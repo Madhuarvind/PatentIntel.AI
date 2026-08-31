@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { AuthMode } from '../types';
+import { dbStore } from '../services/dbStore';
 import { 
   ShieldCheck, 
   Lock, 
@@ -15,7 +16,8 @@ import {
   GitMerge, 
   Search, 
   BookOpen,
-  KeyRound
+  KeyRound,
+  Database
 } from 'lucide-react';
 
 interface Props {
@@ -33,21 +35,49 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess, onOpenLiterature }
   const [role, setRole] = useState('Patent Examiner');
   const [rememberMe, setRememberMe] = useState(true);
   const [resetSent, setResetSent] = useState(false);
+  const [registerSuccessMessage, setRegisterSuccessMessage] = useState<string | null>(null);
+
+  const handleRegisterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Save to Cloud DB
+    dbStore.registerUser(
+      fullName || 'Registered User',
+      email || 'user@patentintel.ai',
+      role,
+      organization
+    );
+    setRegisterSuccessMessage(`Account created successfully for ${fullName || email}! Please sign in below to enter your workspace.`);
+    setMode('login');
+    setPassword('');
+  };
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const userAccount = dbStore.authenticateUser(email) || dbStore.registerUser(
+      fullName || 'Dr. Alex Vance',
+      email || 'alex.vance@patentintel.ai',
+      role,
+      organization
+    );
+    
     onLoginSuccess({
-      name: fullName || 'Dr. Alex Vance',
-      email: email || 'alex.vance@patentintel.ai',
-      role: role
+      name: userAccount.name,
+      email: userAccount.email,
+      role: userAccount.role
     });
   };
 
   const handleDemoLogin = () => {
+    const demoUser = dbStore.registerUser(
+      'Dr. Alex Vance',
+      'alex.vance@uspto-research.gov',
+      'Lead Patent Examiner & R&D Fellow',
+      'USPTO Open Data Laboratory'
+    );
     onLoginSuccess({
-      name: 'Dr. Alex Vance',
-      email: 'alex.vance@uspto-research.gov',
-      role: 'Lead Patent Examiner & R&D Fellow'
+      name: demoUser.name,
+      email: demoUser.email,
+      role: demoUser.role
     });
   };
 
@@ -187,11 +217,11 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess, onOpenLiterature }
 
             <div className="glass-panel" style={{ padding: '14px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ color: 'var(--accent-purple)', background: 'rgba(139,92,246,0.1)', padding: '8px', borderRadius: '8px' }}>
-                <Sparkles size={18} />
+                <Database size={18} />
               </div>
               <div>
-                <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-main)' }}>Evidence LLM</div>
-                <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>Traceable reasoning & diffs</div>
+                <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-main)' }}>Cloud Database</div>
+                <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>Persisted user & patent data</div>
               </div>
             </div>
           </div>
@@ -231,7 +261,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess, onOpenLiterature }
           padding: '4px',
           borderRadius: '12px',
           border: '1px solid var(--border-color)',
-          marginBottom: '32px'
+          marginBottom: '24px'
         }}>
           <button
             onClick={() => { setMode('login'); setResetSent(false); }}
@@ -252,7 +282,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess, onOpenLiterature }
             Sign In
           </button>
           <button
-            onClick={() => { setMode('register'); setResetSent(false); }}
+            onClick={() => { setMode('register'); setResetSent(false); setRegisterSuccessMessage(null); }}
             style={{
               flex: 1,
               padding: '10px',
@@ -271,6 +301,26 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess, onOpenLiterature }
           </button>
         </div>
 
+        {/* REGISTRATION SUCCESS BANNER */}
+        {registerSuccessMessage && mode === 'login' && (
+          <div style={{
+            padding: '12px 14px',
+            borderRadius: '10px',
+            background: 'rgba(16, 185, 129, 0.12)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            color: 'var(--accent-emerald)',
+            fontSize: '0.84rem',
+            fontWeight: 600,
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <CheckCircle2 size={18} style={{ flexShrink: 0 }} />
+            <span>{registerSuccessMessage}</span>
+          </div>
+        )}
+
         {/* SIGN IN FORM */}
         {mode === 'login' && (
           <div>
@@ -279,7 +329,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess, onOpenLiterature }
                 Welcome Back
               </h2>
               <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-                Sign in to access your patent intelligence workspace & claim similarity models.
+                Sign in with your registered email & password to access your database workspace.
               </p>
             </div>
 
@@ -393,11 +443,11 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess, onOpenLiterature }
                 Create Account
               </h2>
               <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-                Register your research workspace to analyze patent claims and prior-art networks.
+                Register your research account in the Cloud Database to analyze patent claims.
               </p>
             </div>
 
-            <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
                   Full Name & Title
@@ -487,7 +537,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess, onOpenLiterature }
               </div>
 
               <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px', marginTop: '6px', fontSize: '0.95rem' }}>
-                Register & Enter Platform <ArrowRight size={18} />
+                Register Account <ArrowRight size={18} />
               </button>
             </form>
           </div>
@@ -501,7 +551,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess, onOpenLiterature }
                 Reset Password
               </h2>
               <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-                Enter your account email and we'll dispatch a secure password reset link.
+                Enter your registered account email and we'll dispatch a secure reset link.
               </p>
             </div>
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { ModuleView } from './types';
+import { dbStore } from './services/dbStore';
 import { AuthScreen } from './components/AuthScreen';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
@@ -15,12 +16,19 @@ import { SettingsView } from './components/SettingsView';
 import { LiteratureModal } from './components/LiteratureModal';
 
 export const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [user, setUser] = useState<{ name: string; email: string; role: string }>({
-    name: 'Dr. Alex Vance',
-    email: 'alex.vance@uspto-research.gov',
-    role: 'Lead Patent Examiner'
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return !!dbStore.getCurrentUser();
   });
+  
+  const [user, setUser] = useState<{ name: string; email: string; role: string }>(() => {
+    const active = dbStore.getCurrentUser();
+    return active ? { name: active.name, email: active.email, role: active.role } : {
+      name: 'Dr. Alex Vance',
+      email: 'alex.vance@uspto-research.gov',
+      role: 'Lead Patent Examiner'
+    };
+  });
+
   const [activeView, setActiveView] = useState<ModuleView>('dashboard');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [isLiteratureOpen, setIsLiteratureOpen] = useState<boolean>(false);
@@ -43,6 +51,7 @@ export const App: React.FC = () => {
   };
 
   const handleLogout = () => {
+    dbStore.logoutUser();
     setIsAuthenticated(false);
   };
 

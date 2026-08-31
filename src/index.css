@@ -232,53 +232,13 @@ html, body {
   border: 1px solid rgba(245, 158, 11, 0.25);
 }
 
-/* --- KEYFRAME ANIMATIONS & MICRO-INTERACTIONS --- */
-
 @keyframes pulseGlow {
   0%, 100% { opacity: 0.4; transform: scale(1); }
   50% { opacity: 0.7; transform: scale(1.05); }
 }
 
-@keyframes floatBackground {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-15px) rotate(3deg); }
-}
-
-@keyframes fadeInScale {
-  from {
-    opacity: 0;
-    transform: scale(0.97) translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-@keyframes logoPulse {
-  0%, 100% { filter: drop-shadow(0 0 8px rgba(0, 242, 254, 0.5)); transform: scale(1); }
-  50% { filter: drop-shadow(0 0 18px rgba(0, 242, 254, 0.85)); transform: scale(1.04); }
-}
-
 .animate-glow {
   animation: pulseGlow 4s infinite ease-in-out;
-}
-
-.animate-float {
-  animation: floatBackground 8s infinite ease-in-out;
-}
-
-.animate-fade-in {
-  animation: fadeInScale 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-logo {
-  animation: logoPulse 3.5s infinite ease-in-out;
-}
-
-/* Full Page Dashboard Module Transition */
-.page-view-container {
-  animation: fadeInScale 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Print Media Styles for Clean Official Report PDF Export */

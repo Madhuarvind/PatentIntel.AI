@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import type { AuthMode } from '../types';
 import { dbStore } from '../services/dbStore';
-import { PatentShieldLogo } from './PatentShieldLogo';
 import { 
   ShieldCheck, 
   Lock, 
@@ -13,13 +12,13 @@ import {
   Sparkles, 
   ArrowRight, 
   CheckCircle2, 
+  Cpu, 
   GitMerge, 
   Search, 
   KeyRound,
   Database,
-  Activity,
-  Layers,
-  Award
+  Zap,
+  Activity
 } from 'lucide-react';
 
 interface Props {
@@ -40,7 +39,6 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
 
   const handleRegisterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Save to Database Store
     dbStore.registerUser(
       fullName || 'Registered User',
       email || 'user@patentintel.ai',
@@ -48,8 +46,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
       organization
     );
 
-    // Require explicit Sign In with password after registration
-    setRegisterSuccessMessage(`Account created successfully for ${fullName || email}! Please enter your password below to Sign In.`);
+    setRegisterSuccessMessage(`Account registered for ${fullName || email}! Please enter your password below to Sign In.`);
     setMode('login');
     setPassword('');
   };
@@ -91,564 +88,526 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
 
   return (
     <div style={{
-      minHeight: '100vh',
-      width: '100%',
+      height: '100vh',
+      width: '100vw',
       display: 'flex',
-      background: 'var(--bg-main)',
+      background: '#0B0F19',
       position: 'relative',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      fontFamily: 'Inter, system-ui, -apple-system, sans-serif'
     }}>
-      {/* Full Page Animated Ambient Glows & Floating Particles */}
-      <div className="animate-float" style={{
+      {/* Background Ambient Glow Orbs */}
+      <div style={{
         position: 'absolute',
         top: '-20%',
         left: '-10%',
-        width: '60vw',
-        height: '60vw',
+        width: '65vw',
+        height: '65vw',
         borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(0, 242, 254, 0.16) 0%, rgba(11, 15, 25, 0) 70%)',
+        background: 'radial-gradient(circle, rgba(0, 242, 254, 0.15) 0%, rgba(11, 15, 25, 0) 70%)',
         pointerEvents: 'none',
-        zIndex: 1
+        zIndex: 0
       }} />
-      <div className="animate-float" style={{
+      <div style={{
         position: 'absolute',
-        bottom: '-20%',
+        bottom: '-25%',
         right: '-10%',
-        width: '60vw',
-        height: '60vw',
+        width: '65vw',
+        height: '65vw',
         borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(99, 102, 241, 0.16) 0%, rgba(11, 15, 25, 0) 70%)',
+        background: 'radial-gradient(circle, rgba(99, 102, 241, 0.18) 0%, rgba(11, 15, 25, 0) 70%)',
         pointerEvents: 'none',
-        animationDelay: '-4s',
-        zIndex: 1
+        zIndex: 0
       }} />
 
-      {/* LEFT PANE: FULL-HEIGHT RICH PATENT INTELLIGENCE HERO & METRICS */}
+      {/* LEFT PANE: FUTURISTIC AI HERO & BRANDING SECTION */}
       <div style={{
-        flex: 1,
+        flex: '1.25',
+        height: '100vh',
         padding: '48px 56px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
         position: 'relative',
-        zIndex: 2,
-        borderRight: '1px solid var(--border-color)',
-        background: 'linear-gradient(180deg, rgba(18, 24, 39, 0.5) 0%, rgba(11, 15, 25, 0.9) 100%)',
-        overflowY: 'auto'
+        zIndex: 1,
+        backgroundImage: 'linear-gradient(135deg, rgba(11, 15, 25, 0.82) 0%, rgba(18, 24, 39, 0.94) 100%), url(/patent_intel_hero_bg.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        borderRight: '1px solid rgba(255, 255, 255, 0.08)'
       }}>
-        {/* Brand Top Header with Status Badge */}
+        {/* Brand Top Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <div className="animate-logo" style={{
-              width: '50px',
-              height: '50px',
+            <div style={{
+              width: '48px',
+              height: '48px',
               borderRadius: '14px',
-              background: 'rgba(0, 242, 254, 0.08)',
-              border: '1px solid rgba(0, 242, 254, 0.35)',
+              background: 'linear-gradient(135deg, #00F2FE 0%, #4FACFE 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: 'var(--shadow-glow)'
+              boxShadow: '0 0 24px rgba(0, 242, 254, 0.45)'
             }}>
-              <PatentShieldLogo size={32} />
+              <Cpu size={26} color="#0B0F19" />
             </div>
             <div>
-              <div style={{ fontSize: '1.6rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
-                PatentIntel<span className="gradient-text">.AI</span>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#FFFFFF' }}>
+                PatentIntel<span style={{ background: 'linear-gradient(135deg, #00F2FE 0%, #4FACFE 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>.AI</span>
               </div>
-              <div style={{ fontSize: '0.74rem', color: 'var(--accent-cyan)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                Explainable Patent Intelligence Platform
+              <div style={{ fontSize: '0.72rem', color: '#00F2FE', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                Next-Gen Explainable Patent Intelligence
               </div>
             </div>
           </div>
 
-          <div className="badge badge-emerald" style={{ padding: '6px 14px', gap: '6px', fontSize: '0.78rem' }}>
-            <Activity size={14} className="animate-pulse" /> USPTO REST API Connected
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'rgba(16, 185, 129, 0.12)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            padding: '6px 14px',
+            borderRadius: '20px',
+            fontSize: '0.78rem',
+            color: '#10B981',
+            fontWeight: 600
+          }}>
+            <Activity size={14} className="pulse-green" /> USPTO Open Data Live Synced
           </div>
         </div>
 
-        {/* Central R&D Value Proposition & Hero Section */}
-        <div style={{ margin: '28px 0' }}>
-          <div className="badge badge-cyan" style={{ marginBottom: '18px', padding: '7px 16px', fontSize: '0.8rem' }}>
-            <Sparkles size={14} /> IEEE Research & PatentMatch Grounded Architecture
+        {/* Hero Value Proposition */}
+        <div style={{ maxWidth: '640px', margin: 'auto 0' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'rgba(0, 242, 254, 0.1)',
+            border: '1px solid rgba(0, 242, 254, 0.25)',
+            padding: '6px 14px',
+            borderRadius: '20px',
+            fontSize: '0.82rem',
+            color: '#00F2FE',
+            fontWeight: 600,
+            marginBottom: '20px'
+          }}>
+            <Sparkles size={15} /> Grounded on 6.26M PatentMatch Dataset & IEEE Standards
           </div>
 
           <h1 style={{
-            fontSize: '2.8rem',
+            fontSize: '3.1rem',
             fontWeight: 800,
-            lineHeight: 1.15,
-            color: 'var(--text-main)',
-            marginBottom: '18px',
-            letterSpacing: '-0.02em'
+            lineHeight: 1.12,
+            color: '#FFFFFF',
+            letterSpacing: '-0.03em',
+            marginBottom: '20px'
           }}>
-            Intelligent Patent <br />
-            <span className="gradient-text">Similarity Analyzer</span> <br />
-            Using LLMs & SBERT
+            Claim-Centric Prior-Art <br />
+            <span style={{
+              background: 'linear-gradient(135deg, #00F2FE 0%, #6366F1 50%, #A855F7 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}>Similarity & Invalidity</span> <br />
+            Engine Powered by SBERT
           </h1>
 
           <p style={{
-            fontSize: '1.05rem',
-            color: 'var(--text-muted)',
-            lineHeight: 1.6,
-            maxWidth: '620px',
-            marginBottom: '28px'
+            fontSize: '1.08rem',
+            color: '#94A3B8',
+            lineHeight: 1.65,
+            marginBottom: '36px'
           }}>
-            An explainable, claim-centric R&D platform combining hybrid retrieval (BM25 + Dense Vector Embeddings), structural claim element decomposition, § 102/103 invalidity risk scoring, and evidence-grounded AI explanations.
+            Decompose multi-tier independent claims into structural limitations, compute 35 U.S.C. § 102/103 invalidity risk probabilities, and generate USPTO-grade audit reports in real time.
           </p>
 
-          {/* DYNAMIC LIVE BENCHMARK METRICS STRIP (Fills Layout Seamlessly) */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '12px',
-            marginBottom: '28px',
-            maxWidth: '680px'
-          }}>
-            <div className="glass-panel" style={{ padding: '12px', borderRadius: '12px', textAlign: 'center', border: '1px solid rgba(0, 242, 254, 0.2)' }}>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-cyan)' }}>6.26M+</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Claims Parsed</div>
-            </div>
-            <div className="glass-panel" style={{ padding: '12px', borderRadius: '12px', textAlign: 'center', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-indigo)' }}>89.4%</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>MAP@10 Score</div>
-            </div>
-            <div className="glass-panel" style={{ padding: '12px', borderRadius: '12px', textAlign: 'center', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-emerald)' }}>&lt;20ms</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Vector Query</div>
-            </div>
-            <div className="glass-panel" style={{ padding: '12px', borderRadius: '12px', textAlign: 'center', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-purple)' }}>100%</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Statutory § Rule</div>
-            </div>
-          </div>
-
-          {/* INTERACTIVE LIVE CLAIM ALIGNMENT PREVIEW GRAPHIC */}
-          <div className="glass-panel" style={{
-            padding: '18px 20px',
-            borderRadius: '14px',
-            maxWidth: '680px',
-            marginBottom: '28px',
-            background: 'rgba(15, 20, 32, 0.7)',
-            border: '1px solid rgba(0, 242, 254, 0.2)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.84rem', fontWeight: 700, color: 'var(--accent-cyan)' }}>
-                <Layers size={16} /> Live Structural Claim Element Matching Stream
-              </div>
-              <span className="badge badge-purple" style={{ fontSize: '0.68rem' }}>SBERT Multi-Vector Alignment</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.78rem' }}>
-                <span style={{ width: '130px', color: 'var(--text-muted)', fontWeight: 600 }}>Target Claim [Limitation A]</span>
-                <div style={{ flex: 1, height: '8px', borderRadius: '4px', background: 'var(--bg-surface)', overflow: 'hidden', position: 'relative' }}>
-                  <div style={{ width: '92%', height: '100%', background: 'var(--gradient-primary)', borderRadius: '4px' }} />
-                </div>
-                <span style={{ color: 'var(--accent-cyan)', fontWeight: 700, minWidth: '40px' }}>92.4%</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.78rem' }}>
-                <span style={{ width: '130px', color: 'var(--text-muted)', fontWeight: 600 }}>Prior-Art US10928341</span>
-                <div style={{ flex: 1, height: '8px', borderRadius: '4px', background: 'var(--bg-surface)', overflow: 'hidden', position: 'relative' }}>
-                  <div style={{ width: '84%', height: '100%', background: 'var(--gradient-accent)', borderRadius: '4px' }} />
-                </div>
-                <span style={{ color: 'var(--accent-indigo)', fontWeight: 700, minWidth: '40px' }}>84.1%</span>
-              </div>
-            </div>
-          </div>
-
-          {/* 4 Feature Badges Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px', maxWidth: '680px' }}>
-            <div className="glass-panel glass-panel-hover" style={{ padding: '14px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ color: 'var(--accent-cyan)', background: 'rgba(0,242,254,0.1)', padding: '10px', borderRadius: '10px' }}>
+          {/* Interactive Feature Matrix Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+            <div style={{
+              background: 'rgba(18, 24, 39, 0.65)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '14px',
+              padding: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <div style={{ background: 'rgba(0, 242, 254, 0.12)', padding: '10px', borderRadius: '10px', color: '#00F2FE' }}>
                 <Search size={20} />
               </div>
               <div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)' }}>Hybrid BM25 + SBERT</div>
-                <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>Dense & lexical dual-stage search</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#F8FAFC' }}>Hybrid Search Engine</div>
+                <div style={{ fontSize: '0.78rem', color: '#64748B' }}>BM25 + SBERT Dense Vectors</div>
               </div>
             </div>
 
-            <div className="glass-panel glass-panel-hover" style={{ padding: '14px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ color: 'var(--accent-indigo)', background: 'rgba(99,102,241,0.1)', padding: '10px', borderRadius: '10px' }}>
+            <div style={{
+              background: 'rgba(18, 24, 39, 0.65)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '14px',
+              padding: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <div style={{ background: 'rgba(99, 102, 241, 0.12)', padding: '10px', borderRadius: '10px', color: '#6366F1' }}>
                 <GitMerge size={20} />
               </div>
               <div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)' }}>Claim Element Alignment</div>
-                <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>Element-by-element coverage matrix</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#F8FAFC' }}>Claim Limitation Trees</div>
+                <div style={{ fontSize: '0.78rem', color: '#64748B' }}>Element-by-element mapping</div>
               </div>
             </div>
 
-            <div className="glass-panel glass-panel-hover" style={{ padding: '14px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ color: 'var(--accent-emerald)', background: 'rgba(16,185,129,0.1)', padding: '10px', borderRadius: '10px' }}>
+            <div style={{
+              background: 'rgba(18, 24, 39, 0.65)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '14px',
+              padding: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <div style={{ background: 'rgba(16, 185, 129, 0.12)', padding: '10px', borderRadius: '10px', color: '#10B981' }}>
                 <ShieldCheck size={20} />
               </div>
               <div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)' }}>35 U.S.C. § 102/103 Rules</div>
-                <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>Automated invalidity risk calculator</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#F8FAFC' }}>35 U.S.C. § 102 / § 103</div>
+                <div style={{ fontSize: '0.78rem', color: '#64748B' }}>Automated invalidity scoring</div>
               </div>
             </div>
 
-            <div className="glass-panel glass-panel-hover" style={{ padding: '14px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ color: 'var(--accent-purple)', background: 'rgba(139,92,246,0.1)', padding: '10px', borderRadius: '10px' }}>
+            <div style={{
+              background: 'rgba(18, 24, 39, 0.65)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '14px',
+              padding: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <div style={{ background: 'rgba(168, 85, 247, 0.12)', padding: '10px', borderRadius: '10px', color: '#A855F7' }}>
                 <Database size={20} />
               </div>
               <div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)' }}>Persisted Workspace Store</div>
-                <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>Persistent database accounts</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#F8FAFC' }}>Cloud Database Store</div>
+                <div style={{ fontSize: '0.78rem', color: '#64748B' }}>Persisted user workspace sync</div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Bottom Footer R&D Info */}
-        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>
-            PatentIntel.AI Research Architecture • Powered by SBERT & USPTO Open Data
+        {/* Bottom System Banner */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+          paddingTop: '20px'
+        }}>
+          <div style={{ fontSize: '0.82rem', color: '#64748B' }}>
+            © 2026 PatentIntel.AI Architecture • Madhuaravind P, Harish M, Mouneesh R
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--accent-cyan)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Award size={14} /> IEEE Published Standard
+          <div style={{ fontSize: '0.82rem', color: '#00F2FE', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Zap size={14} /> PatentMatch Benchmark: 89.4% Precision@10
           </div>
         </div>
       </div>
 
-      {/* RIGHT PANE: ELEGANT AUTHENTICATION CONTAINER */}
+      {/* RIGHT PANE: FULL-HEIGHT STRETCHED PREMIUM AUTHENTICATION CARD */}
       <div style={{
-        width: '520px',
-        minWidth: '520px',
-        padding: '48px 44px',
+        flex: '1',
+        height: '100vh',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
-        background: 'var(--bg-card-solid)',
+        background: 'linear-gradient(180deg, #0F172A 0%, #0B0F19 100%)',
+        padding: '48px 56px',
         position: 'relative',
-        zIndex: 2,
-        boxShadow: '-10px 0 30px rgba(0,0,0,0.5)'
+        zIndex: 1,
+        boxShadow: '-20px 0 50px rgba(0, 0, 0, 0.5)'
       }}>
-        {/* Auth Mode Toggle Tabs */}
         <div style={{
+          width: '100%',
+          maxWidth: '440px',
+          margin: '0 auto',
           display: 'flex',
-          background: 'var(--bg-input)',
-          padding: '4px',
-          borderRadius: '14px',
-          border: '1px solid var(--border-color)',
-          marginBottom: '28px'
+          flexDirection: 'column',
+          height: '100%',
+          justifyContent: 'center'
         }}>
-          <button
-            onClick={() => { setMode('login'); setResetSent(false); }}
-            style={{
-              flex: 1,
-              padding: '12px',
-              border: 'none',
-              borderRadius: '10px',
-              fontSize: '0.92rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              background: mode === 'login' ? 'var(--bg-surface)' : 'transparent',
-              color: mode === 'login' ? 'var(--accent-cyan)' : 'var(--text-muted)',
-              transition: 'all 0.25s ease',
-              boxShadow: mode === 'login' ? 'var(--shadow-sm)' : 'none'
-            }}
-          >
-            Sign In
-          </button>
-          <button
-            onClick={() => { setMode('register'); setResetSent(false); setRegisterSuccessMessage(null); }}
-            style={{
-              flex: 1,
-              padding: '12px',
-              border: 'none',
-              borderRadius: '10px',
-              fontSize: '0.92rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              background: mode === 'register' ? 'var(--bg-surface)' : 'transparent',
-              color: mode === 'register' ? 'var(--accent-cyan)' : 'var(--text-muted)',
-              transition: 'all 0.25s ease',
-              boxShadow: mode === 'register' ? 'var(--shadow-sm)' : 'none'
-            }}
-          >
-            Create Account
-          </button>
-        </div>
 
-        {/* REGISTRATION SUCCESS BANNER */}
-        {registerSuccessMessage && mode === 'login' && (
-          <div className="animate-fade-in" style={{
-            padding: '14px 16px',
-            borderRadius: '12px',
-            background: 'rgba(16, 185, 129, 0.14)',
-            border: '1px solid rgba(16, 185, 129, 0.35)',
-            color: 'var(--accent-emerald)',
-            fontSize: '0.86rem',
-            fontWeight: 600,
-            marginBottom: '22px',
+          {/* Navigation Pill Tabs */}
+          <div style={{
             display: 'flex',
-            alignItems: 'center',
-            gap: '10px'
+            background: 'rgba(15, 23, 42, 0.8)',
+            padding: '5px',
+            borderRadius: '14px',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            marginBottom: '32px'
           }}>
-            <CheckCircle2 size={20} style={{ flexShrink: 0 }} />
-            <span>{registerSuccessMessage}</span>
+            <button
+              onClick={() => { setMode('login'); setResetSent(false); }}
+              style={{
+                flex: 1,
+                padding: '12px',
+                border: 'none',
+                borderRadius: '10px',
+                fontSize: '0.92rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                background: mode === 'login' ? 'linear-gradient(135deg, #00F2FE 0%, #4FACFE 100%)' : 'transparent',
+                color: mode === 'login' ? '#0B0F19' : '#94A3B8',
+                transition: 'all 0.25s ease',
+                boxShadow: mode === 'login' ? '0 0 16px rgba(0, 242, 254, 0.35)' : 'none'
+              }}
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => { setMode('register'); setResetSent(false); setRegisterSuccessMessage(null); }}
+              style={{
+                flex: 1,
+                padding: '12px',
+                border: 'none',
+                borderRadius: '10px',
+                fontSize: '0.92rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                background: mode === 'register' ? 'linear-gradient(135deg, #00F2FE 0%, #4FACFE 100%)' : 'transparent',
+                color: mode === 'register' ? '#0B0F19' : '#94A3B8',
+                transition: 'all 0.25s ease',
+                boxShadow: mode === 'register' ? '0 0 16px rgba(0, 242, 254, 0.35)' : 'none'
+              }}
+            >
+              Create Account
+            </button>
           </div>
-        )}
 
-        {/* SIGN IN FORM */}
-        {mode === 'login' && (
-          <div className="animate-fade-in">
-            <div style={{ marginBottom: '26px' }}>
-              <h2 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 6px' }}>
-                Welcome Back
-              </h2>
-              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-                Sign in with your registered email & password to access your database workspace.
-              </p>
+          {/* REGISTRATION SUCCESS BANNER */}
+          {registerSuccessMessage && mode === 'login' && (
+            <div style={{
+              padding: '14px 16px',
+              borderRadius: '12px',
+              background: 'rgba(16, 185, 129, 0.12)',
+              border: '1px solid rgba(16, 185, 129, 0.35)',
+              color: '#10B981',
+              fontSize: '0.86rem',
+              fontWeight: 600,
+              marginBottom: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              boxShadow: '0 4px 16px rgba(16, 185, 129, 0.15)'
+            }}>
+              <CheckCircle2 size={20} style={{ flexShrink: 0 }} />
+              <span>{registerSuccessMessage}</span>
             </div>
+          )}
 
-            <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>
-                  Work Email / Institutional ID
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <Mail size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
-                  <input
-                    type="email"
-                    required
-                    placeholder="alex.vance@uspto-research.gov"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="input-field"
-                    style={{ paddingLeft: '44px', height: '44px' }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <label style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                    Password
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setMode('forgot')}
-                    style={{ background: 'none', border: 'none', color: 'var(--accent-cyan)', fontSize: '0.82rem', cursor: 'pointer', fontWeight: 500 }}
-                  >
-                    Forgot Password?
-                  </button>
-                </div>
-                <div style={{ position: 'relative' }}>
-                  <Lock size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    placeholder="••••••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="input-field"
-                    style={{ paddingLeft: '44px', paddingRight: '44px', height: '44px' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.84rem', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    style={{ accentColor: 'var(--accent-cyan)', width: '16px', height: '16px' }}
-                  />
-                  Remember session on this device
-                </label>
-              </div>
-
-              <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '13px', marginTop: '6px', fontSize: '0.98rem' }}>
-                Sign In to Platform <ArrowRight size={18} />
-              </button>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '14px 0' }}>
-                <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }} />
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 600 }}>Quick Reviewer Access</span>
-                <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }} />
-              </div>
-
-              {/* DEMO ONE-CLICK LOGIN BUTTON */}
-              <button
-                type="button"
-                onClick={handleDemoLogin}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  borderRadius: '12px',
-                  background: 'rgba(0, 242, 254, 0.08)',
-                  border: '1px solid rgba(0, 242, 254, 0.3)',
-                  color: 'var(--accent-cyan)',
-                  fontWeight: 600,
-                  fontSize: '0.9rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  transition: 'all 0.25s ease'
-                }}
-              >
-                <Sparkles size={18} /> Instant Demo Examiner Login (1-Click)
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* CREATE ACCOUNT FORM */}
-        {mode === 'register' && (
-          <div className="animate-fade-in">
-            <div style={{ marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 6px' }}>
-                Create Account
-              </h2>
-              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-                Register your research account in the Cloud Database to analyze patent claims.
-              </p>
-            </div>
-
-            <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
-                  Full Name & Title
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <User size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
-                  <input
-                    type="text"
-                    required
-                    placeholder="Dr. Alex Vance"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="input-field"
-                    style={{ paddingLeft: '44px', height: '42px' }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
-                  Institutional / Work Email
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <Mail size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
-                  <input
-                    type="email"
-                    required
-                    placeholder="alex.vance@institution.edu"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="input-field"
-                    style={{ paddingLeft: '44px', height: '42px' }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
-                  Organization / University / Firm
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <Building2 size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
-                  <input
-                    type="text"
-                    placeholder="National Patent Research Lab"
-                    value={organization}
-                    onChange={(e) => setOrganization(e.target.value)}
-                    className="input-field"
-                    style={{ paddingLeft: '44px', height: '42px' }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
-                  Research Role
-                </label>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className="input-field"
-                  style={{ background: 'var(--bg-input)', cursor: 'pointer', height: '42px' }}
-                >
-                  <option value="Patent Examiner">Patent Examiner / Analyst</option>
-                  <option value="IP Attorney">IP Attorney / Legal Counsel</option>
-                  <option value="R&D Researcher">R&D Scientist / Engineer</option>
-                  <option value="Academic Researcher">Academic Researcher / Student</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
-                  Password
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <Lock size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
-                  <input
-                    type="password"
-                    required
-                    placeholder="Create a strong password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="input-field"
-                    style={{ paddingLeft: '44px', height: '42px' }}
-                  />
-                </div>
-              </div>
-
-              <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px', marginTop: '6px', fontSize: '0.95rem' }}>
-                Register Account <ArrowRight size={18} />
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* FORGOT PASSWORD FORM */}
-        {mode === 'forgot' && (
-          <div className="animate-fade-in">
-            <div style={{ marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 6px' }}>
-                Reset Password
-              </h2>
-              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-                Enter your registered account email and we'll dispatch a secure reset link.
-              </p>
-            </div>
-
-            {resetSent ? (
-              <div style={{
-                padding: '20px',
-                borderRadius: '12px',
-                background: 'rgba(16, 185, 129, 0.1)',
-                border: '1px solid rgba(16, 185, 129, 0.3)',
-                textAlign: 'center'
-              }}>
-                <CheckCircle2 size={36} color="var(--accent-emerald)" style={{ margin: '0 auto 12px' }} />
-                <h3 style={{ fontSize: '1.05rem', color: 'var(--text-main)', marginBottom: '6px' }}>Reset Link Sent</h3>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
-                  We've sent recovery instructions to <strong>{email || 'your email'}</strong>. Please check your inbox.
+          {/* SIGN IN FORM */}
+          {mode === 'login' && (
+            <div>
+              <div style={{ marginBottom: '28px' }}>
+                <h2 style={{ fontSize: '1.85rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 8px', letterSpacing: '-0.02em' }}>
+                  Welcome Back
+                </h2>
+                <p style={{ fontSize: '0.92rem', color: '#94A3B8', margin: 0 }}>
+                  Enter your registered credentials to access your Cloud Workspace.
                 </p>
-                <button className="btn-secondary" onClick={() => setMode('login')} style={{ width: '100%', justifyContent: 'center' }}>
-                  Back to Sign In
-                </button>
               </div>
-            ) : (
-              <form onSubmit={handleForgotSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+
+              <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
-                    Registered Email Address
+                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: '#CBD5E1', marginBottom: '8px' }}>
+                    Work Email / Institutional ID
                   </label>
                   <div style={{ position: 'relative' }}>
-                    <Mail size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+                    <Mail size={19} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#64748B' }} />
+                    <input
+                      type="email"
+                      required
+                      placeholder="alex.vance@uspto-research.gov"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="input-field"
+                      style={{
+                        width: '100%',
+                        padding: '14px 14px 14px 44px',
+                        background: 'rgba(15, 23, 42, 0.6)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        borderRadius: '12px',
+                        color: '#F8FAFC',
+                        fontSize: '0.95rem',
+                        outline: 'none',
+                        transition: 'all 0.2s ease'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <label style={{ fontSize: '0.84rem', fontWeight: 600, color: '#CBD5E1' }}>
+                      Password
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setMode('forgot')}
+                      style={{ background: 'none', border: 'none', color: '#00F2FE', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
+                  <div style={{ position: 'relative' }}>
+                    <Lock size={19} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#64748B' }} />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      placeholder="••••••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="input-field"
+                      style={{
+                        width: '100%',
+                        padding: '14px 44px 14px 44px',
+                        background: 'rgba(15, 23, 42, 0.6)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        borderRadius: '12px',
+                        color: '#F8FAFC',
+                        fontSize: '0.95rem',
+                        outline: 'none',
+                        transition: 'all 0.2s ease'
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}
+                    >
+                      {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.86rem', color: '#94A3B8', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      style={{ width: '16px', height: '16px', accentColor: '#00F2FE', borderRadius: '4px' }}
+                    />
+                    Remember session on this device
+                  </label>
+                </div>
+
+                <button
+                  type="submit"
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #00F2FE 0%, #4FACFE 100%)',
+                    border: 'none',
+                    color: '#0B0F19',
+                    fontWeight: 800,
+                    fontSize: '1rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    boxShadow: '0 0 24px rgba(0, 242, 254, 0.35)',
+                    transition: 'all 0.2s ease',
+                    marginTop: '4px'
+                  }}
+                >
+                  Sign In to Platform <ArrowRight size={19} />
+                </button>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', margin: '14px 0' }}>
+                  <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.08)' }} />
+                  <span style={{ fontSize: '0.76rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Quick Examiner Access</span>
+                  <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.08)' }} />
+                </div>
+
+                {/* DEMO ONE-CLICK LOGIN BUTTON */}
+                <button
+                  type="button"
+                  onClick={handleDemoLogin}
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    borderRadius: '12px',
+                    background: 'rgba(0, 242, 254, 0.08)',
+                    border: '1px solid rgba(0, 242, 254, 0.3)',
+                    color: '#00F2FE',
+                    fontWeight: 700,
+                    fontSize: '0.94rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <Sparkles size={19} /> Instant Demo Examiner Login (1-Click)
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* CREATE ACCOUNT FORM */}
+          {mode === 'register' && (
+            <div>
+              <div style={{ marginBottom: '24px' }}>
+                <h2 style={{ fontSize: '1.85rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 8px', letterSpacing: '-0.02em' }}>
+                  Create Account
+                </h2>
+                <p style={{ fontSize: '0.92rem', color: '#94A3B8', margin: 0 }}>
+                  Register your examiner account to sync patent claim datasets.
+                </p>
+              </div>
+
+              <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: '#CBD5E1', marginBottom: '6px' }}>
+                    Full Name & Title
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <User size={19} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#64748B' }} />
+                    <input
+                      type="text"
+                      required
+                      placeholder="Dr. Alex Vance"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="input-field"
+                      style={{
+                        width: '100%',
+                        padding: '12px 12px 12px 44px',
+                        background: 'rgba(15, 23, 42, 0.6)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        borderRadius: '12px',
+                        color: '#F8FAFC',
+                        fontSize: '0.92rem',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: '#CBD5E1', marginBottom: '6px' }}>
+                    Institutional / Work Email
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <Mail size={19} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#64748B' }} />
                     <input
                       type="email"
                       required
@@ -656,26 +615,230 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="input-field"
-                      style={{ paddingLeft: '44px', height: '42px' }}
+                      style={{
+                        width: '100%',
+                        padding: '12px 12px 12px 44px',
+                        background: 'rgba(15, 23, 42, 0.6)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        borderRadius: '12px',
+                        color: '#F8FAFC',
+                        fontSize: '0.92rem',
+                        outline: 'none'
+                      }}
                     />
                   </div>
                 </div>
 
-                <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px' }}>
-                  <KeyRound size={18} /> Send Reset Link
-                </button>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: '#CBD5E1', marginBottom: '6px' }}>
+                    Organization / Firm / University
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <Building2 size={19} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#64748B' }} />
+                    <input
+                      type="text"
+                      placeholder="National Patent Research Lab"
+                      value={organization}
+                      onChange={(e) => setOrganization(e.target.value)}
+                      className="input-field"
+                      style={{
+                        width: '100%',
+                        padding: '12px 12px 12px 44px',
+                        background: 'rgba(15, 23, 42, 0.6)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        borderRadius: '12px',
+                        color: '#F8FAFC',
+                        fontSize: '0.92rem',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: '#CBD5E1', marginBottom: '6px' }}>
+                    Research Role
+                  </label>
+                  <select
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    className="input-field"
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      background: '#0F172A',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      borderRadius: '12px',
+                      color: '#F8FAFC',
+                      fontSize: '0.92rem',
+                      outline: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="Patent Examiner">Patent Examiner / Analyst</option>
+                    <option value="IP Attorney">IP Attorney / Legal Counsel</option>
+                    <option value="R&D Researcher">R&D Scientist / Engineer</option>
+                    <option value="Academic Researcher">Academic Researcher / Student</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: '#CBD5E1', marginBottom: '6px' }}>
+                    Password
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <Lock size={19} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#64748B' }} />
+                    <input
+                      type="password"
+                      required
+                      placeholder="Create a strong password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="input-field"
+                      style={{
+                        width: '100%',
+                        padding: '12px 12px 12px 44px',
+                        background: 'rgba(15, 23, 42, 0.6)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        borderRadius: '12px',
+                        color: '#F8FAFC',
+                        fontSize: '0.92rem',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+                </div>
 
                 <button
-                  type="button"
-                  onClick={() => setMode('login')}
-                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.85rem', cursor: 'pointer', textAlign: 'center' }}
+                  type="submit"
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #00F2FE 0%, #4FACFE 100%)',
+                    border: 'none',
+                    color: '#0B0F19',
+                    fontWeight: 800,
+                    fontSize: '1rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    boxShadow: '0 0 24px rgba(0, 242, 254, 0.35)',
+                    marginTop: '6px'
+                  }}
                 >
-                  Cancel and return to Sign In
+                  Register Account <ArrowRight size={19} />
                 </button>
               </form>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+
+          {/* FORGOT PASSWORD FORM */}
+          {mode === 'forgot' && (
+            <div>
+              <div style={{ marginBottom: '24px' }}>
+                <h2 style={{ fontSize: '1.85rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 8px' }}>
+                  Reset Password
+                </h2>
+                <p style={{ fontSize: '0.92rem', color: '#94A3B8', margin: 0 }}>
+                  Enter your account email and we'll dispatch a secure reset token.
+                </p>
+              </div>
+
+              {resetSent ? (
+                <div style={{
+                  padding: '24px',
+                  borderRadius: '14px',
+                  background: 'rgba(16, 185, 129, 0.12)',
+                  border: '1px solid rgba(16, 185, 129, 0.35)',
+                  textAlign: 'center'
+                }}>
+                  <CheckCircle2 size={40} color="#10B981" style={{ margin: '0 auto 14px' }} />
+                  <h3 style={{ fontSize: '1.1rem', color: '#FFFFFF', marginBottom: '8px' }}>Reset Link Dispatched</h3>
+                  <p style={{ fontSize: '0.88rem', color: '#94A3B8', marginBottom: '20px' }}>
+                    We've sent recovery instructions to <strong>{email || 'your email'}</strong>. Please check your inbox.
+                  </p>
+                  <button
+                    onClick={() => setMode('login')}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '10px',
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      color: '#FFFFFF',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Back to Sign In
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleForgotSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: '#CBD5E1', marginBottom: '8px' }}>
+                      Registered Email Address
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <Mail size={19} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#64748B' }} />
+                      <input
+                        type="email"
+                        required
+                        placeholder="alex.vance@institution.edu"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="input-field"
+                        style={{
+                          width: '100%',
+                          padding: '14px 14px 14px 44px',
+                          background: 'rgba(15, 23, 42, 0.6)',
+                          border: '1px solid rgba(255, 255, 255, 0.12)',
+                          borderRadius: '12px',
+                          color: '#F8FAFC',
+                          fontSize: '0.95rem',
+                          outline: 'none'
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      borderRadius: '12px',
+                      background: 'linear-gradient(135deg, #00F2FE 0%, #4FACFE 100%)',
+                      border: 'none',
+                      color: '#0B0F19',
+                      fontWeight: 800,
+                      fontSize: '1rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '10px'
+                    }}
+                  >
+                    <KeyRound size={19} /> Send Reset Token
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMode('login')}
+                    style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '0.88rem', cursor: 'pointer', textAlign: 'center' }}
+                  >
+                    Cancel and return to Sign In
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
+
+        </div>
       </div>
     </div>
   );

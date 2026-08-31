@@ -89,66 +89,64 @@ export const App: React.FC = () => {
         />
       </div>
 
-      {/* Main Workspace Area */}
+      {/* Main Workspace Area (Fixed Full Height Body) */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', height: 'calc(100vh - 64px)' }}>
-        {/* Module Sidebar */}
+        {/* Module Sidebar (Fixed Position Pinning) */}
         <Sidebar
           activeView={activeView}
           onSelectView={setActiveView}
         />
 
-        {/* Dynamic View Content Container with Page Transition Animation */}
+        {/* Dynamic View Content Container (Individually Scrollable Main Area) */}
         <main style={{ flex: 1, height: '100%', padding: '32px', overflowY: 'auto' }}>
-          <div key={activeView} className="page-view-container">
-            {activeView === 'dashboard' && (
-              <DashboardView 
-                onNavigate={setActiveView} 
-                onOpenLiterature={(q) => openLiteratureWithQuery(q)}
-              />
-            )}
+          {activeView === 'dashboard' && (
+            <DashboardView 
+              onNavigate={setActiveView} 
+              onOpenLiterature={(q) => openLiteratureWithQuery(q)}
+            />
+          )}
 
-            {activeView === 'workspace' && (
-              <PatentWorkspaceView />
-            )}
+          {activeView === 'workspace' && (
+            <PatentWorkspaceView />
+          )}
 
-            {activeView === 'search' && (
-              <SearchEngineView 
-                onNavigate={setActiveView} 
-                onOpenPaper={(q) => openLiteratureWithQuery(q)}
-              />
-            )}
+          {activeView === 'search' && (
+            <SearchEngineView 
+              onNavigate={setActiveView} 
+              onOpenPaper={(q) => openLiteratureWithQuery(q)}
+            />
+          )}
 
-            {activeView === 'claims' && (
-              <ClaimIntelligenceView onNavigate={setActiveView} />
-            )}
+          {activeView === 'claims' && (
+            <ClaimIntelligenceView onNavigate={setActiveView} />
+          )}
 
-            {activeView === 'mapping' && (
-              <ClaimMappingView 
-                onNavigate={setActiveView} 
-                onOpenPaper={(q) => openLiteratureWithQuery(q)}
-              />
-            )}
+          {activeView === 'mapping' && (
+            <ClaimMappingView 
+              onNavigate={setActiveView} 
+              onOpenPaper={(q) => openLiteratureWithQuery(q)}
+            />
+          )}
 
-            {activeView === 'timeline' && (
-              <PriorArtTimelineView 
-                onOpenPaper={(q) => openLiteratureWithQuery(q)}
-              />
-            )}
+          {activeView === 'timeline' && (
+            <PriorArtTimelineView 
+              onOpenPaper={(q) => openLiteratureWithQuery(q)}
+            />
+          )}
 
-            {activeView === 'ai-evidence' && (
-              <AIEvidenceView 
-                onOpenPaper={(q) => openLiteratureWithQuery(q)}
-              />
-            )}
+          {activeView === 'ai-evidence' && (
+            <AIEvidenceView 
+              onOpenPaper={(q) => openLiteratureWithQuery(q)}
+            />
+          )}
 
-            {activeView === 'analytics' && (
-              <AnalyticsView />
-            )}
+          {activeView === 'analytics' && (
+            <AnalyticsView />
+          )}
 
-            {activeView === 'settings' && (
-              <SettingsView />
-            )}
-          </div>
+          {activeView === 'settings' && (
+            <SettingsView />
+          )}
         </main>
       </div>
 

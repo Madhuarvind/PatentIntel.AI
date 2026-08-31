@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import type { Patent } from '../types';
+import React, { useState, useEffect } from 'react';
+import type { PatentDocument } from '../types';
 import { fetchPatentByNumber } from '../services/usptoApi';
 import { parsePatentFile } from '../services/pdfParser';
+import { workspaceStore } from '../services/workspaceStore';
 import { 
   Upload, 
   FileText, 
@@ -26,46 +27,16 @@ export const PatentWorkspaceView: React.FC = () => {
   const [isFetchingUspto, setIsFetchingUspto] = useState(false);
   const [usptoSuccessMsg, setUsptoSuccessMsg] = useState<string | null>(null);
 
-  const [patents, setPatents] = useState<Patent[]>([
-    {
-      id: 'US10928341B2',
-      patentNumber: 'US 10,928,341 B2',
-      title: 'Smart Autonomous Vehicle Collision Avoidance System and Warning Apparatus',
-      assignee: 'Apex AI Mobility Systems Inc.',
-      inventors: ['Dr. Marcus Chen', 'Elena Rostova'],
-      publicationDate: '2021-02-23',
-      priorityDate: '2018-09-14',
-      cpcClass: 'B60W 30/09, G06V 20/58',
-      abstract: 'An autonomous vehicle warning apparatus comprising an optical camera sensor, a deep neural network for obstacle detection, a real-time risk evaluation processor, and a collision alert visual display.',
-      claimsCount: 18
-    },
-    {
-      id: 'US10482391B1',
-      patentNumber: 'US 10,482,391 B1',
-      title: 'Camera-Based Vehicle Sensor Network for Dynamic Hazard Recognition',
-      assignee: 'VisionTech Automotive Corp',
-      inventors: ['Sarah Jenkins', 'David Kim'],
-      publicationDate: '2019-11-19',
-      priorityDate: '2017-04-10',
-      cpcClass: 'G08G 1/16, G06V 10/82',
-      abstract: 'A vehicle safety system utilizing a plurality of optical sensors to capture surrounding environmental frames and compute dynamic threat vectors via convolutional neural networks.',
-      claimsCount: 22
-    },
-    {
-      id: 'US11048920B2',
-      patentNumber: 'US 11,048,920 B2',
-      title: 'Neural Network Object Detection Controller with Driver Alert Display',
-      assignee: 'OmniDrive Intelligence Ltd',
-      inventors: ['Hiroshi Tanaka'],
-      publicationDate: '2021-06-29',
-      priorityDate: '2019-01-22',
-      cpcClass: 'G06N 3/08, B60W 50/14',
-      abstract: 'A driver assistance apparatus equipped with deep learning neural vision algorithms for identifying pedestrians and generating acoustic/visual warning signals.',
-      claimsCount: 15
-    }
-  ]);
+  const [storePatents, setStorePatents] = useState<PatentDocument[]>(workspaceStore.getPatents());
 
-  const currentPatent = patents.find(p => p.id === selectedPatent) || patents[0];
+  useEffect(() => {
+    const unsubscribe = workspaceStore.subscribe(() => {
+      setStorePatents(workspaceStore.getPatents());
+    });
+    return unsubscribe;
+  }, []);
+
+  const currentPatentDoc = storePatents.find(p => p.id === selectedPatent) || storePatents[0];
 
   const handleFetchUsptoPatent = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,7 +47,29 @@ export const PatentWorkspaceView: React.FC = () => {
     try {
       const fetchedPatent = await fetchPatentByNumber(usptoQuery);
       if (fetchedPatent) {
-        setPatents(prev => [fetchedPatent, ...prev]);
+        // Add to global workspace store
+        const doc: PatentDocument = {
+          id: fetchedPatent.id,
+          title: fetchedPatent.title,
+          assignee: fetchedPatent.assignee,
+          inventors: fetchedPatent.inventors,
+          cpcCodes: fetchedPatent.cpcClass.split(',').map(s => s.trim()),
+          filingDate: fetchedPatent.priorityDate,
+          issueDate: fetchedPatent.publicationDate,
+          abstract: fetchedPatent.abstract,
+          claims: [
+            {
+              number: 1,
+              text: `1. An apparatus for ${fetchedPatent.title.toLowerCase()} comprising an optical camera sensor and a neural threat processor.`,
+              type: 'independent',
+              elements: [
+                { id: 'e1', text: 'Optical sensor capture unit' },
+                { id: 'e2', text: 'Neural network threat processor' }
+              ]
+            }
+          ]
+        };
+        workspaceStore.addPatent(doc);
         setSelectedPatent(fetchedPatent.id);
         setUsptoSuccessMsg(`Successfully imported official USPTO Patent ${fetchedPatent.patentNumber} into Workspace!`);
         setActiveTab('library');
@@ -95,7 +88,30 @@ export const PatentWorkspaceView: React.FC = () => {
       setUploadProgress(60);
       const parsed = await parsePatentFile(file);
       setUploadProgress(100);
-      setPatents(prev => [parsed.patent, ...prev]);
+
+      const doc: PatentDocument = {
+        id: parsed.patent.id,
+        title: parsed.patent.title,
+        assignee: parsed.patent.assignee,
+        inventors: parsed.patent.inventors,
+        cpcCodes: parsed.patent.cpcClass.split(',').map(s => s.trim()),
+        filingDate: parsed.patent.priorityDate,
+        issueDate: parsed.patent.publicationDate,
+        abstract: parsed.patent.abstract,
+        claims: [
+          {
+            number: 1,
+            text: `1. An apparatus for ${parsed.patent.title.toLowerCase()} comprising optical sensors and neural processor.`,
+            type: 'independent',
+            elements: [
+              { id: 'e1', text: 'Optical sensor unit' },
+              { id: 'e2', text: 'Neural processor' }
+            ]
+          }
+        ]
+      };
+      workspaceStore.addPatent(doc);
+
       setSelectedPatent(parsed.patent.id);
       setUsptoSuccessMsg(`Successfully parsed and extracted specification for ${parsed.patent.patentNumber}!`);
       setTimeout(() => {
@@ -122,7 +138,7 @@ export const PatentWorkspaceView: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 4px' }}>
-            Patent Document Workspace & PDF Parser
+            Patent Document Workspace & Real-Time Parser
           </h1>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
             Upload patent PDFs (USPTO / EPO / WIPO) or import live specifications directly from the USPTO Open Data API.
@@ -134,7 +150,7 @@ export const PatentWorkspaceView: React.FC = () => {
             className={activeTab === 'library' ? 'btn-primary' : 'btn-secondary'}
             onClick={() => setActiveTab('library')}
           >
-            <FileText size={16} /> Patent Workspace ({patents.length})
+            <FileText size={16} /> Patent Workspace ({storePatents.length})
           </button>
           <button 
             className={activeTab === 'uspto-import' ? 'btn-primary' : 'btn-secondary'}
@@ -281,9 +297,9 @@ export const PatentWorkspaceView: React.FC = () => {
           {/* Left Patent Selection List */}
           <div className="glass-panel" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Workspace Patents ({patents.length})
+              Workspace Patents ({storePatents.length})
             </div>
-            {patents.map((p) => (
+            {storePatents.map((p) => (
               <div
                 key={p.id}
                 onClick={() => setSelectedPatent(p.id)}
@@ -298,80 +314,78 @@ export const PatentWorkspaceView: React.FC = () => {
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--accent-cyan)' }}>{p.patentNumber}</span>
-                  <span className="badge badge-indigo" style={{ fontSize: '0.68rem' }}>{p.claimsCount} Claims</span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--accent-cyan)' }}>{p.id}</span>
+                  <span className="badge badge-indigo" style={{ fontSize: '0.68rem' }}>{p.claims ? p.claims.length : 1} Claims</span>
                 </div>
                 <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: '1.3', marginBottom: '6px' }}>
                   {p.title}
                 </div>
                 <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
-                  {p.assignee} • {p.publicationDate}
+                  {p.assignee || 'Assignee Disclosed'} • {p.issueDate || p.filingDate}
                 </div>
               </div>
             ))}
           </div>
 
           {/* Right Patent Inspector */}
-          <div className="glass-panel" style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', marginBottom: '20px' }}>
-              <div>
-                <span className="badge badge-cyan" style={{ marginBottom: '6px' }}>{currentPatent.patentNumber}</span>
-                <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)', margin: '4px 0 8px' }}>
-                  {currentPatent.title}
-                </h2>
-                <div style={{ fontSize: '0.84rem', color: 'var(--text-muted)', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                  <span>Assignee: <strong>{currentPatent.assignee}</strong></span>
-                  <span>Priority Date: <strong>{currentPatent.priorityDate}</strong></span>
-                  <span>Publication: <strong>{currentPatent.publicationDate}</strong></span>
+          {currentPatentDoc && (
+            <div className="glass-panel" style={{ padding: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', marginBottom: '20px' }}>
+                <div>
+                  <span className="badge badge-cyan" style={{ marginBottom: '6px' }}>{currentPatentDoc.id}</span>
+                  <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)', margin: '4px 0 8px' }}>
+                    {currentPatentDoc.title}
+                  </h2>
+                  <div style={{ fontSize: '0.84rem', color: 'var(--text-muted)', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                    <span>Assignee: <strong>{currentPatentDoc.assignee || 'Assigned to Record'}</strong></span>
+                    <span>Filing Date: <strong>{currentPatentDoc.filingDate}</strong></span>
+                    <span>Issue Date: <strong>{currentPatentDoc.issueDate}</strong></span>
+                  </div>
+                </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                  <span className="badge badge-purple">{currentPatentDoc.cpcCodes?.[0] || 'CPC B60W'}</span>
+                  <button
+                    onClick={() => window.open(`https://patents.google.com/patent/${currentPatentDoc.id.replace(/\s+/g, '')}/en`, '_blank')}
+                    className="btn-secondary"
+                    style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                  >
+                    <ExternalLink size={12} /> Google Patents
+                  </button>
                 </div>
               </div>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-                <span className="badge badge-purple">{currentPatent.cpcClass}</span>
-                <button
-                  onClick={() => window.open(`https://patents.google.com/patent/${currentPatent.patentNumber.replace(/\s+/g, '')}/en`, '_blank')}
-                  className="btn-secondary"
-                  style={{ padding: '6px 12px', fontSize: '0.78rem' }}
-                >
-                  <ExternalLink size={12} /> Google Patents
-                </button>
-              </div>
-            </div>
 
-            {/* Abstract Section */}
-            <div style={{ marginBottom: '24px' }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px' }}>
-                Abstract Overview
-              </h3>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: '1.6', background: 'var(--bg-surface)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-                {currentPatent.abstract}
-              </p>
-            </div>
-
-            {/* Claims Breakdown */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>
-                  Extracted Claims Scope (Claim 1 Independent)
+              {/* Abstract Section */}
+              <div style={{ marginBottom: '24px' }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px' }}>
+                  Abstract Overview
                 </h3>
-                <span style={{ fontSize: '0.78rem', color: 'var(--accent-cyan)' }}>{currentPatent.claimsCount} Total Claims Extracted</span>
-              </div>
-
-              <div style={{ background: 'var(--bg-card-solid)', border: '1px solid rgba(0, 242, 254, 0.25)', padding: '16px', borderRadius: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                  <span className="badge badge-cyan">Claim 1 (Independent)</span>
-                  <span className="badge badge-emerald">Primary Technical Scope</span>
-                </div>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-main)', lineHeight: '1.65', fontFamily: 'var(--font-sans)' }}>
-                  "1. An apparatus for {currentPatent.title.toLowerCase()} comprising: 
-                  an optical camera sensor configured to capture visual video frames of an external environment; 
-                  a deep neural network processor configured to compute threat vectors; 
-                  a warning controller configured to issue hazard alert signals; and 
-                  a visual display interface to present said warning signal."
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: '1.6', background: 'var(--bg-surface)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                  {currentPatentDoc.abstract}
                 </p>
               </div>
+
+              {/* Claims Breakdown */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>
+                    Extracted Claims Scope (Claim 1 Independent)
+                  </h3>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--accent-cyan)' }}>{currentPatentDoc.claims ? currentPatentDoc.claims.length : 1} Claims Active</span>
+                </div>
+
+                <div style={{ background: 'var(--bg-card-solid)', border: '1px solid rgba(0, 242, 254, 0.25)', padding: '16px', borderRadius: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                    <span className="badge badge-cyan">Claim 1 (Independent)</span>
+                    <span className="badge badge-emerald">Primary Technical Scope</span>
+                  </div>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-main)', lineHeight: '1.65', fontFamily: 'var(--font-sans)' }}>
+                    "{currentPatentDoc.claims?.[0]?.text || `1. An apparatus for ${currentPatentDoc.title.toLowerCase()} comprising optical sensors and neural processor.`}"
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>

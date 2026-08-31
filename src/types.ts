@@ -42,16 +42,32 @@ export interface Patent {
 
 export interface ClaimElement {
   id: string;
-  type: 'component' | 'function' | 'process' | 'constraint';
-  term: string;
-  description: string;
+  type?: 'component' | 'function' | 'process' | 'constraint';
+  term?: string;
+  description?: string;
+  text?: string;
+  cpcCategory?: string;
 }
 
 export interface Claim {
-  claimNumber: number;
-  isIndependent: boolean;
+  claimNumber?: number;
+  number?: number;
+  isIndependent?: boolean;
+  type?: 'independent' | 'dependent';
   text: string;
   elements: ClaimElement[];
+}
+
+export interface PatentDocument {
+  id: string;
+  title: string;
+  assignee?: string;
+  inventors?: string[];
+  cpcCodes?: string[];
+  filingDate?: string;
+  issueDate?: string;
+  abstract: string;
+  claims?: Claim[];
 }
 
 export interface MappingPair {

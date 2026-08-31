@@ -15,17 +15,16 @@ import {
   Cpu, 
   GitMerge, 
   Search, 
-  BookOpen,
   KeyRound,
   Database
 } from 'lucide-react';
 
 interface Props {
   onLoginSuccess: (user: { name: string; email: string; role: string }) => void;
-  onOpenLiterature: () => void;
+  onOpenLiterature?: () => void;
 }
 
-export const AuthScreen: React.FC<Props> = ({ onLoginSuccess, onOpenLiterature }) => {
+export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState<AuthMode>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -39,14 +38,16 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess, onOpenLiterature }
 
   const handleRegisterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Save to Cloud DB
+    // Register user in Database Store
     dbStore.registerUser(
       fullName || 'Registered User',
       email || 'user@patentintel.ai',
       role,
       organization
     );
-    setRegisterSuccessMessage(`Account created successfully for ${fullName || email}! Please sign in below to enter your workspace.`);
+
+    // Switch to Sign In mode and pre-fill email, require explicit password login
+    setRegisterSuccessMessage(`Account created successfully for ${fullName || email}! Please enter your password below to Sign In.`);
     setMode('login');
     setPassword('');
   };
@@ -227,18 +228,11 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess, onOpenLiterature }
           </div>
         </div>
 
-        {/* Footer info & literature trigger */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
+        {/* Bottom Footer info */}
+        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
           <div style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>
-            Real-Time IEEE & Academic Literature Retrieval Index
+            PatentIntel.AI Research Architecture • Powered by SBERT & USPTO Open Data
           </div>
-          <button 
-            className="btn-secondary" 
-            onClick={onOpenLiterature}
-            style={{ fontSize: '0.82rem', padding: '6px 12px' }}
-          >
-            <BookOpen size={14} /> Real-Time Academic Search
-          </button>
         </div>
       </div>
 

@@ -61,18 +61,9 @@ export const App: React.FC = () => {
 
   if (!isAuthenticated) {
     return (
-      <>
-        <AuthScreen 
-          onLoginSuccess={handleLoginSuccess}
-          onOpenLiterature={() => openLiteratureWithQuery()}
-        />
-        <LiteratureModal 
-          isOpen={isLiteratureOpen}
-          onClose={() => setIsLiteratureOpen(false)}
-          initialQuery={literatureQuery}
-          onNavigateModule={(mod) => setActiveView(mod)}
-        />
-      </>
+      <AuthScreen 
+        onLoginSuccess={handleLoginSuccess}
+      />
     );
   }
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { CitationLineageGraph } from './CitationLineageGraph';
 import { 
   CheckCircle2, 
   XCircle,
@@ -22,10 +23,10 @@ export const PriorArtTimelineView: React.FC<Props> = ({ onOpenPaper }) => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 4px' }}>
-            Prior-Art Chronology Timeline & Novelty Evidence Matrix
+            Prior-Art Chronology Timeline & Citation Lineage Engine
           </h1>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-            Maps claim elements across earlier priority dates to establish prior-art disclosure timelines.
+            Maps forward and backward citations, parent/child patent families, and priority date chronologies.
           </p>
         </div>
 
@@ -35,6 +36,9 @@ export const PriorArtTimelineView: React.FC<Props> = ({ onOpenPaper }) => {
           </button>
         )}
       </div>
+
+      {/* Feature 5: Dynamic Citation Lineage & Patent Family Tree Graph Visualizer */}
+      <CitationLineageGraph />
 
       {/* Chronological Timeline Bar */}
       <div className="glass-panel" style={{ padding: '28px' }}>

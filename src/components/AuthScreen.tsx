@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { AuthMode } from '../types';
 import { dbStore } from '../services/dbStore';
+import { PatentShieldLogo } from './PatentShieldLogo';
 import { 
   ShieldCheck, 
   Lock, 
@@ -12,7 +13,6 @@ import {
   Sparkles, 
   ArrowRight, 
   CheckCircle2, 
-  Cpu, 
   GitMerge, 
   Search, 
   KeyRound,
@@ -21,7 +21,6 @@ import {
 
 interface Props {
   onLoginSuccess: (user: { name: string; email: string; role: string }) => void;
-  onOpenLiterature?: () => void;
 }
 
 export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
@@ -38,7 +37,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
 
   const handleRegisterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Register user in Database Store
+    // Save to Database Store
     dbStore.registerUser(
       fullName || 'Registered User',
       email || 'user@patentintel.ai',
@@ -46,7 +45,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
       organization
     );
 
-    // Switch to Sign In mode and pre-fill email, require explicit password login
+    // Require explicit Sign In with password after registration
     setRegisterSuccessMessage(`Account created successfully for ${fullName || email}! Please enter your password below to Sign In.`);
     setMode('login');
     setPassword('');
@@ -96,26 +95,27 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
       position: 'relative',
       overflow: 'hidden'
     }}>
-      {/* Background Ambient Glows */}
-      <div style={{
+      {/* Dynamic Animated Ambient Background Glows */}
+      <div className="animate-float" style={{
         position: 'absolute',
         top: '-15%',
         left: '-10%',
-        width: '50vw',
-        height: '50vw',
+        width: '55vw',
+        height: '55vw',
         borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(0, 242, 254, 0.12) 0%, rgba(11, 15, 25, 0) 70%)',
+        background: 'radial-gradient(circle, rgba(0, 242, 254, 0.14) 0%, rgba(11, 15, 25, 0) 70%)',
         pointerEvents: 'none'
       }} />
-      <div style={{
+      <div className="animate-float" style={{
         position: 'absolute',
         bottom: '-15%',
         right: '-10%',
-        width: '50vw',
-        height: '50vw',
+        width: '55vw',
+        height: '55vw',
         borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, rgba(11, 15, 25, 0) 70%)',
-        pointerEvents: 'none'
+        background: 'radial-gradient(circle, rgba(99, 102, 241, 0.14) 0%, rgba(11, 15, 25, 0) 70%)',
+        pointerEvents: 'none',
+        animationDelay: '-4s'
       }} />
 
       {/* LEFT PANE: BRANDING & PATENT INTELLIGENCE VISUALIZER */}
@@ -128,28 +128,29 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
         position: 'relative',
         zIndex: 2,
         borderRight: '1px solid var(--border-color)',
-        background: 'linear-gradient(180deg, rgba(18, 24, 39, 0.4) 0%, rgba(11, 15, 25, 0.8) 100%)'
+        background: 'linear-gradient(180deg, rgba(18, 24, 39, 0.4) 0%, rgba(11, 15, 25, 0.85) 100%)'
       }}>
-        {/* Brand Top Header */}
+        {/* Brand Top Header with Custom Quantum Patent Shield Logo */}
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-            <div style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '12px',
-              background: 'var(--gradient-primary)',
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '8px' }}>
+            <div className="animate-logo" style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '14px',
+              background: 'rgba(0, 242, 254, 0.08)',
+              border: '1px solid rgba(0, 242, 254, 0.3)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               boxShadow: 'var(--shadow-glow)'
             }}>
-              <Cpu size={24} color="#0B0F19" />
+              <PatentShieldLogo size={30} />
             </div>
             <div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
                 PatentIntel<span className="gradient-text">.AI</span>
               </div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                 Explainable Patent Intelligence Platform
               </div>
             </div>
@@ -157,7 +158,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
         </div>
 
         {/* Central Graphic & R&D Value Proposition */}
-        <div style={{ margin: '40px 0' }}>
+        <div style={{ margin: '36px 0' }}>
           <div className="badge badge-cyan" style={{ marginBottom: '16px', padding: '6px 14px' }}>
             <Sparkles size={14} /> IEEE & PatentMatch Benchmark Grounded
           </div>
@@ -184,9 +185,9 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
             An explainable, claim-centric R&D platform combining hybrid retrieval (BM25 + Dense Embeddings), structural claim element mapping, prior-art timeline analysis, and evidence-grounded AI explanations.
           </p>
 
-          {/* Feature Badges Container */}
+          {/* Feature Badges Grid with Micro-Animations */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px', maxWidth: '560px' }}>
-            <div className="glass-panel" style={{ padding: '14px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="glass-panel glass-panel-hover" style={{ padding: '14px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{ color: 'var(--accent-cyan)', background: 'rgba(0,242,254,0.1)', padding: '8px', borderRadius: '8px' }}>
                 <Search size={18} />
               </div>
@@ -196,7 +197,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
               </div>
             </div>
 
-            <div className="glass-panel" style={{ padding: '14px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="glass-panel glass-panel-hover" style={{ padding: '14px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{ color: 'var(--accent-indigo)', background: 'rgba(99,102,241,0.1)', padding: '8px', borderRadius: '8px' }}>
                 <GitMerge size={18} />
               </div>
@@ -206,7 +207,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
               </div>
             </div>
 
-            <div className="glass-panel" style={{ padding: '14px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="glass-panel glass-panel-hover" style={{ padding: '14px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{ color: 'var(--accent-emerald)', background: 'rgba(16,185,129,0.1)', padding: '8px', borderRadius: '8px' }}>
                 <ShieldCheck size={18} />
               </div>
@@ -216,7 +217,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
               </div>
             </div>
 
-            <div className="glass-panel" style={{ padding: '14px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="glass-panel glass-panel-hover" style={{ padding: '14px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{ color: 'var(--accent-purple)', background: 'rgba(139,92,246,0.1)', padding: '8px', borderRadius: '8px' }}>
                 <Database size={18} />
               </div>
@@ -297,7 +298,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
 
         {/* REGISTRATION SUCCESS BANNER */}
         {registerSuccessMessage && mode === 'login' && (
-          <div style={{
+          <div className="animate-fade-in" style={{
             padding: '12px 14px',
             borderRadius: '10px',
             background: 'rgba(16, 185, 129, 0.12)',
@@ -317,7 +318,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
 
         {/* SIGN IN FORM */}
         {mode === 'login' && (
-          <div>
+          <div className="animate-fade-in">
             <div style={{ marginBottom: '24px' }}>
               <h2 style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 6px' }}>
                 Welcome Back
@@ -431,7 +432,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
 
         {/* CREATE ACCOUNT FORM */}
         {mode === 'register' && (
-          <div>
+          <div className="animate-fade-in">
             <div style={{ marginBottom: '24px' }}>
               <h2 style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 6px' }}>
                 Create Account
@@ -539,7 +540,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
 
         {/* FORGOT PASSWORD FORM */}
         {mode === 'forgot' && (
-          <div>
+          <div className="animate-fade-in">
             <div style={{ marginBottom: '24px' }}>
               <h2 style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 6px' }}>
                 Reset Password

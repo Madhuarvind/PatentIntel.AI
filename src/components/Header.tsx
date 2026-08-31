@@ -1,11 +1,11 @@
 import React from 'react';
+import { PatentShieldLogo } from './PatentShieldLogo';
 import { 
   Search, 
   BookOpen, 
   Sun, 
   Moon, 
   LogOut, 
-  Cpu, 
   CheckCircle
 } from 'lucide-react';
 
@@ -45,16 +45,17 @@ export const Header: React.FC<Props> = ({
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{
-            width: '36px',
-            height: '36px',
+            width: '38px',
+            height: '38px',
             borderRadius: '10px',
-            background: 'var(--gradient-primary)',
+            background: 'rgba(0, 242, 254, 0.08)',
+            border: '1px solid rgba(0, 242, 254, 0.3)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             boxShadow: 'var(--shadow-glow)'
           }}>
-            <Cpu size={20} color="#0B0F19" />
+            <PatentShieldLogo size={24} />
           </div>
           <div>
             <div style={{ fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.01em', color: 'var(--text-main)' }}>

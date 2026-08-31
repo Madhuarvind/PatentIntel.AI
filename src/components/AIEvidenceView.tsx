@@ -3,7 +3,6 @@ import { ReportExportModal } from './ReportExportModal';
 import { workspaceStore } from '../services/workspaceStore';
 import type { PatentDocument } from '../types';
 import { 
-  Sparkles,
   BookOpen,
   Award,
   Download,
@@ -135,7 +134,7 @@ export const AIEvidenceView: React.FC<Props> = ({ onOpenPaper }) => {
           </button>
 
           {onOpenPaper && (
-            <button className="btn-secondary" onClick={() => onOpenPaper('AI patent prior art search reasoning RAG')} style={{ fontSize: '0.82rem' }}>
+            <button className="btn-secondary" onClick={() => onOpenPaper('AI patent prior art search reasoning RAG')} style={{ fontSize: '0.84rem' }}>
               <BookOpen size={14} /> Search AI Prior-Art Papers
             </button>
           )}
@@ -239,29 +238,6 @@ export const AIEvidenceView: React.FC<Props> = ({ onOpenPaper }) => {
             <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>Priority Chronology Link</div>
           </div>
         </div>
-      </div>
-
-      {/* Summary Box encouraging Executive Exporter */}
-      <div className="glass-panel" style={{ padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid rgba(0, 242, 254, 0.25)' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <Sparkles size={18} color="var(--accent-cyan)" />
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-              Generate USPTO Examination Report for {activePatent?.id}
-            </h3>
-          </div>
-          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', margin: 0 }}>
-            Compiles element alignment tables, statutory 35 U.S.C. § 102/103 scores, and grounded LLM evidence into printable PDF or Markdown dossier.
-          </p>
-        </div>
-
-        <button 
-          className="btn-primary" 
-          onClick={() => setIsExportModalOpen(true)}
-          style={{ fontWeight: 800, padding: '12px 22px', fontSize: '0.92rem' }}
-        >
-          <Award size={18} /> Open 1-Click Executive Exporter Modal
-        </button>
       </div>
 
       {/* Exporter Modal */}

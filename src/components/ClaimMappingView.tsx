@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { ModuleView } from '../types';
+import { InvalidityCalculatorModal } from './InvalidityCalculatorModal';
 import { 
   CheckCircle2, 
   AlertTriangle, 
   Sparkles, 
   ArrowRight,
-  BookOpen
+  BookOpen,
+  Scale
 } from 'lucide-react';
 
 interface Props {
@@ -14,6 +16,8 @@ interface Props {
 }
 
 export const ClaimMappingView: React.FC<Props> = ({ onNavigate, onOpenPaper }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const mappings = [
     {
       target: 'E1: Optical Camera Sensor',
@@ -63,14 +67,22 @@ export const ClaimMappingView: React.FC<Props> = ({ onNavigate, onOpenPaper }) =
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 4px' }}>
-            Claim-to-Claim Element Mapping Visualizer
+            Claim-to-Claim Element Mapping & Invalidity Risk Engine
           </h1>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-            Multi-Sim SBERT Benchmark — Aligns claim elements side-by-side to expose exact matches, partial overlaps, and key differences.
+            Multi-Sim SBERT Benchmark — Aligns claim elements side-by-side to compute 35 U.S.C. § 102 & § 103 invalidity probabilities.
           </p>
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
+          <button 
+            className="btn-secondary" 
+            onClick={() => setIsModalOpen(true)}
+            style={{ border: '1px solid var(--accent-rose)', color: 'var(--accent-rose)', background: 'rgba(244, 63, 94, 0.08)', fontWeight: 700 }}
+          >
+            <Scale size={16} /> 35 U.S.C. § 102 / § 103 Invalidity Risk Calculator
+          </button>
+
           {onOpenPaper && (
             <button className="btn-secondary" onClick={() => onOpenPaper('patent claim plagiarism similarity SBERT')} style={{ fontSize: '0.84rem' }}>
               <BookOpen size={16} /> Search Plagiarism Papers
@@ -165,6 +177,13 @@ export const ClaimMappingView: React.FC<Props> = ({ onNavigate, onOpenPaper }) =
           ))}
         </div>
       </div>
+
+      {/* Statutory Invalidity Calculator Modal */}
+      <InvalidityCalculatorModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        patentNumber="US 10,928,341 B2"
+      />
     </div>
   );
 };

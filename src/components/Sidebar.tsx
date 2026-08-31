@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ModuleView } from '../types';
+import { workspaceStore } from '../services/workspaceStore';
 import { 
   LayoutDashboard, 
   FolderKanban, 
@@ -10,7 +11,8 @@ import {
   Sparkles, 
   BarChart3, 
   Settings,
-  ShieldCheck
+  Activity,
+  Database
 } from 'lucide-react';
 
 interface Props {
@@ -24,6 +26,15 @@ interface NavSection {
 }
 
 export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
+  const [patentCount, setPatentCount] = useState<number>(workspaceStore.getPatents().length);
+
+  useEffect(() => {
+    const unsubscribe = workspaceStore.subscribe(() => {
+      setPatentCount(workspaceStore.getPatents().length);
+    });
+    return unsubscribe;
+  }, []);
+
   const sections: NavSection[] = [
     {
       title: 'CORE R&D MODULES',
@@ -135,22 +146,37 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
         ))}
       </div>
 
-      {/* Bottom Status Card */}
+      {/* Dynamic Active Workspace & API Sync Status Card */}
       <div className="glass-panel" style={{
-        padding: '12px 14px',
+        padding: '14px',
         borderRadius: '12px',
-        background: 'linear-gradient(180deg, rgba(0, 242, 254, 0.04) 0%, rgba(99, 102, 241, 0.04) 100%)',
-        border: '1px solid rgba(0, 242, 254, 0.18)',
+        background: 'linear-gradient(180deg, rgba(0, 242, 254, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%)',
+        border: '1px solid rgba(0, 242, 254, 0.2)',
         marginTop: '20px',
         flexShrink: 0
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-          <ShieldCheck size={16} color="var(--accent-cyan)" />
-          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)' }}>Real-Time R&D Suite</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              background: '#10B981',
+              boxShadow: '0 0 8px #10B981',
+              display: 'inline-block'
+            }} />
+            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-main)' }}>Live Workspace Active</span>
+          </div>
+
+          <span className="badge badge-cyan" style={{ fontSize: '0.66rem', padding: '2px 6px' }}>
+            <Database size={10} style={{ marginRight: '3px' }} /> {patentCount} Patents
+          </span>
         </div>
-        <p style={{ fontSize: '0.73rem', color: 'var(--text-muted)', lineHeight: '1.35', margin: 0 }}>
-          PatentMatch • OpenAlex & Semantic Scholar • Multi-Sim SBERT.
-        </p>
+
+        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: '1.4', display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <Activity size={12} color="var(--accent-cyan)" />
+          <span>USPTO Open Data & Semantic Scholar Synced</span>
+        </div>
       </div>
     </aside>
   );

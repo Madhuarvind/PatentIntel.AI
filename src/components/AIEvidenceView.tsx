@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { ReportExportModal } from './ReportExportModal';
 import { 
   Sparkles,
-  BookOpen
+  BookOpen,
+  Award,
+  Download
 } from 'lucide-react';
 
 interface Props {
@@ -9,24 +12,36 @@ interface Props {
 }
 
 export const AIEvidenceView: React.FC<Props> = ({ onOpenPaper }) => {
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 4px' }}>
-            Evidence-Grounded LLM Reasoning & Explainability Engine
+            Evidence-Grounded LLM Reasoning & Examination Exporter
           </h1>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-            Eliminates LLM hallucination by binding every reasoning sentence directly to retrieved claim passages.
+            Eliminates LLM hallucination by binding every reasoning sentence directly to retrieved claim passages and generating official USPTO audit reports.
           </p>
         </div>
 
-        {onOpenPaper && (
-          <button className="btn-secondary" onClick={() => onOpenPaper('AI patent prior art search reasoning RAG')} style={{ fontSize: '0.82rem' }}>
-            <BookOpen size={14} /> Search AI Prior-Art Papers
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button 
+            className="btn-primary" 
+            onClick={() => setIsExportModalOpen(true)}
+            style={{ fontWeight: 800 }}
+          >
+            <Award size={16} /> 1-Click Executive Examination Report <Download size={14} />
           </button>
-        )}
+
+          {onOpenPaper && (
+            <button className="btn-secondary" onClick={() => onOpenPaper('AI patent prior art search reasoning RAG')} style={{ fontSize: '0.82rem' }}>
+              <BookOpen size={14} /> Search AI Prior-Art Papers
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Score Decomposition Panel */}
@@ -119,6 +134,13 @@ export const AIEvidenceView: React.FC<Props> = ({ onOpenPaper }) => {
           </div>
         </div>
       </div>
+
+      {/* Exporter Modal */}
+      <ReportExportModal 
+        isOpen={isExportModalOpen} 
+        onClose={() => setIsExportModalOpen(false)} 
+        patentNumber="US 10,928,341 B2"
+      />
     </div>
   );
 };

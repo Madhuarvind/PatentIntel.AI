@@ -68,28 +68,37 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-main)' }}>
+    <div style={{ 
+      height: '100vh', 
+      width: '100vw',
+      display: 'flex', 
+      flexDirection: 'column', 
+      background: 'var(--bg-main)',
+      overflow: 'hidden'
+    }}>
       {/* Header Bar */}
-      <Header
-        user={user}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-        onOpenLiterature={() => openLiteratureWithQuery()}
-        onLogout={handleLogout}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-      />
+      <div style={{ flexShrink: 0, zIndex: 10 }}>
+        <Header
+          user={user}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onOpenLiterature={() => openLiteratureWithQuery()}
+          onLogout={handleLogout}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
+      </div>
 
-      {/* Main Workspace Area */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        {/* Module Sidebar */}
+      {/* Main Workspace Area (Fixed Full Height Body) */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', height: 'calc(100vh - 64px)' }}>
+        {/* Module Sidebar (Fixed Position Pinning) */}
         <Sidebar
           activeView={activeView}
           onSelectView={setActiveView}
         />
 
-        {/* Dynamic View Content Container */}
-        <main style={{ flex: 1, padding: '32px', overflowY: 'auto' }}>
+        {/* Dynamic View Content Container (Individually Scrollable Main Area) */}
+        <main style={{ flex: 1, height: '100%', padding: '32px', overflowY: 'auto' }}>
           {activeView === 'dashboard' && (
             <DashboardView 
               onNavigate={setActiveView} 

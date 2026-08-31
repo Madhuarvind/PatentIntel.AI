@@ -200,14 +200,14 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess, onOpenLiterature }
         {/* Footer info & literature trigger */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
           <div style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>
-            Research Baseline: 8 IEEE / ResearchGate Benchmark Studies
+            Real-Time IEEE & Academic Literature Retrieval Index
           </div>
           <button 
             className="btn-secondary" 
             onClick={onOpenLiterature}
             style={{ fontSize: '0.82rem', padding: '6px 12px' }}
           >
-            <BookOpen size={14} /> Review 8 Literature Papers
+            <BookOpen size={14} /> Real-Time Academic Search
           </button>
         </div>
       </div>

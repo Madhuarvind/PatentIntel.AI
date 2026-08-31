@@ -1,8 +1,11 @@
-import React from 'react';
-import type { ModuleView } from '../types';
+import React, { useState, useEffect } from 'react';
+import type { ModuleView, PatentDocument } from '../types';
+import { workspaceStore } from '../services/workspaceStore';
 import { 
   GitBranch, 
-  ArrowRight
+  ArrowRight,
+  FolderKanban,
+  FileCheck
 } from 'lucide-react';
 
 interface Props {
@@ -10,12 +13,36 @@ interface Props {
 }
 
 export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate }) => {
-  const claimElements = [
+  const [workspacePatents, setWorkspacePatents] = useState<PatentDocument[]>(workspaceStore.getPatents());
+  const [selectedPatentId, setSelectedPatentId] = useState<string>(workspacePatents[0]?.id || 'US10928341B2');
+
+  useEffect(() => {
+    const unsubscribe = workspaceStore.subscribe(() => {
+      const updated = workspaceStore.getPatents();
+      setWorkspacePatents(updated);
+      if (!updated.some(p => p.id === selectedPatentId) && updated.length > 0) {
+        setSelectedPatentId(updated[0].id);
+      }
+    });
+    return unsubscribe;
+  }, [selectedPatentId]);
+
+  const activeDoc = workspacePatents.find(p => p.id === selectedPatentId) || workspacePatents[0];
+
+  // Dynamically extract elements from selected patent claim
+  const activeClaimText = activeDoc?.claims?.[0]?.text || `1. An apparatus for ${activeDoc?.title.toLowerCase()} comprising an optical camera sensor and a deep neural network processor.`;
+  
+  const claimElements = activeDoc?.claims?.[0]?.elements?.length ? activeDoc.claims[0].elements.map((e, idx) => ({
+    id: `E${idx + 1}`,
+    type: 'Component',
+    term: e.text || `Element Component ${idx + 1}`,
+    details: e.text || 'Extracted technical claim element scope.',
+    scope: e.cpcCategory || activeDoc.cpcCodes?.[0] || 'Technical Scope'
+  })) : [
     { id: 'E1', type: 'Component', term: 'Optical Camera Sensor', details: 'High-resolution visual sensor configured to capture video frames of external roadway environment.', scope: 'Hardware Input' },
     { id: 'E2', type: 'Component', term: 'Deep Neural Network Processor', details: 'Convolutional neural network model trained on object detection and collision threat metrics.', scope: 'AI Inference Engine' },
     { id: 'E3', type: 'Function', term: 'Real-Time Hazard Risk Computation', details: 'Evaluates distance, relative velocity, and trajectories of surrounding dynamic obstacles.', scope: 'Algorithmic Process' },
-    { id: 'E4', type: 'Component', term: 'Collision Warning Controller', details: 'Logic controller coupled to processor to issue hazard alert signals when probability exceeds 0.85 threshold.', scope: 'Control Logic' },
-    { id: 'E5', type: 'Constraint', term: 'In-Cockpit Visual Display Interface', details: 'Displays warning cues directly on dashboard screen inside cockpit.', scope: 'HMI Output' }
+    { id: 'E4', type: 'Component', term: 'Collision Warning Controller', details: 'Logic controller coupled to processor to issue hazard alert signals when probability exceeds threshold.', scope: 'Control Logic' }
   ];
 
   return (
@@ -27,7 +54,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate }) => {
             Structural Claim Decomposition Engine
           </h1>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-            PatentMatch R&D baseline: Automatically parses claims into granular technical elements (Components, Functions, Constraints).
+            Automatically parses claims into granular technical elements (Components, Functions, Constraints) for live workspace patents.
           </p>
         </div>
 
@@ -36,25 +63,40 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate }) => {
         </button>
       </div>
 
+      {/* Patent Selection Bar */}
+      <div className="glass-panel" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <FolderKanban size={20} color="var(--accent-cyan)" />
+          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>Select Workspace Patent to Decompose:</span>
+        </div>
+
+        <select 
+          value={selectedPatentId}
+          onChange={(e) => setSelectedPatentId(e.target.value)}
+          className="input-field"
+          style={{ width: '380px', height: '40px', fontSize: '0.88rem', padding: '0 12px' }}
+        >
+          {workspacePatents.map(p => (
+            <option key={p.id} value={p.id}>{p.id} - {p.title}</option>
+          ))}
+        </select>
+      </div>
+
       {/* Main Split Content */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
         {/* Left: Original Claim Text */}
         <div className="glass-panel" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <span className="badge badge-cyan">Target Patent: US10928341B2</span>
+            <span className="badge badge-cyan">Active Target: {activeDoc?.id}</span>
             <span className="badge badge-indigo">Claim 1 (Independent)</span>
           </div>
 
           <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '12px' }}>
-            Original Claim Specification
+            {activeDoc?.title}
           </h3>
 
           <div style={{ background: 'var(--bg-surface)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', fontSize: '0.9rem', lineHeight: '1.7', color: 'var(--text-main)' }}>
-            "1. A smart autonomous vehicle collision warning apparatus comprising: <br/>
-            <span style={{ color: 'var(--accent-cyan)', background: 'rgba(0,242,254,0.1)', padding: '2px 6px', borderRadius: '4px' }}>[E1] an optical camera sensor</span> configured to capture visual video frames of an external roadway environment; <br/>
-            <span style={{ color: 'var(--accent-indigo)', background: 'rgba(99,102,241,0.1)', padding: '2px 6px', borderRadius: '4px' }}>[E2] a deep neural network processor</span> coupled to said optical camera sensor configured to <span style={{ color: 'var(--accent-emerald)', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '4px' }}>[E3] compute collision probability metrics</span>; <br/>
-            <span style={{ color: 'var(--accent-purple)', background: 'rgba(139,92,246,0.1)', padding: '2px 6px', borderRadius: '4px' }}>[E4] a real-time warning controller</span> configured to generate a collision hazard alert signal when said computed collision probability exceeds a predefined threshold; and <br/>
-            <span style={{ color: 'var(--accent-amber)', background: 'rgba(245,158,11,0.1)', padding: '2px 6px', borderRadius: '4px' }}>[E5] a visual display interface</span> positioned within a vehicle cockpit to display said warning signal."
+            "{activeClaimText}"
           </div>
         </div>
 
@@ -64,7 +106,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate }) => {
             <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>
               Decomposed Technical Elements ({claimElements.length})
             </h3>
-            <span className="badge badge-emerald">5/5 Elements Extracted</span>
+            <span className="badge badge-emerald"><FileCheck size={12} /> {claimElements.length} Elements Extracted</span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { CitationLineageGraph } from './CitationLineageGraph';
+import { workspaceStore } from '../services/workspaceStore';
+import type { PatentDocument } from '../types';
 import { 
   CheckCircle2, 
   XCircle,
@@ -11,11 +13,14 @@ interface Props {
 }
 
 export const PriorArtTimelineView: React.FC<Props> = ({ onOpenPaper }) => {
-  const timelineEvents = [
-    { year: 2017, patent: 'US 10,482,391 (VisionTech)', title: 'First optical sensor & CNN obstacle detection disclosure', priority: '2017-04-10', relevance: '91% Match' },
-    { year: 2019, patent: 'US 11,048,920 (OmniDrive)', title: 'Pedestrian threat neural network & acoustic cockpit warning', priority: '2019-01-22', relevance: '86% Match' },
-    { year: 2021, patent: 'Target: US 10,928,341 (Apex AI)', title: 'Smart autonomous collision warning apparatus', priority: '2021-02-23', relevance: 'Target Document' }
-  ];
+  const [workspacePatents, setWorkspacePatents] = useState<PatentDocument[]>(workspaceStore.getPatents());
+
+  useEffect(() => {
+    const unsubscribe = workspaceStore.subscribe(() => {
+      setWorkspacePatents(workspaceStore.getPatents());
+    });
+    return unsubscribe;
+  }, []);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -26,7 +31,7 @@ export const PriorArtTimelineView: React.FC<Props> = ({ onOpenPaper }) => {
             Prior-Art Chronology Timeline & Citation Lineage Engine
           </h1>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-            Maps forward and backward citations, parent/child patent families, and priority date chronologies.
+            Maps forward and backward citations, parent/child patent families, and priority date chronologies across {workspacePatents.length} active workspace patents.
           </p>
         </div>
 
@@ -43,26 +48,26 @@ export const PriorArtTimelineView: React.FC<Props> = ({ onOpenPaper }) => {
       {/* Chronological Timeline Bar */}
       <div className="glass-panel" style={{ padding: '28px' }}>
         <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '20px' }}>
-          Prior-Art Lineage (2017 – Present)
+          Workspace Prior-Art Lineage ({workspacePatents.length} Patents Registered)
         </h3>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', position: 'relative' }}>
-          {timelineEvents.map((ev, i) => (
-            <div key={i} style={{
-              background: i === 2 ? 'rgba(0, 242, 254, 0.08)' : 'var(--bg-surface)',
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(workspacePatents.length, 3)}, 1fr)`, gap: '20px', position: 'relative' }}>
+          {workspacePatents.map((p, i) => (
+            <div key={p.id} style={{
+              background: i === 0 ? 'rgba(0, 242, 254, 0.08)' : 'var(--bg-surface)',
               border: '1px solid',
-              borderColor: i === 2 ? 'var(--accent-cyan)' : 'var(--border-color)',
+              borderColor: i === 0 ? 'var(--accent-cyan)' : 'var(--border-color)',
               padding: '18px',
               borderRadius: '12px',
               position: 'relative'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span className="badge badge-cyan" style={{ fontSize: '0.85rem', fontWeight: 800 }}>{ev.year}</span>
-                <span className={i === 2 ? 'badge badge-emerald' : 'badge badge-indigo'}>{ev.relevance}</span>
+                <span className="badge badge-cyan" style={{ fontSize: '0.85rem', fontWeight: 800 }}>{p.filingDate || '2021'}</span>
+                <span className={i === 0 ? 'badge badge-emerald' : 'badge badge-indigo'}>{i === 0 ? 'Target Document' : 'Prior Disclosure'}</span>
               </div>
-              <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', margin: '4px 0' }}>{ev.patent}</h4>
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>{ev.title}</p>
-              <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)', marginTop: '8px' }}>Priority: {ev.priority}</div>
+              <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', margin: '4px 0' }}>{p.id}</h4>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>{p.title}</p>
+              <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)', marginTop: '8px' }}>Assignee: {p.assignee || 'Assigned to Record'}</div>
             </div>
           ))}
         </div>

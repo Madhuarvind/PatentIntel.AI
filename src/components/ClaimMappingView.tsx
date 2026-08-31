@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import type { ModuleView } from '../types';
+import React, { useState, useEffect } from 'react';
+import type { ModuleView, PatentDocument } from '../types';
 import { InvalidityCalculatorModal } from './InvalidityCalculatorModal';
+import { workspaceStore } from '../services/workspaceStore';
 import { 
   CheckCircle2, 
   AlertTriangle, 
@@ -17,18 +18,33 @@ interface Props {
 
 export const ClaimMappingView: React.FC<Props> = ({ onNavigate, onOpenPaper }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [workspacePatents, setWorkspacePatents] = useState<PatentDocument[]>(workspaceStore.getPatents());
+
+  const [targetId, setTargetId] = useState<string>(workspacePatents[0]?.id || 'US10928341B2');
+  const [candidateId, setCandidateId] = useState<string>(workspacePatents[1]?.id || workspacePatents[0]?.id || 'US10482391B1');
+
+  useEffect(() => {
+    const unsubscribe = workspaceStore.subscribe(() => {
+      const updated = workspaceStore.getPatents();
+      setWorkspacePatents(updated);
+    });
+    return unsubscribe;
+  }, []);
+
+  const targetDoc = workspacePatents.find(p => p.id === targetId) || workspacePatents[0];
+  const candidateDoc = workspacePatents.find(p => p.id === candidateId) || workspacePatents[1] || workspacePatents[0];
 
   const mappings = [
     {
-      target: 'E1: Optical Camera Sensor',
-      retrieved: 'Claim 1(a): Plurality of optical sensors positioned on bumper',
+      target: `E1: ${targetDoc?.title || 'Optical Camera Sensor'}`,
+      retrieved: `Claim 1(a): Plurality of optical sensors for ${candidateDoc?.title || 'Sensor Network'}`,
       score: 94,
       status: 'Semantic Match',
       type: 'exact',
       explanation: 'SBERT embeddings recognize camera sensor and optical sensor as functionally identical visual input elements.'
     },
     {
-      target: 'E2: Deep Neural Network Processor',
+      target: 'E2: Neural Threat Processor',
       retrieved: 'Claim 1(b): Convolutional neural network threat processor',
       score: 92,
       status: 'High Match',
@@ -44,7 +60,7 @@ export const ClaimMappingView: React.FC<Props> = ({ onNavigate, onOpenPaper }) =
       explanation: 'Risk computation and threat vector calculation share structural logic.'
     },
     {
-      target: 'E4: Collision Warning Controller',
+      target: 'E4: Hazard Alert Controller',
       retrieved: 'Claim 1(d): Emergency braking actuation unit',
       score: 82,
       status: 'Partial Overlap',
@@ -52,7 +68,7 @@ export const ClaimMappingView: React.FC<Props> = ({ onNavigate, onOpenPaper }) =
       explanation: 'Target generates driver warnings; retrieved triggers automatic active braking.'
     },
     {
-      target: 'E5: In-Cockpit Visual Display',
+      target: 'E5: Cockpit Visual Display Interface',
       retrieved: 'Claim 1(e): Windshield Heads-Up Display (HUD)',
       score: 76,
       status: 'Technical Difference',
@@ -95,14 +111,45 @@ export const ClaimMappingView: React.FC<Props> = ({ onNavigate, onOpenPaper }) =
         </div>
       </div>
 
+      {/* Dynamic Patent Selector Bar */}
+      <div className="glass-panel" style={{ padding: '16px 20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <div>
+          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent-cyan)', display: 'block', marginBottom: '6px' }}>Select Target Patent:</label>
+          <select 
+            value={targetId}
+            onChange={(e) => setTargetId(e.target.value)}
+            className="input-field"
+            style={{ width: '100%', height: '40px', fontSize: '0.88rem' }}
+          >
+            {workspacePatents.map(p => (
+              <option key={p.id} value={p.id}>{p.id} - {p.title}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent-indigo)', display: 'block', marginBottom: '6px' }}>Select Candidate Prior-Art Patent:</label>
+          <select 
+            value={candidateId}
+            onChange={(e) => setCandidateId(e.target.value)}
+            className="input-field"
+            style={{ width: '100%', height: '40px', fontSize: '0.88rem' }}
+          >
+            {workspacePatents.map(p => (
+              <option key={p.id} value={p.id}>{p.id} - {p.title}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* Comparison Overview Bar */}
       <div className="glass-panel" style={{ padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ flex: 1, paddingRight: '20px' }}>
           <div className="badge badge-cyan" style={{ marginBottom: '6px' }}>Target Application</div>
           <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>
-            US 10,928,341 B2 (Claim 1)
+            {targetDoc?.id} (Claim 1)
           </h3>
-          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Smart Autonomous Vehicle Collision Warning</div>
+          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{targetDoc?.title}</div>
         </div>
 
         <div style={{ padding: '0 24px', borderLeft: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)', textAlign: 'center' }}>
@@ -118,16 +165,16 @@ export const ClaimMappingView: React.FC<Props> = ({ onNavigate, onOpenPaper }) =
         <div style={{ flex: 1, paddingLeft: '20px' }}>
           <div className="badge badge-indigo" style={{ marginBottom: '6px' }}>Retrieved Prior Art</div>
           <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>
-            US 10,482,391 B1 (Claim 1)
+            {candidateDoc?.id} (Claim 1)
           </h3>
-          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Camera-Based Sensor Network (Prior: 2017)</div>
+          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{candidateDoc?.title}</div>
         </div>
       </div>
 
       {/* Element Mapping Table */}
       <div className="glass-panel" style={{ padding: '24px' }}>
         <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '16px' }}>
-          Element-by-Element Structural Alignment
+          Element-by-Element Structural Alignment ({targetDoc?.id} ↔ {candidateDoc?.id})
         </h3>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -182,7 +229,7 @@ export const ClaimMappingView: React.FC<Props> = ({ onNavigate, onOpenPaper }) =
       <InvalidityCalculatorModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        patentNumber="US 10,928,341 B2"
+        patentNumber={targetDoc?.id || 'US10928341B2'}
       />
     </div>
   );

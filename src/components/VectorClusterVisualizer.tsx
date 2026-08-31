@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { workspaceStore } from '../services/workspaceStore';
+import type { PatentDocument } from '../types';
 import { 
   Sparkles, 
   CheckCircle2
@@ -23,93 +25,49 @@ interface Props {
 
 export const VectorClusterVisualizer: React.FC<Props> = ({ onSelectPatentForComparison }) => {
   const [hoveredNode, setHoveredNode] = useState<EmbeddingNode | null>(null);
+  const [workspacePatents, setWorkspacePatents] = useState<PatentDocument[]>(workspaceStore.getPatents());
 
-  const nodes: EmbeddingNode[] = [
-    {
-      id: 'node_target',
-      patentNumber: 'US 10,928,341 B2',
-      title: 'Smart Autonomous Vehicle Collision Warning Apparatus (Target)',
-      x: 0,
-      y: 0,
-      sbertScore: 100,
-      cosineDistance: 0.00,
-      claimOverlap: 'Target Reference',
-      category: 'target',
-      cpcClass: 'B60W 30/09'
-    },
-    {
-      id: 'node_high_1',
-      patentNumber: 'US 10,482,391 B1',
-      title: 'Camera-Based Vehicle Sensor Network for Dynamic Hazard Recognition',
-      x: 32,
-      y: -24,
-      sbertScore: 92,
-      cosineDistance: 0.12,
-      claimOverlap: '91% Match (4/5 Elements)',
-      category: 'high',
-      cpcClass: 'G08G 1/16'
-    },
-    {
-      id: 'node_high_2',
-      patentNumber: 'US 11,048,920 B2',
-      title: 'Neural Network Object Detection Controller with Driver Alert Display',
-      x: -45,
-      y: 30,
-      sbertScore: 88,
-      cosineDistance: 0.18,
-      claimOverlap: '86% Match (4/5 Elements)',
-      category: 'high',
-      cpcClass: 'G06N 3/08'
-    },
-    {
-      id: 'node_mod_1',
-      patentNumber: 'US 10,129,482 B2',
-      title: 'Optical Sensing Apparatus for Obstacle Detection in Autonomous Transit',
-      x: 68,
-      y: 42,
-      sbertScore: 84,
-      cosineDistance: 0.24,
-      claimOverlap: '82% Match (3/5 Elements)',
-      category: 'moderate',
-      cpcClass: 'B60W 30/09'
-    },
-    {
-      id: 'node_mod_2',
-      patentNumber: 'US 11,849,201 B2',
-      title: 'Deep Learning Neural Network for Driver Monitoring & Fatigue Detection',
-      x: -72,
-      y: -50,
-      sbertScore: 78,
-      cosineDistance: 0.32,
-      claimOverlap: '74% Match (3/5 Elements)',
-      category: 'moderate',
-      cpcClass: 'G06N 3/08'
-    },
-    {
-      id: 'node_dist_1',
-      patentNumber: 'US 9,823,481 B1',
-      title: 'Multi-Radar Signal Processing Method for Marine Craft Navigation',
-      x: 120,
-      y: -95,
-      sbertScore: 54,
-      cosineDistance: 0.68,
-      claimOverlap: '38% Match (1/5 Elements)',
-      category: 'distant',
-      cpcClass: 'G01S 13/93'
-    },
-    {
-      id: 'node_dist_2',
-      patentNumber: 'US 9,102,391 B2',
-      title: 'Industrial Robotic Arm Actuator Control System',
-      x: -130,
-      y: 110,
-      sbertScore: 42,
-      cosineDistance: 0.81,
-      claimOverlap: '22% Match (0/5 Elements)',
-      category: 'distant',
-      cpcClass: 'B25J 9/16'
+  useEffect(() => {
+    const unsubscribe = workspaceStore.subscribe(() => {
+      setWorkspacePatents(workspaceStore.getPatents());
+    });
+    return unsubscribe;
+  }, []);
+
+  // Map workspace patents into 2D vector cluster nodes dynamically
+  const nodes: EmbeddingNode[] = workspacePatents.map((p, index) => {
+    if (index === 0) {
+      return {
+        id: p.id,
+        patentNumber: p.id,
+        title: p.title,
+        x: 0,
+        y: 0,
+        sbertScore: 100,
+        cosineDistance: 0.00,
+        claimOverlap: 'Target Reference',
+        category: 'target',
+        cpcClass: p.cpcCodes?.[0] || 'B60W 30/09'
+      };
     }
-  ];
+    const angle = ((index - 1) * (2 * Math.PI / Math.max(1, workspacePatents.length - 1))) + 0.4;
+    const radius = 40 + index * 25;
+    const sbertScore = Math.max(50, 95 - index * 6);
+    const cosineDistance = parseFloat(((100 - sbertScore) / 100).toFixed(2));
+
+    return {
+      id: p.id,
+      patentNumber: p.id,
+      title: p.title,
+      x: Math.round(Math.cos(angle) * radius),
+      y: Math.round(Math.sin(angle) * radius),
+      sbertScore,
+      cosineDistance,
+      claimOverlap: `${sbertScore - 2}% Match`,
+      category: sbertScore > 85 ? 'high' : sbertScore > 70 ? 'moderate' : 'distant',
+      cpcClass: p.cpcCodes?.[0] || 'G08G 1/16'
+    };
+  });
 
   const getNodeColor = (cat: EmbeddingNode['category']) => {
     switch (cat) {
@@ -126,7 +84,7 @@ export const VectorClusterVisualizer: React.FC<Props> = ({ onSelectPatentForComp
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <div className="badge badge-cyan" style={{ marginBottom: '6px' }}>
-            <Sparkles size={12} /> 2D Vector Embedding Map (t-SNE / PCA Projection)
+            <Sparkles size={12} /> 2D Vector Embedding Map ({workspacePatents.length} Workspace Patents)
           </div>
           <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 4px' }}>
             SBERT Multi-Vector Similarity Cluster Visualizer
@@ -315,8 +273,8 @@ export const VectorClusterVisualizer: React.FC<Props> = ({ onSelectPatentForComp
         </div>
 
         <div style={{ background: 'var(--bg-surface)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-          <span style={{ color: 'var(--text-dim)' }}>Top Candidate Distance:</span>
-          <div style={{ fontWeight: 700, color: '#10B981' }}>0.12 (High Infringement)</div>
+          <span style={{ color: 'var(--text-dim)' }}>Workspace Candidates:</span>
+          <div style={{ fontWeight: 700, color: '#10B981' }}>{workspacePatents.length} Patents Active</div>
         </div>
       </div>
     </div>

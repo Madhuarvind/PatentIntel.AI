@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ReportExportModal } from './ReportExportModal';
+import { workspaceStore } from '../services/workspaceStore';
+import type { PatentDocument } from '../types';
 import { 
   Sparkles,
   BookOpen,
@@ -13,6 +15,17 @@ interface Props {
 
 export const AIEvidenceView: React.FC<Props> = ({ onOpenPaper }) => {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [workspacePatents, setWorkspacePatents] = useState<PatentDocument[]>(workspaceStore.getPatents());
+
+  useEffect(() => {
+    const unsubscribe = workspaceStore.subscribe(() => {
+      setWorkspacePatents(workspaceStore.getPatents());
+    });
+    return unsubscribe;
+  }, []);
+
+  const activePatent = workspacePatents[0];
+  const priorArtPatent = workspacePatents[1] || workspacePatents[0];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -47,7 +60,7 @@ export const AIEvidenceView: React.FC<Props> = ({ onOpenPaper }) => {
       {/* Score Decomposition Panel */}
       <div className="glass-panel" style={{ padding: '24px' }}>
         <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '16px' }}>
-          Explainable Multi-Signal Score Breakdown (Total: 88.4 / 100)
+          Explainable Multi-Signal Score Breakdown for {activePatent?.id} (Total: 88.4 / 100)
         </h3>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '14px' }}>
@@ -66,13 +79,13 @@ export const AIEvidenceView: React.FC<Props> = ({ onOpenPaper }) => {
           <div style={{ background: 'var(--bg-surface)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
             <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>Tech Relationship</div>
             <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent-emerald)', margin: '4px 0' }}>9 / 10</div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Vehicle Collision Avoidance</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Autonomous Systems</div>
           </div>
 
           <div style={{ background: 'var(--bg-surface)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
             <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>CPC Classification</div>
             <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent-purple)', margin: '4px 0' }}>8 / 10</div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>B60W 30/09 Class</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{activePatent?.cpcCodes?.[0] || 'B60W Class'}</div>
           </div>
 
           <div style={{ background: 'var(--bg-surface)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
@@ -91,7 +104,7 @@ export const AIEvidenceView: React.FC<Props> = ({ onOpenPaper }) => {
           </div>
           <div>
             <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-              Evidence-Grounded AI Analysis Report
+              Evidence-Grounded AI Analysis Report ({activePatent?.id})
             </h3>
             <span style={{ fontSize: '0.78rem', color: 'var(--accent-cyan)' }}>Model: Gemini 1.5 Pro / GPT-4 (Grounded RAG Mode)</span>
           </div>
@@ -104,10 +117,10 @@ export const AIEvidenceView: React.FC<Props> = ({ onOpenPaper }) => {
               1. Technical Scope Overlap Summary
             </h4>
             <p style={{ margin: '0 0 10px', color: 'var(--text-muted)' }}>
-              Target Patent <strong>US10928341B2</strong> and Prior-Art Patent <strong>US10482391B1</strong> exhibit substantial structural and functional correspondence regarding camera-based optical sensing and neural network threat computation.
+              Target Patent <strong>{activePatent?.id} ({activePatent?.title})</strong> and Prior-Art Patent <strong>{priorArtPatent?.id} ({priorArtPatent?.title})</strong> exhibit substantial structural and functional correspondence regarding optical sensing and neural network threat computation.
             </p>
             <div style={{ fontSize: '0.82rem', background: 'rgba(0,242,254,0.06)', borderLeft: '3px solid var(--accent-cyan)', padding: '8px 12px', color: 'var(--text-main)' }}>
-              📌 <strong>Evidence Citation:</strong> US10482391 Col 4, Line 12–28: <em>"A camera sensor captures visual frames, feeding a CNN model to calculate collision hazard vectors..."</em>
+              📌 <strong>Evidence Citation:</strong> {priorArtPatent?.id} Specification: <em>"{priorArtPatent?.abstract}"</em>
             </div>
           </div>
 
@@ -129,7 +142,7 @@ export const AIEvidenceView: React.FC<Props> = ({ onOpenPaper }) => {
               3. Distinct Technical Novelty Indicators (Differences)
             </h4>
             <p style={{ margin: 0, color: 'var(--text-muted)' }}>
-              The target application specifies an <strong>in-cockpit dashboard display interface</strong>, whereas US10482391 requires a <strong>windshield HUD projection unit</strong>. This represents a concrete hardware interface distinction for examination defense.
+              The target application specifies an <strong>in-cockpit dashboard display interface</strong>, whereas {priorArtPatent?.id} requires a <strong>windshield HUD projection unit</strong>. This represents a concrete hardware interface distinction for examination defense.
             </p>
           </div>
         </div>
@@ -139,7 +152,7 @@ export const AIEvidenceView: React.FC<Props> = ({ onOpenPaper }) => {
       <ReportExportModal 
         isOpen={isExportModalOpen} 
         onClose={() => setIsExportModalOpen(false)} 
-        patentNumber="US 10,928,341 B2"
+        patentNumber={activePatent?.id || 'US10928341B2'}
       />
     </div>
   );

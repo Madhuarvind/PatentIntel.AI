@@ -240,3 +240,38 @@ html, body {
 .animate-glow {
   animation: pulseGlow 4s infinite ease-in-out;
 }
+
+/* Print Media Styles for Clean Official Report PDF Export */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .printable-report-area, .printable-report-area * {
+    visibility: visible !important;
+  }
+
+  .printable-report-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 24px !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+    color: #0b0f19 !important;
+    box-shadow: none !important;
+    border: none !important;
+    font-family: serif !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+}

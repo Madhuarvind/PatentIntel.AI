@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import type { Patent } from '../types';
 import { fetchPatentByNumber } from '../services/usptoApi';
+import { parsePatentFile } from '../services/pdfParser';
 import { 
   Upload, 
   FileText, 
   Plus, 
-  Sparkles,
   Search,
   Globe,
   Loader2,
   CheckCircle2,
-  ExternalLink
+  ExternalLink,
+  FileCheck
 } from 'lucide-react';
 
 export const PatentWorkspaceView: React.FC = () => {
@@ -18,6 +19,7 @@ export const PatentWorkspaceView: React.FC = () => {
   const [selectedPatent, setSelectedPatent] = useState<string>('US10928341B2');
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isParsing, setIsParsing] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   // Live USPTO Importer state
   const [usptoQuery, setUsptoQuery] = useState('');
@@ -86,20 +88,32 @@ export const PatentWorkspaceView: React.FC = () => {
     }
   };
 
-  const handleSimulateUpload = () => {
+  const handleFileUpload = async (file: File) => {
     setIsParsing(true);
-    setUploadProgress(10);
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsParsing(false);
-          setActiveTab('library');
-          return 100;
-        }
-        return prev + 30;
-      });
-    }, 400);
+    setUploadProgress(20);
+    try {
+      setUploadProgress(60);
+      const parsed = await parsePatentFile(file);
+      setUploadProgress(100);
+      setPatents(prev => [parsed.patent, ...prev]);
+      setSelectedPatent(parsed.patent.id);
+      setUsptoSuccessMsg(`Successfully parsed and extracted specification for ${parsed.patent.patentNumber}!`);
+      setTimeout(() => {
+        setIsParsing(false);
+        setActiveTab('library');
+      }, 400);
+    } catch (err) {
+      console.error('Error parsing file:', err);
+      setIsParsing(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileUpload(e.dataTransfer.files[0]);
+    }
   };
 
   return (
@@ -132,7 +146,7 @@ export const PatentWorkspaceView: React.FC = () => {
             className={activeTab === 'upload' ? 'btn-primary' : 'btn-secondary'}
             onClick={() => setActiveTab('upload')}
           >
-            <Plus size={16} /> Upload Patent PDF
+            <Plus size={16} /> Drag & Drop Patent PDF
           </button>
         </div>
       </div>
@@ -191,9 +205,24 @@ export const PatentWorkspaceView: React.FC = () => {
         </div>
       )}
 
-      {/* PDF Upload Tab */}
+      {/* Real Drag & Drop File Upload Tab */}
       {activeTab === 'upload' && (
-        <div className="glass-panel" style={{ padding: '36px', textAlign: 'center', maxWidth: '720px', margin: '0 auto', width: '100%' }}>
+        <div 
+          className="glass-panel"
+          onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+          onDragLeave={() => setIsDragOver(false)}
+          onDrop={handleDrop}
+          style={{ 
+            padding: '48px 36px', 
+            textAlign: 'center', 
+            maxWidth: '760px', 
+            margin: '0 auto', 
+            width: '100%',
+            border: isDragOver ? '2px dashed var(--accent-cyan)' : '2px dashed var(--border-color)',
+            background: isDragOver ? 'rgba(0, 242, 254, 0.05)' : 'var(--bg-card-solid)',
+            transition: 'all 0.2s ease'
+          }}
+        >
           <div style={{
             width: '64px',
             height: '64px',
@@ -210,16 +239,16 @@ export const PatentWorkspaceView: React.FC = () => {
           </div>
 
           <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px' }}>
-            Upload Patent Specification or Claim Text (PDF / TXT)
+            Drag and Drop Patent Specification (PDF / TXT)
           </h2>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '24px', lineHeight: '1.5' }}>
-            Drag and drop patent files here or click browse. Automatic PyMuPDF / Tesseract OCR section extraction will parse Title, Abstract, Background, and Independent/Dependent Claims.
+            Upload real patent documents directly. Client-side regex engine parses Title, Abstract, CPC Classifications, and Independent/Dependent Claim trees in real time.
           </p>
 
           {isParsing ? (
             <div style={{ padding: '20px', background: 'var(--bg-surface)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.86rem', fontWeight: 600, color: 'var(--accent-cyan)' }}>
-                <span>Extracting Sections & Claims...</span>
+                <span>Parsing Sections & Claims Scope...</span>
                 <span>{uploadProgress}%</span>
               </div>
               <div style={{ width: '100%', height: '8px', background: 'var(--bg-main)', borderRadius: '4px', overflow: 'hidden' }}>
@@ -227,9 +256,21 @@ export const PatentWorkspaceView: React.FC = () => {
               </div>
             </div>
           ) : (
-            <button className="btn-primary" onClick={handleSimulateUpload} style={{ padding: '12px 28px', fontSize: '0.95rem' }}>
-              <Sparkles size={18} /> Select Sample Patent PDF (US10928341)
-            </button>
+            <label style={{ display: 'inline-block', cursor: 'pointer' }}>
+              <input
+                type="file"
+                accept=".pdf,.txt,.json,.md"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    handleFileUpload(e.target.files[0]);
+                  }
+                }}
+                style={{ display: 'none' }}
+              />
+              <span className="btn-primary" style={{ padding: '12px 28px', fontSize: '0.95rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                <FileCheck size={18} /> Select File from Computer
+              </span>
+            </label>
           )}
         </div>
       )}

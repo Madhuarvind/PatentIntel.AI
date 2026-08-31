@@ -1,4 +1,5 @@
 import React from 'react';
+import { VectorClusterVisualizer } from './VectorClusterVisualizer';
 
 export const AnalyticsView: React.FC = () => {
   const ablationData = [
@@ -14,10 +15,10 @@ export const AnalyticsView: React.FC = () => {
       {/* Header */}
       <div>
         <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 4px' }}>
-          Research Evaluation Benchmarks & Ablation Study
+          Research Evaluation Benchmarks & Embedding Analytics
         </h1>
         <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-          Experimental evaluation on PatentMatch 6.26M dataset samples comparing retrieval, precision, and component contributions.
+          Interactive 2D vector embedding maps and experimental ablation study evaluation on PatentMatch 6.26M benchmark dataset.
         </p>
       </div>
 
@@ -47,6 +48,9 @@ export const AnalyticsView: React.FC = () => {
           <div style={{ fontSize: '0.76rem', color: 'var(--accent-purple)', fontWeight: 600 }}>Lin & Shen (2024) Benchmark</div>
         </div>
       </div>
+
+      {/* Feature 3: Interactive 2D Vector Embedding Similarity Visualizer */}
+      <VectorClusterVisualizer />
 
       {/* Ablation Study Table */}
       <div className="glass-panel" style={{ padding: '24px' }}>

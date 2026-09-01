@@ -190,3 +190,113 @@ export interface ClaimSynthesisRequest {
   technologyDomain?: string;
   targetJurisdiction?: string;
 }
+
+// ==========================================
+// WIPO CLAIM TRANSLATOR TYPES
+// ==========================================
+
+export type SourceLanguage = 'auto' | 'zh' | 'ja' | 'de' | 'fr' | 'en';
+export type TargetLanguage = 'en' | 'zh' | 'ja' | 'de' | 'fr';
+export type ClaimLanguageCode = 'zh' | 'ja' | 'de' | 'fr' | 'en' | 'unknown';
+
+export interface LanguageDetectionResult {
+  language: ClaimLanguageCode;
+  label: string;
+  confidence: number;
+  isLowConfidence: boolean;
+  warning?: string;
+}
+
+export type TerminologyCategory = 'Technical' | 'Patent Term' | 'Engineering' | 'Standardized' | 'Component';
+
+export interface TerminologyItem {
+  id: string;
+  original: string;
+  english: string;
+  category: TerminologyCategory;
+  confidence: number;
+  isLocked?: boolean;
+  status: 'accepted' | 'edited' | 'ambiguous';
+  alternatives?: string[];
+  sourceElement?: string;
+}
+
+export interface ClassificationCandidate {
+  code: string;
+  title: string;
+  type: 'IPC' | 'CPC';
+  reason: string;
+  confidence: number;
+  source: 'Verified (WIPO/EPO)' | 'AI-suggested classification candidates';
+  verifiedDefinition?: string;
+}
+
+export interface QualityMetrics {
+  languageDetectionConfidence: number;
+  terminologyConsistency: number;
+  numericPreservation: number;
+  claimStructurePreservation: number;
+  semanticConsistency: number;
+  overallQuality: number;
+  warnings: string[];
+  potentialMeaningDrift?: string;
+  driftSectionCount?: number;
+}
+
+export interface ClaimElementAlignment {
+  elementNumber: number;
+  label: string;
+  originalText: string;
+  translatedText: string;
+  isAmbiguous?: boolean;
+  alternatives?: string[];
+}
+
+export interface AmbiguityItem {
+  id: string;
+  originalTerm: string;
+  recommendedTranslation: string;
+  alternatives: string[];
+  confidence: number;
+  userChoice?: string;
+  isResolved?: boolean;
+}
+
+export interface ClaimTranslationSession {
+  id: string;
+  patent_id?: string;
+  claim_id?: string;
+  claim_number?: number;
+  source_language: string;
+  target_language: string;
+  original_text: string;
+  translated_text: string;
+  terminology_map: TerminologyItem[];
+  classifications: ClassificationCandidate[];
+  quality_metrics: QualityMetrics;
+  alignments: ClaimElementAlignment[];
+  ambiguities: AmbiguityItem[];
+  model: string;
+  prompt_version: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+  dependsOn?: number[];
+  claimType?: 'independent' | 'dependent';
+}
+
+export interface BatchTranslationItem {
+  id: string;
+  claimNumber: number;
+  originalText: string;
+  status: 'pending' | 'processing' | 'completed' | 'error';
+  result?: ClaimTranslationSession;
+  errorMsg?: string;
+}
+
+export interface ConsistencyMatrixItem {
+  sourceTerm: string;
+  claimTranslations: Record<number, string>;
+  isConsistent: boolean;
+}
+

@@ -12,10 +12,15 @@ import {
   Loader2,
   CheckCircle2,
   ExternalLink,
-  FileCheck
+  FileCheck,
+  Languages
 } from 'lucide-react';
 
-export const PatentWorkspaceView: React.FC = () => {
+interface Props {
+  onOpenClaimTranslator?: (patentId: string, claimNumber: number, claimText: string) => void;
+}
+
+export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) => {
   const [activeTab, setActiveTab] = useState<'library' | 'upload' | 'uspto-import'>('library');
   const [selectedPatent, setSelectedPatent] = useState<string>('US10928341B2');
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -375,9 +380,24 @@ export const PatentWorkspaceView: React.FC = () => {
                 </div>
 
                 <div style={{ background: 'var(--bg-card-solid)', border: '1px solid rgba(0, 242, 254, 0.25)', padding: '16px', borderRadius: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                    <span className="badge badge-cyan">Claim 1 (Independent)</span>
-                    <span className="badge badge-emerald">Primary Technical Scope</span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className="badge badge-cyan">Claim 1 (Independent)</span>
+                      <span className="badge badge-emerald">Primary Technical Scope</span>
+                    </div>
+
+                    {onOpenClaimTranslator && (
+                      <button
+                        className="btn-primary"
+                        onClick={() => {
+                          const claimTxt = currentPatentDoc.claims?.[0]?.text || `1. An apparatus for ${currentPatentDoc.title.toLowerCase()} comprising optical sensors and neural processor.`;
+                          onOpenClaimTranslator(currentPatentDoc.id, 1, claimTxt);
+                        }}
+                        style={{ padding: '4px 12px', fontSize: '0.78rem' }}
+                      >
+                        <Languages size={14} /> Translate Claim
+                      </button>
+                    )}
                   </div>
                   <p style={{ fontSize: '0.9rem', color: 'var(--text-main)', lineHeight: '1.65', fontFamily: 'var(--font-sans)' }}>
                     "{currentPatentDoc.claims?.[0]?.text || `1. An apparatus for ${currentPatentDoc.title.toLowerCase()} comprising optical sensors and neural processor.`}"

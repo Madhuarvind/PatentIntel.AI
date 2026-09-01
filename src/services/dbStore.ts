@@ -1,4 +1,4 @@
-import type { PatentDocument } from '../types';
+import type { PatentDocument, ClaimTranslationSession, TerminologyItem } from '../types';
 
 export interface UserAccount {
   id: string;
@@ -26,6 +26,8 @@ const DB_KEYS = {
   PATENTS: 'patentintel_db_patents',
   EVALUATIONS: 'patentintel_db_evaluations',
   SEARCH_HISTORY: 'patentintel_db_search_history',
+  TRANSLATIONS: 'patentintel_db_claim_translations',
+  TERMINOLOGY_MEMORY: 'patentintel_db_terminology_memory',
 };
 
 class CloudDatabaseService {
@@ -164,6 +166,62 @@ class CloudDatabaseService {
     if (!data) return [];
     try {
       return JSON.parse(data);
+    } catch {
+      return [];
+    }
+  }
+
+  // --- CLAIM TRANSLATIONS PERSISTENCE ---
+  public saveClaimTranslation(session: ClaimTranslationSession): ClaimTranslationSession {
+    const translations = this.getClaimTranslations();
+    const existingIdx = translations.findIndex(t => t.id === session.id);
+    if (existingIdx >= 0) {
+      translations[existingIdx] = session;
+    } else {
+      translations.unshift(session);
+    }
+    localStorage.setItem(DB_KEYS.TRANSLATIONS, JSON.stringify(translations));
+    this.notifyListeners();
+    return session;
+  }
+
+  public getClaimTranslations(): ClaimTranslationSession[] {
+    const data = localStorage.getItem(DB_KEYS.TRANSLATIONS);
+    if (!data) return [];
+    try {
+      return JSON.parse(data);
+    } catch {
+      return [];
+    }
+  }
+
+  public getTranslationHistory(patentId?: string): ClaimTranslationSession[] {
+    const all = this.getClaimTranslations();
+    if (!patentId) return all;
+    return all.filter(t => t.patent_id === patentId);
+  }
+
+  public restoreTranslationSession(id: string): ClaimTranslationSession | null {
+    const all = this.getClaimTranslations();
+    return all.find(t => t.id === id) || null;
+  }
+
+  public saveTerminologyMemory(familyId: string, terms: TerminologyItem[]) {
+    const memData = localStorage.getItem(DB_KEYS.TERMINOLOGY_MEMORY);
+    let memStore: Record<string, TerminologyItem[]> = {};
+    if (memData) {
+      try { memStore = JSON.parse(memData); } catch {}
+    }
+    memStore[familyId] = terms;
+    localStorage.setItem(DB_KEYS.TERMINOLOGY_MEMORY, JSON.stringify(memStore));
+  }
+
+  public getTerminologyMemory(familyId: string): TerminologyItem[] {
+    const memData = localStorage.getItem(DB_KEYS.TERMINOLOGY_MEMORY);
+    if (!memData) return [];
+    try {
+      const memStore = JSON.parse(memData);
+      return memStore[familyId] || [];
     } catch {
       return [];
     }

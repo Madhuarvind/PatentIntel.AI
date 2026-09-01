@@ -17,11 +17,12 @@ import {
 interface Props {
   onNavigate: (view: ModuleView) => void;
   onOpenPaper?: (query?: string) => void;
+  initialQuery?: string;
 }
 
-export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper }) => {
+export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, initialQuery }) => {
   const [searchTab, setSearchTab] = useState<'uspto-live' | 'workspace-hybrid'>('uspto-live');
-  const [query, setQuery] = useState('autonomous vehicle collision warning camera neural network');
+  const [query, setQuery] = useState(initialQuery || 'autonomous vehicle collision warning camera neural network');
   const [livePatents, setLivePatents] = useState<Patent[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 

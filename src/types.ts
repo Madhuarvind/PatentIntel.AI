@@ -9,7 +9,8 @@ export type ModuleView =
   | 'timeline'
   | 'ai-evidence'
   | 'analytics'
-  | 'settings';
+  | 'settings'
+  | 'claim-synthesizer';
 
 export interface RealtimeAcademicPaper {
   id: string;
@@ -145,4 +146,114 @@ export interface MappingPair {
   explanation: string;
   targetPassage: string;
   retrievedPassage: string;
+}
+
+// ==========================================
+// CLAIM SYNTHESIZER TYPES
+// ==========================================
+
+export type SupportStatus = 'SUPPORTED' | 'PARTIALLY_SUPPORTED' | 'UNSUPPORTED';
+export type ClaimStrategy = 'broad' | 'balanced' | 'narrow';
+export type ClaimCategory = 'apparatus' | 'method' | 'computer-method' | 'crm' | 'device';
+
+export interface TechnicalElementsModel {
+  system: string;
+  components: string[];
+  modules: string[];
+  inputs: string[];
+  outputs: string[];
+  functions: string[];
+  processingSteps: string[];
+  technicalRelationships: string[];
+  constraints: string[];
+  technicalEffects: string[];
+  optionalFeatures: string[];
+}
+
+export interface ClaimEvidenceRef {
+  elementText: string;
+  sourceSection: string;
+  paragraphRef: string;
+  quote: string;
+  supportScore: number;
+  supportStatus: SupportStatus;
+}
+
+export interface GeneratedClaimElement {
+  id: string;
+  label: string;
+  text: string;
+  evidence: ClaimEvidenceRef;
+  relationships: { targetId: string; relationLabel: string }[];
+}
+
+export interface GeneratedClaim {
+  claimNumber: number;
+  category: ClaimCategory;
+  isIndependent: boolean;
+  dependsOn: number[];
+  text: string;
+  elements: GeneratedClaimElement[];
+  whySelected?: string;
+  addedLimitations?: string[];
+}
+
+export interface ClaimQuality {
+  technicalCoverage: number;   // 0-100
+  evidenceSupport: number;     // 0-100
+  unsupportedElements: number;
+  dependencyErrors: number;
+  terminologyConflicts: number;
+  missingCoreElements: string[];
+  redundantElements: string[];
+  warnings: string[];
+}
+
+export interface ClaimCandidate {
+  id: 'A' | 'B' | 'C';
+  strategy: ClaimStrategy;
+  label: string;
+  coverage: number;
+  independentClaims: GeneratedClaim[];
+  dependentClaims: GeneratedClaim[];
+  quality: ClaimQuality;
+  technicalElements: TechnicalElementsModel;
+}
+
+export interface ClaimVersion {
+  versionId: string;
+  versionNumber: number;
+  label: string;
+  createdAt: string;
+  strategy: ClaimStrategy;
+  promptVersion: string;
+  modelUsed: string;
+  inputSource: string;
+  claimsSnapshot: GeneratedClaim[];
+  changes?: string;
+}
+
+export interface ClaimDraft {
+  draftId: string;
+  sourceText: string;
+  sourcePatentId?: string;
+  technicalElements: TechnicalElementsModel;
+  selectedCandidateId: 'A' | 'B' | 'C';
+  candidates: ClaimCandidate[];
+  activeClaimsEdited: GeneratedClaim[];
+  quality: ClaimQuality;
+  versions: ClaimVersion[];
+  createdAt: string;
+  updatedAt: string;
+  userId?: string;
+}
+
+export interface ClaimSynthesisRequest {
+  sourceText: string;
+  strategy: ClaimStrategy;
+  claimCategories: ClaimCategory[];
+  dependentClaimCount: number;
+  sourcePatentId?: string;
+  technologyDomain?: string;
+  targetJurisdiction?: string;
 }

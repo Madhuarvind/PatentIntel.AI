@@ -12,7 +12,8 @@ import {
   BarChart3, 
   Settings,
   Activity,
-  Database
+  Database,
+  PenTool
 } from 'lucide-react';
 
 interface Props {
@@ -50,7 +51,8 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
         { id: 'claims', label: 'Claim Decomposition', icon: Layers },
         { id: 'mapping', label: 'Claim-to-Claim Mapping', icon: GitCompare, badge: 'Core' },
         { id: 'timeline', label: 'Prior-Art Timeline', icon: Clock },
-        { id: 'ai-evidence', label: 'AI Evidence Reasoning', icon: Sparkles, badge: 'LLM' }
+        { id: 'ai-evidence', label: 'AI Evidence Reasoning', icon: Sparkles, badge: 'LLM' },
+        { id: 'claim-synthesizer', label: 'AI Claim Synthesizer', icon: PenTool, badge: 'NEW' }
       ]
     },
     {

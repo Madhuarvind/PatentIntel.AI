@@ -14,6 +14,7 @@ import { AIEvidenceView } from './components/AIEvidenceView';
 import { AnalyticsView } from './components/AnalyticsView';
 import { SettingsView } from './components/SettingsView';
 import { LiteratureModal } from './components/LiteratureModal';
+import { ClaimSynthesizerView } from './components/ClaimSynthesizerView';
 
 export const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -146,6 +147,10 @@ export const App: React.FC = () => {
 
           {activeView === 'settings' && (
             <SettingsView />
+          )}
+
+          {activeView === 'claim-synthesizer' && (
+            <ClaimSynthesizerView />
           )}
         </main>
       </div>

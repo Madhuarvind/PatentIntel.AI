@@ -26,18 +26,79 @@ export interface RealtimeAcademicPaper {
   source: 'Semantic Scholar' | 'OpenAlex' | 'arXiv' | 'CrossRef';
 }
 
+export interface PatentClaim {
+  claimNumber: number;
+  text: string;
+  type: 'independent' | 'dependent';
+  dependsOn: number[];
+  elements?: ClaimElement[];
+}
+
+export interface NormalizedPatent {
+  id: string;
+  patentNumber: string;
+  publicationNumber: string;
+  applicationNumber?: string;
+  country: string;
+  documentNumber?: string;
+  kindCode?: string;
+  displayNumber?: string;
+  rawSourceIdentifier?: string;
+  sourceIdentifier?: string;
+  documentType?: string;
+  title: string;
+  abstract: string;
+  description?: string;
+  claims: PatentClaim[];
+  claimsCount: number;
+  inventors: string[];
+  applicants?: string[];
+  assignees: string[];
+  assignee?: string;
+  priorityDate?: string;
+  filingDate?: string;
+  publicationDate?: string;
+  grantDate?: string;
+  cpc: string[];
+  ipc: string[];
+  uspc?: string[];
+  patentFamily?: string[];
+  citations?: string[];
+  source: 'USPTO' | 'Google Patents' | 'OpenAlex' | 'EPO';
+  sourceUrl: string;
+  retrievedAt: string;
+  importQuality: 'COMPLETE' | 'PARTIAL' | 'FAILED';
+}
+
 export interface Patent {
   id: string;
   patentNumber: string;
+  publicationNumber?: string;
+  applicationNumber?: string;
+  country?: string;
+  kindCode?: string;
+  displayNumber?: string;
+  documentType?: string;
   title: string;
   assignee: string;
+  assignees?: string[];
   inventors: string[];
   publicationDate: string;
+  filingDate?: string;
+  grantDate?: string;
   priorityDate: string;
   cpcClass: string;
+  cpc?: string[];
+  ipc?: string[];
   abstract: string;
+  description?: string;
   claimsCount: number;
+  parsedClaims?: PatentClaim[];
   similarityScore?: number;
+  source?: string;
+  sourceUrl?: string;
+  retrievedAt?: string;
+  importQuality?: 'COMPLETE' | 'PARTIAL' | 'FAILED';
 }
 
 export interface ClaimElement {
@@ -68,6 +129,12 @@ export interface PatentDocument {
   issueDate?: string;
   abstract: string;
   claims?: Claim[];
+  rawSourceIdentifier?: string;
+  sourceIdentifier?: string;
+  displayNumber?: string;
+  sourceUrl?: string;
+  retrievedAt?: string;
+  source?: string;
 }
 
 export interface MappingPair {

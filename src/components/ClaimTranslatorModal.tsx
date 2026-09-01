@@ -16,7 +16,6 @@ import {
   X,
   Sparkles,
   CheckCircle2,
-  AlertTriangle,
   FileText,
   Download,
   History,
@@ -31,7 +30,6 @@ import {
   ArrowRight,
   ShieldAlert,
   Loader2,
-  Copy,
   Sliders,
   Table,
 } from 'lucide-react';
@@ -93,7 +91,7 @@ export const ClaimTranslatorModal: React.FC<Props> = ({
   const [exportSuccessMsg, setExportSuccessMsg] = useState<string | null>(null);
 
   // Batch translation states
-  const [batchClaims, setBatchClaims] = useState<{ claimNumber: number; text: string }[]>([
+  const [batchClaims] = useState<{ claimNumber: number; text: string }[]>([
     {
       claimNumber: 1,
       text: '1. 一种自主车辆碰撞预警装置，包括：摄像头传感器；深度神经网络处理器；以及碰撞预警控制器。',
@@ -460,7 +458,7 @@ export const ClaimTranslatorModal: React.FC<Props> = ({
             color: '#facc15',
           }}
         >
-          <ShieldAlert size={16} flexShrink={0} />
+          <ShieldAlert size={16} style={{ flexShrink: 0 }} />
           <span>
             <strong>IMPORTANT NOTICE:</strong> This is an AI-assisted patent translation and terminology-analysis tool.
             It does NOT constitute a legally certified translation. Human expert review recommended for legal proceedings.

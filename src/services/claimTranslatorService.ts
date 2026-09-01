@@ -4,7 +4,7 @@ import type {
   ClaimLanguageCode,
   LanguageDetectionResult,
   TerminologyItem,
-  ClassificationCandidate,
+  TerminologyCategory,
   QualityMetrics,
   ClaimElementAlignment,
   AmbiguityItem,
@@ -45,6 +45,10 @@ export class GeminiTranslationProvider implements ITranslationProvider {
       temperature: 0.1,
       ...config,
     };
+  }
+
+  public getConfig(): TranslationProviderConfig {
+    return this.config;
   }
 
   public async translateText(

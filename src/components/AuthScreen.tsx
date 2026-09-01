@@ -18,7 +18,8 @@ import {
   KeyRound,
   Database,
   Zap,
-  Activity
+  Activity,
+  Award
 } from 'lucide-react';
 
 interface Props {
@@ -96,41 +97,50 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
       overflow: 'hidden',
       fontFamily: 'Inter, system-ui, -apple-system, sans-serif'
     }}>
-      {/* Background Ambient Glow Orbs */}
+      {/* Background Multi-Layer Ambient Orbs & Grid Overlay */}
       <div style={{
         position: 'absolute',
-        top: '-20%',
+        top: '-15%',
         left: '-10%',
-        width: '65vw',
-        height: '65vw',
+        width: '60vw',
+        height: '60vw',
         borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(0, 242, 254, 0.15) 0%, rgba(11, 15, 25, 0) 70%)',
+        background: 'radial-gradient(circle, rgba(0, 242, 254, 0.16) 0%, rgba(11, 15, 25, 0) 70%)',
         pointerEvents: 'none',
         zIndex: 0
       }} />
       <div style={{
         position: 'absolute',
-        bottom: '-25%',
+        bottom: '-20%',
         right: '-10%',
-        width: '65vw',
-        height: '65vw',
+        width: '60vw',
+        height: '60vw',
         borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(99, 102, 241, 0.18) 0%, rgba(11, 15, 25, 0) 70%)',
+        background: 'radial-gradient(circle, rgba(99, 102, 241, 0.20) 0%, rgba(11, 15, 25, 0) 70%)',
+        pointerEvents: 'none',
+        zIndex: 0
+      }} />
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px)',
+        backgroundSize: '32px 32px',
+        opacity: 0.6,
         pointerEvents: 'none',
         zIndex: 0
       }} />
 
-      {/* LEFT PANE: FUTURISTIC AI HERO & BRANDING SECTION */}
+      {/* LEFT PANE: FUTURISTIC AI HERO & BRANDING SECTION WITH DYNAMIC GLASS BACKGROUND */}
       <div style={{
-        flex: '1.25',
+        flex: '1.3',
         height: '100vh',
-        padding: '48px 56px',
+        padding: '48px 60px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
         position: 'relative',
         zIndex: 1,
-        backgroundImage: 'linear-gradient(135deg, rgba(11, 15, 25, 0.82) 0%, rgba(18, 24, 39, 0.94) 100%), url(/patent_intel_hero_bg.png)',
+        backgroundImage: 'linear-gradient(135deg, rgba(11, 15, 25, 0.88) 0%, rgba(15, 23, 42, 0.92) 100%), url(/patent_intel_hero_bg.png)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         borderRight: '1px solid rgba(255, 255, 255, 0.08)'
@@ -139,22 +149,22 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '14px',
+              width: '50px',
+              height: '50px',
+              borderRadius: '16px',
               background: 'linear-gradient(135deg, #00F2FE 0%, #4FACFE 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 0 24px rgba(0, 242, 254, 0.45)'
+              boxShadow: '0 0 28px rgba(0, 242, 254, 0.45)'
             }}>
-              <Cpu size={26} color="#0B0F19" />
+              <Cpu size={28} color="#0B0F19" />
             </div>
             <div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#FFFFFF' }}>
+              <div style={{ fontSize: '1.55rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#FFFFFF' }}>
                 PatentIntel<span style={{ background: 'linear-gradient(135deg, #00F2FE 0%, #4FACFE 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>.AI</span>
               </div>
-              <div style={{ fontSize: '0.72rem', color: '#00F2FE', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: '0.74rem', color: '#00F2FE', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                 Next-Gen Explainable Patent Intelligence
               </div>
             </div>
@@ -165,42 +175,44 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
             alignItems: 'center',
             gap: '8px',
             background: 'rgba(16, 185, 129, 0.12)',
-            border: '1px solid rgba(16, 185, 129, 0.3)',
-            padding: '6px 14px',
+            border: '1px solid rgba(16, 185, 129, 0.35)',
+            padding: '8px 16px',
             borderRadius: '20px',
-            fontSize: '0.78rem',
+            fontSize: '0.8rem',
             color: '#10B981',
-            fontWeight: 600
+            fontWeight: 700,
+            boxShadow: '0 4px 16px rgba(16, 185, 129, 0.15)'
           }}>
-            <Activity size={14} className="pulse-green" /> USPTO Open Data Live Synced
+            <Activity size={15} /> USPTO Open Data Live Synced
           </div>
         </div>
 
         {/* Hero Value Proposition */}
-        <div style={{ maxWidth: '640px', margin: 'auto 0' }}>
+        <div style={{ maxWidth: '660px', margin: 'auto 0' }}>
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: '8px',
             background: 'rgba(0, 242, 254, 0.1)',
-            border: '1px solid rgba(0, 242, 254, 0.25)',
-            padding: '6px 14px',
+            border: '1px solid rgba(0, 242, 254, 0.28)',
+            padding: '8px 16px',
             borderRadius: '20px',
-            fontSize: '0.82rem',
+            fontSize: '0.84rem',
             color: '#00F2FE',
-            fontWeight: 600,
-            marginBottom: '20px'
+            fontWeight: 700,
+            marginBottom: '24px',
+            boxShadow: '0 0 20px rgba(0, 242, 254, 0.15)'
           }}>
-            <Sparkles size={15} /> Grounded on 6.26M PatentMatch Dataset & IEEE Standards
+            <Award size={16} /> Grounded on 6.26M PatentMatch Dataset & IEEE Standards
           </div>
 
           <h1 style={{
-            fontSize: '3.1rem',
+            fontSize: '3.2rem',
             fontWeight: 800,
-            lineHeight: 1.12,
+            lineHeight: 1.14,
             color: '#FFFFFF',
             letterSpacing: '-0.03em',
-            marginBottom: '20px'
+            marginBottom: '22px'
           }}>
             Claim-Centric Prior-Art <br />
             <span style={{
@@ -214,89 +226,164 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
           <p style={{
             fontSize: '1.08rem',
             color: '#94A3B8',
-            lineHeight: 1.65,
-            marginBottom: '36px'
+            lineHeight: 1.68,
+            marginBottom: '38px',
+            maxWidth: '620px'
           }}>
             Decompose multi-tier independent claims into structural limitations, compute 35 U.S.C. § 102/103 invalidity risk probabilities, and generate USPTO-grade audit reports in real time.
           </p>
 
-          {/* Interactive Feature Matrix Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+          {/* Interactive Feature Matrix Cards with Generous Spacing */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '18px' }}>
+            
+            {/* Card 1 */}
             <div style={{
-              background: 'rgba(18, 24, 39, 0.65)',
-              backdropFilter: 'blur(12px)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: '14px',
-              padding: '16px',
+              background: 'rgba(18, 24, 39, 0.72)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '16px',
+              padding: '18px 20px',
               display: 'flex',
               alignItems: 'center',
-              gap: '12px'
+              gap: '16px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+              transition: 'all 0.3s ease'
             }}>
-              <div style={{ background: 'rgba(0, 242, 254, 0.12)', padding: '10px', borderRadius: '10px', color: '#00F2FE' }}>
-                <Search size={20} />
+              <div style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: '12px',
+                background: 'rgba(0, 242, 254, 0.14)',
+                border: '1px solid rgba(0, 242, 254, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#00F2FE',
+                flexShrink: 0
+              }}>
+                <Search size={22} />
               </div>
-              <div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#F8FAFC' }}>Hybrid Search Engine</div>
-                <div style={{ fontSize: '0.78rem', color: '#64748B' }}>BM25 + SBERT Dense Vectors</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#F8FAFC', lineHeight: 1.3 }}>
+                  Hybrid Search Engine
+                </div>
+                <div style={{ fontSize: '0.81rem', color: '#94A3B8', lineHeight: 1.4 }}>
+                  BM25 keyword + SBERT dense vectors
+                </div>
               </div>
             </div>
 
+            {/* Card 2 */}
             <div style={{
-              background: 'rgba(18, 24, 39, 0.65)',
-              backdropFilter: 'blur(12px)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: '14px',
-              padding: '16px',
+              background: 'rgba(18, 24, 39, 0.72)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '16px',
+              padding: '18px 20px',
               display: 'flex',
               alignItems: 'center',
-              gap: '12px'
+              gap: '16px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+              transition: 'all 0.3s ease'
             }}>
-              <div style={{ background: 'rgba(99, 102, 241, 0.12)', padding: '10px', borderRadius: '10px', color: '#6366F1' }}>
-                <GitMerge size={20} />
+              <div style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: '12px',
+                background: 'rgba(99, 102, 241, 0.14)',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#6366F1',
+                flexShrink: 0
+              }}>
+                <GitMerge size={22} />
               </div>
-              <div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#F8FAFC' }}>Claim Limitation Trees</div>
-                <div style={{ fontSize: '0.78rem', color: '#64748B' }}>Element-by-element mapping</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#F8FAFC', lineHeight: 1.3 }}>
+                  Claim Limitation Trees
+                </div>
+                <div style={{ fontSize: '0.81rem', color: '#94A3B8', lineHeight: 1.4 }}>
+                  Element-by-element structural mapping
+                </div>
               </div>
             </div>
 
+            {/* Card 3 - Enhanced Spacing & Clarity */}
             <div style={{
-              background: 'rgba(18, 24, 39, 0.65)',
-              backdropFilter: 'blur(12px)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: '14px',
-              padding: '16px',
+              background: 'rgba(18, 24, 39, 0.72)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid rgba(16, 185, 129, 0.25)',
+              borderRadius: '16px',
+              padding: '18px 20px',
               display: 'flex',
               alignItems: 'center',
-              gap: '12px'
+              gap: '16px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+              transition: 'all 0.3s ease'
             }}>
-              <div style={{ background: 'rgba(16, 185, 129, 0.12)', padding: '10px', borderRadius: '10px', color: '#10B981' }}>
-                <ShieldCheck size={20} />
+              <div style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: '12px',
+                background: 'rgba(16, 185, 129, 0.14)',
+                border: '1px solid rgba(16, 185, 129, 0.35)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#10B981',
+                flexShrink: 0
+              }}>
+                <ShieldCheck size={22} />
               </div>
-              <div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#F8FAFC' }}>35 U.S.C. § 102 / § 103</div>
-                <div style={{ fontSize: '0.78rem', color: '#64748B' }}>Automated invalidity scoring</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#F8FAFC', lineHeight: 1.3 }}>
+                  35 U.S.C. § 102 & § 103 Assessment
+                </div>
+                <div style={{ fontSize: '0.81rem', color: '#94A3B8', lineHeight: 1.4 }}>
+                  Automated statutory invalidity risk calculator
+                </div>
               </div>
             </div>
 
+            {/* Card 4 */}
             <div style={{
-              background: 'rgba(18, 24, 39, 0.65)',
-              backdropFilter: 'blur(12px)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: '14px',
-              padding: '16px',
+              background: 'rgba(18, 24, 39, 0.72)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '16px',
+              padding: '18px 20px',
               display: 'flex',
               alignItems: 'center',
-              gap: '12px'
+              gap: '16px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+              transition: 'all 0.3s ease'
             }}>
-              <div style={{ background: 'rgba(168, 85, 247, 0.12)', padding: '10px', borderRadius: '10px', color: '#A855F7' }}>
-                <Database size={20} />
+              <div style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: '12px',
+                background: 'rgba(168, 85, 247, 0.14)',
+                border: '1px solid rgba(168, 85, 247, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#A855F7',
+                flexShrink: 0
+              }}>
+                <Database size={22} />
               </div>
-              <div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#F8FAFC' }}>Cloud Database Store</div>
-                <div style={{ fontSize: '0.78rem', color: '#64748B' }}>Persisted user workspace sync</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#F8FAFC', lineHeight: 1.3 }}>
+                  Cloud Database Sync
+                </div>
+                <div style={{ fontSize: '0.81rem', color: '#94A3B8', lineHeight: 1.4 }}>
+                  Persisted user workspace & patent storage
+                </div>
               </div>
             </div>
+
           </div>
         </div>
 
@@ -306,13 +393,13 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
           alignItems: 'center',
           justifyContent: 'space-between',
           borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-          paddingTop: '20px'
+          paddingTop: '22px'
         }}>
-          <div style={{ fontSize: '0.82rem', color: '#64748B' }}>
-            © 2026 PatentIntel.AI Architecture • Madhuaravind P, Harish M, Mouneesh R
+          <div style={{ fontSize: '0.84rem', color: '#64748B' }}>
+            © 2026 PatentIntel.AI • Madhuaravind P, Harish M, Mouneesh R
           </div>
-          <div style={{ fontSize: '0.82rem', color: '#00F2FE', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Zap size={14} /> PatentMatch Benchmark: 89.4% Precision@10
+          <div style={{ fontSize: '0.84rem', color: '#00F2FE', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Zap size={15} /> PatentMatch Benchmark: 89.4% Precision@10
           </div>
         </div>
       </div>
@@ -343,11 +430,12 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
           {/* Navigation Pill Tabs */}
           <div style={{
             display: 'flex',
-            background: 'rgba(15, 23, 42, 0.8)',
-            padding: '5px',
-            borderRadius: '14px',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            marginBottom: '32px'
+            background: 'rgba(15, 23, 42, 0.85)',
+            padding: '6px',
+            borderRadius: '16px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            marginBottom: '32px',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)'
           }}>
             <button
               onClick={() => { setMode('login'); setResetSent(false); }}
@@ -355,14 +443,14 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
                 flex: 1,
                 padding: '12px',
                 border: 'none',
-                borderRadius: '10px',
-                fontSize: '0.92rem',
+                borderRadius: '12px',
+                fontSize: '0.94rem',
                 fontWeight: 700,
                 cursor: 'pointer',
                 background: mode === 'login' ? 'linear-gradient(135deg, #00F2FE 0%, #4FACFE 100%)' : 'transparent',
                 color: mode === 'login' ? '#0B0F19' : '#94A3B8',
                 transition: 'all 0.25s ease',
-                boxShadow: mode === 'login' ? '0 0 16px rgba(0, 242, 254, 0.35)' : 'none'
+                boxShadow: mode === 'login' ? '0 0 20px rgba(0, 242, 254, 0.4)' : 'none'
               }}
             >
               Sign In
@@ -373,14 +461,14 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
                 flex: 1,
                 padding: '12px',
                 border: 'none',
-                borderRadius: '10px',
-                fontSize: '0.92rem',
+                borderRadius: '12px',
+                fontSize: '0.94rem',
                 fontWeight: 700,
                 cursor: 'pointer',
                 background: mode === 'register' ? 'linear-gradient(135deg, #00F2FE 0%, #4FACFE 100%)' : 'transparent',
                 color: mode === 'register' ? '#0B0F19' : '#94A3B8',
                 transition: 'all 0.25s ease',
-                boxShadow: mode === 'register' ? '0 0 16px rgba(0, 242, 254, 0.35)' : 'none'
+                boxShadow: mode === 'register' ? '0 0 20px rgba(0, 242, 254, 0.4)' : 'none'
               }}
             >
               Create Account
@@ -391,17 +479,17 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
           {registerSuccessMessage && mode === 'login' && (
             <div style={{
               padding: '14px 16px',
-              borderRadius: '12px',
-              background: 'rgba(16, 185, 129, 0.12)',
-              border: '1px solid rgba(16, 185, 129, 0.35)',
+              borderRadius: '14px',
+              background: 'rgba(16, 185, 129, 0.14)',
+              border: '1px solid rgba(16, 185, 129, 0.4)',
               color: '#10B981',
-              fontSize: '0.86rem',
+              fontSize: '0.88rem',
               fontWeight: 600,
               marginBottom: '24px',
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
-              boxShadow: '0 4px 16px rgba(16, 185, 129, 0.15)'
+              boxShadow: '0 4px 20px rgba(16, 185, 129, 0.2)'
             }}>
               <CheckCircle2 size={20} style={{ flexShrink: 0 }} />
               <span>{registerSuccessMessage}</span>
@@ -412,17 +500,17 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
           {mode === 'login' && (
             <div>
               <div style={{ marginBottom: '28px' }}>
-                <h2 style={{ fontSize: '1.85rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 8px', letterSpacing: '-0.02em' }}>
+                <h2 style={{ fontSize: '1.9rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 8px', letterSpacing: '-0.02em' }}>
                   Welcome Back
                 </h2>
-                <p style={{ fontSize: '0.92rem', color: '#94A3B8', margin: 0 }}>
+                <p style={{ fontSize: '0.94rem', color: '#94A3B8', margin: 0, lineHeight: 1.5 }}>
                   Enter your registered credentials to access your Cloud Workspace.
                 </p>
               </div>
 
-              <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: '#CBD5E1', marginBottom: '8px' }}>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#CBD5E1', marginBottom: '8px' }}>
                     Work Email / Institutional ID
                   </label>
                   <div style={{ position: 'relative' }}>
@@ -437,7 +525,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
                       style={{
                         width: '100%',
                         padding: '14px 14px 14px 44px',
-                        background: 'rgba(15, 23, 42, 0.6)',
+                        background: 'rgba(15, 23, 42, 0.65)',
                         border: '1px solid rgba(255, 255, 255, 0.12)',
                         borderRadius: '12px',
                         color: '#F8FAFC',
@@ -451,13 +539,13 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
 
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <label style={{ fontSize: '0.84rem', fontWeight: 600, color: '#CBD5E1' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#CBD5E1' }}>
                       Password
                     </label>
                     <button
                       type="button"
                       onClick={() => setMode('forgot')}
-                      style={{ background: 'none', border: 'none', color: '#00F2FE', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}
+                      style={{ background: 'none', border: 'none', color: '#00F2FE', fontSize: '0.83rem', fontWeight: 600, cursor: 'pointer' }}
                     >
                       Forgot Password?
                     </button>
@@ -474,7 +562,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
                       style={{
                         width: '100%',
                         padding: '14px 44px 14px 44px',
-                        background: 'rgba(15, 23, 42, 0.6)',
+                        background: 'rgba(15, 23, 42, 0.65)',
                         border: '1px solid rgba(255, 255, 255, 0.12)',
                         borderRadius: '12px',
                         color: '#F8FAFC',
@@ -591,7 +679,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
                       style={{
                         width: '100%',
                         padding: '12px 12px 12px 44px',
-                        background: 'rgba(15, 23, 42, 0.6)',
+                        background: 'rgba(15, 23, 42, 0.65)',
                         border: '1px solid rgba(255, 255, 255, 0.12)',
                         borderRadius: '12px',
                         color: '#F8FAFC',
@@ -618,7 +706,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
                       style={{
                         width: '100%',
                         padding: '12px 12px 12px 44px',
-                        background: 'rgba(15, 23, 42, 0.6)',
+                        background: 'rgba(15, 23, 42, 0.65)',
                         border: '1px solid rgba(255, 255, 255, 0.12)',
                         borderRadius: '12px',
                         color: '#F8FAFC',
@@ -644,7 +732,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
                       style={{
                         width: '100%',
                         padding: '12px 12px 12px 44px',
-                        background: 'rgba(15, 23, 42, 0.6)',
+                        background: 'rgba(15, 23, 42, 0.65)',
                         border: '1px solid rgba(255, 255, 255, 0.12)',
                         borderRadius: '12px',
                         color: '#F8FAFC',
@@ -698,7 +786,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
                       style={{
                         width: '100%',
                         padding: '12px 12px 12px 44px',
-                        background: 'rgba(15, 23, 42, 0.6)',
+                        background: 'rgba(15, 23, 42, 0.65)',
                         border: '1px solid rgba(255, 255, 255, 0.12)',
                         borderRadius: '12px',
                         color: '#F8FAFC',
@@ -794,7 +882,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
                         style={{
                           width: '100%',
                           padding: '14px 14px 14px 44px',
-                          background: 'rgba(15, 23, 42, 0.6)',
+                          background: 'rgba(15, 23, 42, 0.65)',
                           border: '1px solid rgba(255, 255, 255, 0.12)',
                           borderRadius: '12px',
                           color: '#F8FAFC',

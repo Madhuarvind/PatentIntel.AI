@@ -1,15 +1,23 @@
 import React, { useState } from 'react';
 import { Key, Save } from 'lucide-react';
+import { getStoredSettings, saveStoredSettings } from '../services/llmService';
 
 export const SettingsView: React.FC = () => {
-  const [llmProvider, setLlmProvider] = useState('gemini');
-  const [similarityCutoff, setSimilarityCutoff] = useState(0.75);
-  const [vectorEngine, setVectorEngine] = useState('faiss');
-  const [apiKey, setApiKey] = useState('••••••••••••••••••••••••••••••••');
+  const initialSettings = getStoredSettings();
+  const [llmProvider, setLlmProvider] = useState(initialSettings.provider || 'gemini');
+  const [similarityCutoff, setSimilarityCutoff] = useState(initialSettings.similarityCutoff || 0.75);
+  const [vectorEngine, setVectorEngine] = useState(initialSettings.vectorEngine || 'faiss');
+  const [apiKey, setApiKey] = useState(initialSettings.apiKey || '');
   const [saved, setSaved] = useState(false);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    saveStoredSettings({
+      provider: llmProvider,
+      apiKey: apiKey.trim(),
+      similarityCutoff,
+      vectorEngine
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };

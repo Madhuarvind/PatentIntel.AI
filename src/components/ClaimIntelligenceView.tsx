@@ -5,14 +5,16 @@ import {
   GitBranch, 
   ArrowRight,
   FolderKanban,
-  FileCheck
+  FileCheck,
+  Languages
 } from 'lucide-react';
 
 interface Props {
   onNavigate: (view: ModuleView) => void;
+  onOpenClaimTranslator?: (patentId: string, claimNumber: number, claimText: string) => void;
 }
 
-export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate }) => {
+export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaimTranslator }) => {
   const [workspacePatents, setWorkspacePatents] = useState<PatentDocument[]>(workspaceStore.getPatents());
   const [selectedPatentId, setSelectedPatentId] = useState<string>(workspacePatents[0]?.id || 'US10928341B2');
 
@@ -88,7 +90,18 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate }) => {
         <div className="glass-panel" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <span className="badge badge-cyan">Active Target: {activeDoc?.id}</span>
-            <span className="badge badge-indigo">Claim 1 (Independent)</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="badge badge-indigo">Claim 1 (Independent)</span>
+              {onOpenClaimTranslator && (
+                <button
+                  className="btn-primary"
+                  onClick={() => onOpenClaimTranslator(activeDoc?.id || 'US10928341B2', 1, activeClaimText)}
+                  style={{ padding: '4px 10px', fontSize: '0.76rem' }}
+                >
+                  <Languages size={12} /> Translate Claim
+                </button>
+              )}
+            </div>
           </div>
 
           <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '12px' }}>

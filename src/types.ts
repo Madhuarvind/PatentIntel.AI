@@ -27,18 +27,81 @@ export interface RealtimeAcademicPaper {
   source: 'Semantic Scholar' | 'OpenAlex' | 'arXiv' | 'CrossRef';
 }
 
+export interface PatentClaim {
+  claimNumber: number;
+  text: string;
+  type: 'independent' | 'dependent';
+  dependsOn: number[];
+  elements?: ClaimElement[];
+}
+
+export interface NormalizedPatent {
+  id: string;
+  patentNumber: string;
+  publicationNumber: string;
+  applicationNumber?: string;
+  country: string;
+  documentNumber?: string;
+  kindCode?: string;
+  displayNumber?: string;
+  rawSourceIdentifier?: string;
+  sourceIdentifier?: string;
+  documentType?: string;
+  title: string;
+  abstract: string;
+  description?: string;
+  claims: PatentClaim[];
+  claimsCount: number;
+  inventors: string[];
+  applicants?: string[];
+  assignees: string[];
+  assignee?: string;
+  priorityDate?: string;
+  filingDate?: string;
+  publicationDate?: string;
+  grantDate?: string;
+  cpc: string[];
+  ipc: string[];
+  uspc?: string[];
+  patentFamily?: string[];
+  citations?: string[];
+  source: 'USPTO' | 'Google Patents' | 'OpenAlex' | 'EPO' | 'Uploaded PDF Specification';
+  sourceUrl: string;
+  fileHash?: string;
+  retrievedAt: string;
+  importQuality: 'COMPLETE' | 'PARTIAL' | 'FAILED';
+}
+
 export interface Patent {
   id: string;
   patentNumber: string;
+  publicationNumber?: string;
+  applicationNumber?: string;
+  country?: string;
+  kindCode?: string;
+  displayNumber?: string;
+  documentType?: string;
   title: string;
   assignee: string;
+  assignees?: string[];
   inventors: string[];
   publicationDate: string;
+  filingDate?: string;
+  grantDate?: string;
   priorityDate: string;
   cpcClass: string;
+  cpc?: string[];
+  ipc?: string[];
   abstract: string;
+  description?: string;
   claimsCount: number;
+  parsedClaims?: PatentClaim[];
   similarityScore?: number;
+  source?: string;
+  sourceUrl?: string;
+  fileHash?: string;
+  retrievedAt?: string;
+  importQuality?: 'COMPLETE' | 'PARTIAL' | 'FAILED';
 }
 
 export interface ClaimElement {
@@ -63,12 +126,45 @@ export interface PatentDocument {
   id: string;
   title: string;
   assignee?: string;
+  assignees?: string[];
   inventors?: string[];
   cpcCodes?: string[];
+  cpc?: string[];
+  ipc?: string[];
   filingDate?: string;
   issueDate?: string;
+  publicationDate?: string;
+  grantDate?: string;
+  priorityDate?: string;
+  publicationNumber?: string;
+  patentNumber?: string;
+  country?: string;
+  kindCode?: string;
+  documentType?: 'PATENT' | string;
   abstract: string;
   claims?: Claim[];
+  claimsCount?: number;
+  rawSourceIdentifier?: string;
+  sourceIdentifier?: string;
+  displayNumber?: string;
+  sourceUrl?: string;
+  retrievedAt?: string;
+  source?: string;
+  fileHash?: string;
+  importQuality?: 'COMPLETE' | 'PARTIAL' | 'FAILED';
+}
+
+export interface ResearchDocument {
+  documentType: 'RESEARCH_PAPER';
+  id: string;
+  title: string;
+  authors: string[];
+  doi?: string;
+  journal?: string;
+  publicationYear?: number | string;
+  abstract: string;
+  source: 'OpenAlex' | 'CrossRef' | 'IEEE' | string;
+  sourceUrl: string;
 }
 
 export interface MappingPair {
@@ -190,3 +286,181 @@ export interface ClaimSynthesisRequest {
   technologyDomain?: string;
   targetJurisdiction?: string;
 }
+
+// ==========================================
+// WIPO CLAIM TRANSLATOR TYPES
+// ==========================================
+
+export type SourceLanguage = 'auto' | 'zh' | 'ja' | 'de' | 'fr' | 'en';
+export type TargetLanguage = 'en' | 'zh' | 'ja' | 'de' | 'fr';
+export type ClaimLanguageCode = 'zh' | 'ja' | 'de' | 'fr' | 'en' | 'unknown';
+
+export interface LanguageDetectionResult {
+  language: ClaimLanguageCode;
+  label: string;
+  confidence: number;
+  isLowConfidence: boolean;
+  warning?: string;
+}
+
+export type TerminologyCategory = 'Technical' | 'Patent Term' | 'Engineering' | 'Standardized' | 'Component';
+
+export interface TerminologyItem {
+  id: string;
+  original: string;
+  english: string;
+  category: TerminologyCategory;
+  confidence: number;
+  isLocked?: boolean;
+  status: 'accepted' | 'edited' | 'ambiguous';
+  alternatives?: string[];
+  sourceElement?: string;
+}
+
+export interface ClassificationCandidate {
+  code: string;
+  title: string;
+  type: 'IPC' | 'CPC';
+  reason: string;
+  confidence: number;
+  source: 'Verified (WIPO/EPO)' | 'AI-suggested classification candidates';
+  verifiedDefinition?: string;
+}
+
+export interface QualityMetrics {
+  languageDetectionConfidence: number;
+  terminologyConsistency: number;
+  numericPreservation: number;
+  claimStructurePreservation: number;
+  semanticConsistency: number;
+  overallQuality: number;
+  warnings: string[];
+  potentialMeaningDrift?: string;
+  driftSectionCount?: number;
+}
+
+export interface ClaimElementAlignment {
+  elementNumber: number;
+  label: string;
+  originalText: string;
+  translatedText: string;
+  isAmbiguous?: boolean;
+  alternatives?: string[];
+}
+
+export interface AmbiguityItem {
+  id: string;
+  originalTerm: string;
+  recommendedTranslation: string;
+  alternatives: string[];
+  confidence: number;
+  userChoice?: string;
+  isResolved?: boolean;
+}
+
+export interface ClaimTranslationSession {
+  id: string;
+  patent_id?: string;
+  claim_id?: string;
+  claim_number?: number;
+  source_language: string;
+  target_language: string;
+  original_text: string;
+  translated_text: string;
+  terminology_map: TerminologyItem[];
+  classifications: ClassificationCandidate[];
+  quality_metrics: QualityMetrics;
+  alignments: ClaimElementAlignment[];
+  ambiguities: AmbiguityItem[];
+  model: string;
+  prompt_version: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+  dependsOn?: number[];
+  claimType?: 'independent' | 'dependent';
+}
+
+export interface BatchTranslationItem {
+  id: string;
+  claimNumber: number;
+  originalText: string;
+  status: 'pending' | 'processing' | 'completed' | 'error';
+  result?: ClaimTranslationSession;
+  errorMsg?: string;
+}
+
+
+export interface ConsistencyMatrixItem {
+  sourceTerm: string;
+  claimTranslations: Record<number, string>;
+  isConsistent: boolean;
+}
+
+// ==========================================
+// REAL-TIME PATENT IMPORT STATE MACHINE TYPES
+// ==========================================
+
+export type ImportStatus =
+  | 'idle'
+  | 'validating'
+  | 'connecting'
+  | 'fetching_metadata'
+  | 'fetching_claims'
+  | 'normalizing'
+  | 'saving'
+  | 'completed'
+  | 'failed'
+  | 'timeout'
+  | 'cancelled';
+
+export type ImportErrorCode =
+  | 'INVALID_PATENT_ID'
+  | 'PATENT_NOT_FOUND'
+  | 'SOURCE_TIMEOUT'
+  | 'SOURCE_UNAVAILABLE'
+  | 'RATE_LIMITED'
+  | 'PARSER_ERROR'
+  | 'DATABASE_ERROR'
+  | 'IDENTITY_MISMATCH'
+  | 'CANCELLED';
+
+export interface ImportTimings {
+  validationMs: number;
+  sourceMs: number;
+  metadataMs: number;
+  claimsMs: number;
+  normalizationMs: number;
+  databaseMs: number;
+  totalMs: number;
+}
+
+export interface ImportProgressState {
+  requestId: string;
+  status: ImportStatus;
+  progress: number;
+  stepNumber: number;
+  message: string;
+  detail?: string;
+  elapsedSeconds: number;
+  timings?: ImportTimings;
+  error?: {
+    code: ImportErrorCode;
+    message: string;
+    suggestedAction?: string;
+  };
+}
+
+export interface PatentImportResult {
+  success: boolean;
+  requestId: string;
+  status: ImportStatus;
+  patent?: NormalizedPatent;
+  timings?: ImportTimings;
+  error?: {
+    code: ImportErrorCode;
+    message: string;
+  };
+}
+
+

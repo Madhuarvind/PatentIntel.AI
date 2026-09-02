@@ -15,6 +15,7 @@ import { AnalyticsView } from './components/AnalyticsView';
 import { SettingsView } from './components/SettingsView';
 import { LiteratureModal } from './components/LiteratureModal';
 import { ClaimSynthesizerView } from './components/ClaimSynthesizerView';
+import { ClaimTranslatorModal } from './components/ClaimTranslatorModal';
 
 export const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -36,6 +37,13 @@ export const App: React.FC = () => {
   const [literatureQuery, setLiteratureQuery] = useState<string>('patent claim similarity SBERT');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  // WIPO Claim Translator Modal State
+  const [isTranslatorOpen, setIsTranslatorOpen] = useState<boolean>(false);
+  const [translatorPatentId, setTranslatorPatentId] = useState<string>('US10928341B2');
+  const [translatorClaimNumber, setTranslatorClaimNumber] = useState<number>(1);
+  const [translatorClaimText, setTranslatorClaimText] = useState<string | undefined>(undefined);
+  const [translatorSearchQuery, setTranslatorSearchQuery] = useState<string | undefined>(undefined);
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
@@ -43,6 +51,18 @@ export const App: React.FC = () => {
   const openLiteratureWithQuery = (query?: string) => {
     if (query) setLiteratureQuery(query);
     setIsLiteratureOpen(true);
+  };
+
+  const openClaimTranslator = (patentId?: string, claimNumber?: number, claimText?: string) => {
+    if (patentId) setTranslatorPatentId(patentId);
+    if (claimNumber) setTranslatorClaimNumber(claimNumber);
+    if (claimText) setTranslatorClaimText(claimText);
+    setIsTranslatorOpen(true);
+  };
+
+  const handleSearchSimilarFromTranslator = (translatedQuery: string) => {
+    setTranslatorSearchQuery(translatedQuery);
+    setActiveView('search');
   };
 
   const handleLoginSuccess = (userData: { name: string; email: string; role: string }) => {
@@ -108,18 +128,24 @@ export const App: React.FC = () => {
           )}
 
           {activeView === 'workspace' && (
-            <PatentWorkspaceView />
+            <PatentWorkspaceView 
+              onOpenClaimTranslator={openClaimTranslator}
+            />
           )}
 
           {activeView === 'search' && (
             <SearchEngineView 
               onNavigate={setActiveView} 
               onOpenPaper={(q) => openLiteratureWithQuery(q)}
+              initialQuery={translatorSearchQuery}
             />
           )}
 
           {activeView === 'claims' && (
-            <ClaimIntelligenceView onNavigate={setActiveView} />
+            <ClaimIntelligenceView 
+              onNavigate={setActiveView}
+              onOpenClaimTranslator={openClaimTranslator}
+            />
           )}
 
           {activeView === 'mapping' && (
@@ -161,6 +187,16 @@ export const App: React.FC = () => {
         onClose={() => setIsLiteratureOpen(false)}
         initialQuery={literatureQuery}
         onNavigateModule={(mod) => setActiveView(mod)}
+      />
+
+      {/* WIPO Multi-Language Claim Translator Modal */}
+      <ClaimTranslatorModal
+        isOpen={isTranslatorOpen}
+        onClose={() => setIsTranslatorOpen(false)}
+        initialPatentId={translatorPatentId}
+        initialClaimNumber={translatorClaimNumber}
+        initialClaimText={translatorClaimText}
+        onSearchSimilarPatents={handleSearchSimilarFromTranslator}
       />
     </div>
   );

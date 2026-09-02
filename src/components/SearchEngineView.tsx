@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { ModuleView, Patent } from '../types';
-import { searchLiveUsptoPatents } from '../services/usptoApi';
+import { searchLiveUsptoPatents, getPatentSourceUrl } from '../services/usptoApi';
 import { workspaceStore } from '../services/workspaceStore';
 import { 
   Search, 
@@ -11,7 +11,8 @@ import {
   Globe,
   Loader2,
   ExternalLink,
-  CheckCircle2
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 
 interface Props {
@@ -303,6 +304,14 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
             <Loader2 size={32} style={{ animation: 'spin 1s linear infinite' }} />
             <div style={{ fontSize: '1rem', fontWeight: 600 }}>Connecting to USPTO Open Data & PatentsView REST API...</div>
           </div>
+        ) : livePatents.length === 0 ? (
+          <div className="glass-panel" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <AlertCircle size={32} style={{ color: 'var(--accent-cyan)', marginBottom: '12px' }} />
+            <h3 style={{ color: 'var(--text-main)', margin: '0 0 8px', fontSize: '1.1rem' }}>No Matching USPTO Patent Records</h3>
+            <p style={{ margin: 0, fontSize: '0.88rem', maxWidth: '540px', marginLeft: 'auto', marginRight: 'auto' }}>
+              No official patent specifications matched your search query "{query}". Try broadening your technical terms or searching by exact patent publication number (e.g. US11455581B2).
+            </p>
+          </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {livePatents.map((p) => (
@@ -314,6 +323,11 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
                       <span className="badge badge-indigo">{p.cpcClass}</span>
                       <span className="badge badge-emerald">Granted: {p.publicationDate}</span>
                       <span className="badge badge-purple">Claims: {p.claimsCount}</span>
+                      {p.similarityScore && (
+                        <span className="badge badge-cyan" style={{ background: 'rgba(0, 242, 254, 0.15)', color: 'var(--accent-cyan)' }}>
+                          Match: {p.similarityScore}%
+                        </span>
+                      )}
                     </div>
                     <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', margin: '4px 0 4px' }}>
                       {p.title}
@@ -335,7 +349,12 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
                           cpcCodes: [p.cpcClass],
                           filingDate: p.priorityDate,
                           issueDate: p.publicationDate,
-                          abstract: p.abstract
+                          abstract: p.abstract,
+                          displayNumber: p.patentNumber,
+                          rawSourceIdentifier: p.id,
+                          sourceIdentifier: p.id,
+                          source: 'USPTO Live Search',
+                          sourceUrl: getPatentSourceUrl(p)
                         });
                         onNavigate('workspace');
                       }}
@@ -358,7 +377,7 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
 
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <button
-                      onClick={() => window.open(`https://patents.google.com/patent/${p.patentNumber.replace(/\s+/g, '')}/en`, '_blank')}
+                      onClick={() => window.open(getPatentSourceUrl(p), '_blank')}
                       className="btn-secondary"
                       style={{ padding: '8px 14px', fontSize: '0.82rem' }}
                     >
@@ -367,7 +386,25 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
 
                     <button 
                       className="btn-secondary"
-                      onClick={() => onNavigate('mapping')}
+                      onClick={() => {
+                        // Ensure record is in workspace before comparing
+                        workspaceStore.addPatent({
+                          id: p.id,
+                          title: p.title,
+                          assignee: p.assignee,
+                          inventors: p.inventors,
+                          cpcCodes: [p.cpcClass],
+                          filingDate: p.priorityDate,
+                          issueDate: p.publicationDate,
+                          abstract: p.abstract,
+                          displayNumber: p.patentNumber,
+                          rawSourceIdentifier: p.id,
+                          sourceIdentifier: p.id,
+                          source: 'USPTO Live Search',
+                          sourceUrl: getPatentSourceUrl(p)
+                        });
+                        onNavigate('mapping');
+                      }}
                       style={{ padding: '8px 14px', fontSize: '0.82rem' }}
                     >
                       <GitCompare size={16} /> Compare Claims <ArrowRight size={14} />

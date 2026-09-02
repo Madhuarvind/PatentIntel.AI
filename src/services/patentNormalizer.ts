@@ -24,13 +24,15 @@ export function normalizePatentNumber(input: string): NormalizedPatentId {
 
   const cleanInput = rawInput.toUpperCase().replace(/[\s\-\.,]/g, '');
 
-  // Regex for standard patent identifiers (e.g., US011594127B1, US11594127B1, 11594127)
-  const match = cleanInput.match(/^([A-Z]{2})?(\d{6,10})([A-Z]\d?)?$/);
+  // Regex for standard patent identifiers & application publications (e.g., US011594127B1, US20250292675A1, 11594127)
+  const match = cleanInput.match(/^([A-Z]{2})?(\d{6,11})([A-Z]\d?)?$/);
 
   if (match) {
     const country = match[1] || 'US';
     const rawDigits = match[2];
-    const kindCode = match[3] || (country === 'US' ? 'B2' : 'A1');
+    const isAppPub = rawDigits.length === 11 && (rawDigits.startsWith('20') || rawDigits.startsWith('19'));
+    const defaultKind = isAppPub ? 'A1' : 'B2';
+    const kindCode = match[3] || (country === 'US' ? defaultKind : 'A1');
 
     // Strip leading zero for US 8-digit utility patents if padded (e.g. 011594127 -> 11594127)
     let documentNumber = rawDigits;
@@ -40,16 +42,22 @@ export function normalizePatentNumber(input: string): NormalizedPatentId {
 
     const normalizedInput = `${country}${documentNumber}${kindCode}`;
     
-    // Format display number with thousands separators (e.g. US 11,594,127 B1)
-    const formattedDigits = parseInt(documentNumber, 10).toLocaleString('en-US');
-    const displayNumber = `${country} ${formattedDigits} ${kindCode}`.trim();
+    // Format display number (e.g. US 11,594,127 B1 or US 2025/0292675 A1)
+    let displayNumber = '';
+    if (isAppPub && documentNumber.length === 11) {
+      displayNumber = `${country} ${documentNumber.slice(0, 4)}/${documentNumber.slice(4)} ${kindCode}`;
+    } else {
+      const formattedDigits = parseInt(documentNumber, 10).toLocaleString('en-US');
+      displayNumber = `${country} ${formattedDigits} ${kindCode}`.trim();
+    }
 
     let candidates: string[] = [
       normalizedInput,
       `${country}${documentNumber}`,
+      `${country}${documentNumber}${kindCode}`,
+      `${country}${documentNumber}A1`,
       `${country}${documentNumber}B2`,
-      `${country}${documentNumber}B1`,
-      `${country}${documentNumber}A1`
+      `${country}${documentNumber}B1`
     ];
 
     candidates = Array.from(new Set(candidates));
@@ -66,22 +74,18 @@ export function normalizePatentNumber(input: string): NormalizedPatentId {
     };
   }
 
-  // Fallback for non-standard formats
+  // Fallback for non-standard formats with strict minimum digit check
   const documentNumber = cleanInput.replace(/[^0-9]/g, '');
+  if (!documentNumber || documentNumber.length < 5 || parseInt(documentNumber, 10) === 0) {
+    throw new Error(`Invalid patent identifier "${rawInput}". Please enter a valid USPTO patent number (e.g. US11954112B2, US11594127B1).`);
+  }
+
   const country = cleanInput.slice(0, 2).match(/^[A-Z]{2}$/) ? cleanInput.slice(0, 2) : 'US';
   const kindCode = 'B2';
   const normalizedInput = `${country}${documentNumber}${kindCode}`;
   
-  const formattedDigits = documentNumber ? parseInt(documentNumber, 10).toLocaleString('en-US') : cleanInput;
+  const formattedDigits = parseInt(documentNumber, 10).toLocaleString('en-US');
   const displayNumber = `${country} ${formattedDigits} ${kindCode}`.trim();
-
-  const candidates = Array.from(new Set([
-    cleanInput,
-    normalizedInput,
-    `${country}${documentNumber}`,
-    `US${documentNumber}B2`,
-    `US${documentNumber}B1`
-  ])).filter(Boolean);
 
   return {
     rawInput,
@@ -91,7 +95,7 @@ export function normalizePatentNumber(input: string): NormalizedPatentId {
     documentNumber,
     kindCode,
     displayNumber,
-    candidates
+    candidates: [normalizedInput, `${country}${documentNumber}`]
   };
 }
 

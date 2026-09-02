@@ -112,7 +112,36 @@ class WorkspaceStore {
     try {
       const stored = localStorage.getItem(DB_PATENTS_KEY);
       if (stored) {
-        this.patents = JSON.parse(stored);
+        let loaded: PatentDocument[] = JSON.parse(stored);
+        // Purge corrupted/malformed legacy records
+        loaded = loaded.filter(p => {
+          const norm = (p.id || '').replace(/[\s\-\.,]/g, '').toUpperCase();
+          if (norm === 'US11455581B2' && p.title.includes('Smart food inventory')) {
+            console.warn('[WorkspaceStore] Purging mismatched legacy cache entry for US11455581B2!');
+            return false;
+          }
+          if ((norm === 'US11940634B2' || norm === 'US11940634') && (p.title.includes('Intelligent Control Vector') || (p.assignee && p.assignee.includes('Disclosed')))) {
+            console.warn('[WorkspaceStore] Purging mismatched fallback cache entry for US11940634B2!');
+            return false;
+          }
+          if (norm === 'US12379729B2' && (p.title.includes('Actinobacillus') || p.title.includes('Polymorphism'))) {
+            console.warn('[WorkspaceStore] Purging corrupted cache entry for US12379729B2!');
+            return false;
+          }
+          if (
+            (p.assignee && p.assignee.includes('Applicant Disclosed in Specification')) ||
+            (p.inventors && p.inventors.some(inv => inv.includes('Disclosed Specification Inventor'))) ||
+            p.filingDate === '2026-09-01' ||
+            p.issueDate === '2026-09-01' ||
+            p.title === 'US11990034'
+          ) {
+            console.warn(`[WorkspaceStore] Purging legacy malformed PDF record for ${p.id}!`);
+            return false;
+          }
+          return true;
+        });
+        this.patents = loaded;
+        this.saveToStorage();
       } else {
         this.patents = [...INITIAL_WORKSPACE_PATENTS];
         this.saveToStorage();
@@ -148,8 +177,17 @@ class WorkspaceStore {
     });
   }
 
+  public findByFileHash(fileHash: string): PatentDocument | undefined {
+    if (!fileHash) return undefined;
+    return this.patents.find(p => p.fileHash === fileHash);
+  }
+
+  public getPatent(idOrNumber: string): PatentDocument | undefined {
+    return this.findPatent(idOrNumber);
+  }
+
   public addPatent(patent: PatentDocument) {
-    const existingIndex = this.patents.findIndex(p => p.id === patent.id);
+    const existingIndex = this.patents.findIndex(p => p.id === patent.id || (patent.fileHash && p.fileHash === patent.fileHash));
     if (existingIndex >= 0) {
       this.patents[existingIndex] = patent;
     } else {
@@ -160,7 +198,9 @@ class WorkspaceStore {
   }
 
   public addNormalizedPatent(normalized: NormalizedPatent): { isDuplicate: boolean; patent: PatentDocument } {
-    const existing = this.findPatent(normalized.id) || this.findPatent(normalized.publicationNumber);
+    const existing = (normalized.fileHash ? this.findByFileHash(normalized.fileHash) : undefined) ||
+                     this.findPatent(normalized.id) || 
+                     this.findPatent(normalized.publicationNumber);
     
     if (existing) {
       return { isDuplicate: true, patent: existing };
@@ -198,6 +238,7 @@ class WorkspaceStore {
       displayNumber: normalized.displayNumber,
       source: normalized.source || 'USPTO',
       sourceUrl: normalized.sourceUrl,
+      fileHash: normalized.fileHash,
       retrievedAt: normalized.retrievedAt
     };
 

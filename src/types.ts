@@ -65,8 +65,9 @@ export interface NormalizedPatent {
   uspc?: string[];
   patentFamily?: string[];
   citations?: string[];
-  source: 'USPTO' | 'Google Patents' | 'OpenAlex' | 'EPO';
+  source: 'USPTO' | 'Google Patents' | 'OpenAlex' | 'EPO' | 'Uploaded PDF Specification';
   sourceUrl: string;
+  fileHash?: string;
   retrievedAt: string;
   importQuality: 'COMPLETE' | 'PARTIAL' | 'FAILED';
 }
@@ -98,6 +99,7 @@ export interface Patent {
   similarityScore?: number;
   source?: string;
   sourceUrl?: string;
+  fileHash?: string;
   retrievedAt?: string;
   importQuality?: 'COMPLETE' | 'PARTIAL' | 'FAILED';
 }
@@ -136,6 +138,7 @@ export interface PatentDocument {
   sourceUrl?: string;
   retrievedAt?: string;
   source?: string;
+  fileHash?: string;
 }
 
 export interface MappingPair {
@@ -361,9 +364,77 @@ export interface BatchTranslationItem {
   errorMsg?: string;
 }
 
+
 export interface ConsistencyMatrixItem {
   sourceTerm: string;
   claimTranslations: Record<number, string>;
   isConsistent: boolean;
 }
+
+// ==========================================
+// REAL-TIME PATENT IMPORT STATE MACHINE TYPES
+// ==========================================
+
+export type ImportStatus =
+  | 'idle'
+  | 'validating'
+  | 'connecting'
+  | 'fetching_metadata'
+  | 'fetching_claims'
+  | 'normalizing'
+  | 'saving'
+  | 'completed'
+  | 'failed'
+  | 'timeout'
+  | 'cancelled';
+
+export type ImportErrorCode =
+  | 'INVALID_PATENT_ID'
+  | 'PATENT_NOT_FOUND'
+  | 'SOURCE_TIMEOUT'
+  | 'SOURCE_UNAVAILABLE'
+  | 'RATE_LIMITED'
+  | 'PARSER_ERROR'
+  | 'DATABASE_ERROR'
+  | 'IDENTITY_MISMATCH'
+  | 'CANCELLED';
+
+export interface ImportTimings {
+  validationMs: number;
+  sourceMs: number;
+  metadataMs: number;
+  claimsMs: number;
+  normalizationMs: number;
+  databaseMs: number;
+  totalMs: number;
+}
+
+export interface ImportProgressState {
+  requestId: string;
+  status: ImportStatus;
+  progress: number;
+  stepNumber: number;
+  message: string;
+  detail?: string;
+  elapsedSeconds: number;
+  timings?: ImportTimings;
+  error?: {
+    code: ImportErrorCode;
+    message: string;
+    suggestedAction?: string;
+  };
+}
+
+export interface PatentImportResult {
+  success: boolean;
+  requestId: string;
+  status: ImportStatus;
+  patent?: NormalizedPatent;
+  timings?: ImportTimings;
+  error?: {
+    code: ImportErrorCode;
+    message: string;
+  };
+}
+
 

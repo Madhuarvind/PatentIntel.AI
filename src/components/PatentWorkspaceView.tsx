@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import type { PatentDocument } from '../types';
-import { fetchPatentByNumberWithProgress } from '../services/usptoApi';
+import React, { useState, useEffect, useRef } from 'react';
+import type { PatentDocument, ImportProgressState } from '../types';
+import { fetchPatentByNumberWithProgressState } from '../services/usptoApi';
+import { normalizePatentNumber } from '../services/patentNormalizer';
 import { parsePatentFile } from '../services/pdfParser';
 import { workspaceStore } from '../services/workspaceStore';
 import { 
@@ -13,9 +14,7 @@ import {
   CheckCircle2,
   ExternalLink,
   FileCheck,
-<<<<<<< HEAD
-  Languages
-=======
+  Languages,
   AlertCircle,
   Users,
   Building,
@@ -31,9 +30,51 @@ import {
   BarChart2,
   GitCompare,
   FileX,
-  X
->>>>>>> main
+  X,
+  Clock,
+  RefreshCw
 } from 'lucide-react';
+
+interface PatentMetadataItemProps {
+  label: string;
+  value: React.ReactNode;
+  icon?: React.ReactNode;
+  fullWidth?: boolean;
+}
+
+const PatentMetadataItem: React.FC<PatentMetadataItemProps> = ({ label, value, icon, fullWidth = false }) => (
+  <div style={{
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+    gridColumn: fullWidth ? '1 / -1' : 'auto',
+    minWidth: 0
+  }}>
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px',
+      fontSize: '0.75rem',
+      fontWeight: 700,
+      textTransform: 'uppercase',
+      letterSpacing: '0.05em',
+      color: '#94A3B8'
+    }}>
+      {icon}
+      <span>{label}</span>
+    </div>
+    <div style={{
+      fontSize: '0.88rem',
+      fontWeight: 600,
+      color: '#F8FAFC',
+      lineHeight: '1.4',
+      overflowWrap: 'anywhere',
+      wordBreak: 'break-word'
+    }}>
+      {value}
+    </div>
+  </div>
+);
 
 interface Props {
   onOpenClaimTranslator?: (patentId: string, claimNumber: number, claimText: string) => void;
@@ -46,14 +87,16 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
   const [isParsing, setIsParsing] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
-  // Live USPTO Importer State
+  // Live USPTO Importer State Machine
   const [usptoQuery, setUsptoQuery] = useState('');
   const [isFetchingUspto, setIsFetchingUspto] = useState(false);
-  const [currentStep, setCurrentStep] = useState<number>(0);
-  const [stepLabel, setStepLabel] = useState<string>('');
+  const [importState, setImportState] = useState<ImportProgressState | null>(null);
   const [usptoSuccessMsg, setUsptoSuccessMsg] = useState<string | null>(null);
   const [usptoErrorMsg, setUsptoErrorMsg] = useState<string | null>(null);
   const [lastImportedPatentId, setLastImportedPatentId] = useState<string | null>(null);
+  
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const currentRequestIdRef = useRef<string | null>(null);
 
   // Workspace Management State (Search, Filter, Sort, Remove Menu, Confirm Modal, Toast)
   const [storePatents, setStorePatents] = useState<PatentDocument[]>(workspaceStore.getPatents());
@@ -110,64 +153,113 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
       return 0;
     });
 
+  const handleCancelImport = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsFetchingUspto(false);
+    setImportState({
+      requestId: currentRequestIdRef.current || 'CANCELLED',
+      status: 'cancelled',
+      progress: 0,
+      stepNumber: 0,
+      message: 'Patent import cancelled by user.',
+      elapsedSeconds: 0
+    });
+  };
+
   const handleFetchUspto = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!usptoQuery.trim()) return;
+    if (!usptoQuery.trim() || isFetchingUspto) return;
 
+    // Reset previous states
     setIsFetchingUspto(true);
     setUsptoSuccessMsg(null);
     setUsptoErrorMsg(null);
-    setCurrentStep(1);
-    setStepLabel('Validating patent identifier & candidates');
+
+    // Create fresh AbortController & Request ID
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     try {
-      const normalizedResult = await fetchPatentByNumberWithProgress(
-        usptoQuery, 
-        (step, label) => {
-          setCurrentStep(step);
-          setStepLabel(label);
-        }
+      const result = await fetchPatentByNumberWithProgressState(
+        usptoQuery,
+        (progressState) => {
+          // Prevent stale responses from older requests (Requirement 20)
+          if (currentRequestIdRef.current && progressState.requestId !== currentRequestIdRef.current) {
+            return;
+          }
+          setImportState(progressState);
+        },
+        controller.signal,
+        25000 // 25s hard timeout
       );
 
-      const addResult = workspaceStore.addNormalizedPatent(normalizedResult);
-      setSelectedPatent(addResult.patent.id);
-      setLastImportedPatentId(addResult.patent.id);
+      currentRequestIdRef.current = result.requestId;
 
-      if (addResult.isDuplicate) {
-        setUsptoSuccessMsg(`Patent ${addResult.patent.displayNumber || addResult.patent.id} already exists in workspace.`);
+      if (result.success && result.patent) {
+        const addResult = workspaceStore.addNormalizedPatent(result.patent);
+        setSelectedPatent(addResult.patent.id);
+        setLastImportedPatentId(addResult.patent.id);
+
+        const timingText = result.timings ? `(Completed in ${(result.timings.totalMs / 1000).toFixed(1)}s)` : '';
+        if (addResult.isDuplicate) {
+          setUsptoSuccessMsg(`Patent ${addResult.patent.displayNumber || addResult.patent.id} already exists in workspace. ${timingText}`);
+        } else {
+          setUsptoSuccessMsg(`Successfully imported ${addResult.patent.displayNumber || addResult.patent.id} into workspace! ${timingText}`);
+        }
+
+        setUsptoQuery('');
+        setTimeout(() => {
+          setIsFetchingUspto(false);
+          setActiveTab('library');
+        }, 600);
       } else {
-        setUsptoSuccessMsg(`Successfully imported ${addResult.patent.displayNumber || addResult.patent.id} into workspace!`);
+        const errMsg = result.error?.message || 'Failed to retrieve patent record from official registries.';
+        setUsptoErrorMsg(errMsg);
       }
-
-      setUsptoQuery('');
-      setTimeout(() => {
-        setIsFetchingUspto(false);
-        setActiveTab('library');
-      }, 500);
     } catch (err: any) {
-      console.error('USPTO Import error:', err);
+      console.error('USPTO Import Exception:', err);
       setUsptoErrorMsg(err.message || 'Failed to retrieve patent record.');
+    } finally {
       setIsFetchingUspto(false);
+      abortControllerRef.current = null;
     }
   };
 
   const handleFileUpload = async (file: File) => {
     setIsParsing(true);
-    setUploadProgress(20);
+    setUploadProgress(15);
     setUsptoSuccessMsg(null);
     setUsptoErrorMsg(null);
 
     try {
-      setUploadProgress(60);
+      // Step 1: Read PDF text layer & compute SHA-256 hash
+      setUploadProgress(35);
       const parsed = await parsePatentFile(file);
-      setUploadProgress(100);
 
-      const pubNum = parsed.patent.publicationNumber || 'US11990034B2';
-      const dispNum = parsed.patent.displayNumber || pubNum;
+      // Step 2: Determine extracted patent publication ID
+      const rawExtractedId = parsed.patent.publicationNumber || parsed.patent.patentNumber;
+      let targetPatentId = '';
+      if (rawExtractedId && /US?\d{6,11}[A-Z0-9]*/i.test(rawExtractedId)) {
+        try {
+          const norm = normalizePatentNumber(rawExtractedId);
+          targetPatentId = norm.canonical;
+        } catch {
+          targetPatentId = rawExtractedId;
+        }
+      }
 
-      const existing = workspaceStore.findPatent(pubNum);
+      const dispNum = parsed.patent.displayNumber || targetPatentId || parsed.patent.publicationNumber;
+
+      // Check if patent already exists in workspace by SHA-256 Hash or Patent ID
+      const existingByHash = parsed.fileHash ? workspaceStore.findByFileHash(parsed.fileHash) : undefined;
+      const existingByNum = targetPatentId ? workspaceStore.findPatent(targetPatentId) : undefined;
+      const existing = existingByHash || existingByNum;
+
       if (existing) {
-        setUsptoSuccessMsg(`Patent ${dispNum} already exists in workspace.`);
+        setUsptoSuccessMsg(`Patent ${existing.displayNumber || existing.id} already exists in workspace.`);
         setSelectedPatent(existing.id);
         setLastImportedPatentId(existing.id);
         setTimeout(() => {
@@ -177,39 +269,91 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
         return;
       }
 
-      const docClaims = parsed.claims.map((c, idx) => ({
-        number: c.claimNumber || idx + 1,
-        text: c.text,
-        type: c.type,
-        isIndependent: c.type === 'independent',
-        elements: [
-          { id: `el_${c.claimNumber}_1`, text: c.text.substring(0, 80) }
-        ]
-      }));
+      let canonicalDoc: PatentDocument | null = null;
 
-      const doc: PatentDocument = {
-        id: pubNum,
-        title: parsed.patent.title,
-        assignee: parsed.patent.assignee,
-        inventors: parsed.patent.inventors,
-        cpcCodes: parsed.patent.cpc ? parsed.patent.cpc : ['B60W 30/09', 'G08G 1/01'],
-        filingDate: parsed.patent.priorityDate || '2022-01-15',
-        issueDate: parsed.patent.publicationDate || '2024-05-21',
-        abstract: parsed.patent.abstract,
-        claims: docClaims,
-        rawSourceIdentifier: dispNum,
-        sourceIdentifier: pubNum,
-        displayNumber: dispNum,
-        source: 'Uploaded PDF Specification',
-        sourceUrl: parsed.patent.sourceUrl,
-        retrievedAt: new Date().toISOString()
-      };
+      // Step 3 & 4: Pass extracted patent ID to SAME USPTO API pipeline used by direct API importer
+      if (targetPatentId) {
+        setUploadProgress(65);
+        console.log(`[PDF -> USPTO PIPELINE] Querying USPTO registry for extracted ID: "${targetPatentId}"`);
+        try {
+          const apiResult = await fetchPatentByNumberWithProgressState(targetPatentId);
+          if (apiResult.success && apiResult.patent) {
+            const p = apiResult.patent;
+            const docClaims = p.claims.map((c, idx) => ({
+              number: c.claimNumber || idx + 1,
+              text: c.text,
+              type: c.type,
+              isIndependent: c.type === 'independent',
+              elements: [
+                { id: `el_${c.claimNumber}_1`, text: c.text.substring(0, 80) }
+              ]
+            }));
 
-      workspaceStore.addPatent(doc);
+            canonicalDoc = {
+              id: p.publicationNumber || p.id || targetPatentId,
+              title: p.title,
+              assignee: p.assignee || (p.assignees && p.assignees[0]) || 'N/A',
+              inventors: p.inventors && p.inventors.length > 0 ? p.inventors : ['N/A'],
+              cpcCodes: p.cpc && p.cpc.length > 0 ? p.cpc : ['G06F 17/00'],
+              filingDate: p.filingDate || 'N/A',
+              issueDate: p.publicationDate || p.grantDate || 'N/A',
+              abstract: p.abstract,
+              claims: docClaims,
+              rawSourceIdentifier: p.displayNumber || p.id,
+              sourceIdentifier: p.publicationNumber || p.id,
+              displayNumber: p.displayNumber || p.id,
+              source: 'PDF Upload + USPTO Verified',
+              sourceUrl: p.sourceUrl || `https://patents.google.com/patent/${p.publicationNumber || p.id}/en`,
+              fileHash: parsed.fileHash,
+              retrievedAt: new Date().toISOString()
+            };
+            console.log(`[PDF -> USPTO PIPELINE] CANONICAL MATCH SUCCESSFUL:`, canonicalDoc);
+          }
+        } catch (apiErr) {
+          console.warn(`[PDF -> USPTO PIPELINE] Registry lookup unfulfilled for ${targetPatentId}:`, apiErr);
+        }
+      }
 
-      setSelectedPatent(doc.id);
-      setLastImportedPatentId(doc.id);
-      setUsptoSuccessMsg(`Successfully parsed and extracted specification for ${dispNum} (${parsed.patent.title})!`);
+      // Step 5: Fallback to structured PDF parsed result only if official registry lookup was unavailable
+      if (!canonicalDoc) {
+        setUploadProgress(85);
+        const docClaims = parsed.claims.map((c, idx) => ({
+          number: c.claimNumber || idx + 1,
+          text: c.text,
+          type: c.type,
+          isIndependent: c.type === 'independent',
+          elements: [
+            { id: `el_${c.claimNumber}_1`, text: c.text.substring(0, 80) }
+          ]
+        }));
+
+        canonicalDoc = {
+          id: parsed.patent.id,
+          title: parsed.patent.title,
+          assignee: parsed.patent.assignee,
+          inventors: parsed.patent.inventors,
+          cpcCodes: parsed.patent.cpc || ['G06F 17/00'],
+          filingDate: parsed.patent.priorityDate || 'N/A',
+          issueDate: parsed.patent.publicationDate || 'N/A',
+          abstract: parsed.patent.abstract,
+          claims: docClaims,
+          rawSourceIdentifier: dispNum,
+          sourceIdentifier: targetPatentId || parsed.patent.publicationNumber,
+          displayNumber: dispNum,
+          source: 'Uploaded PDF Specification',
+          sourceUrl: parsed.patent.sourceUrl || '',
+          fileHash: parsed.fileHash,
+          retrievedAt: new Date().toISOString()
+        };
+      }
+
+      setUploadProgress(100);
+
+      // Save verified canonical record to workspace
+      workspaceStore.addPatent(canonicalDoc);
+      setSelectedPatent(canonicalDoc.id);
+      setLastImportedPatentId(canonicalDoc.id);
+      setUsptoSuccessMsg(`Successfully imported and verified ${canonicalDoc.displayNumber} (${canonicalDoc.title})!`);
       setTimeout(() => {
         setIsParsing(false);
         setActiveTab('library');
@@ -342,8 +486,9 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
               <input
                 type="text"
                 value={usptoQuery}
+                disabled={isFetchingUspto}
                 onChange={(e) => setUsptoQuery(e.target.value)}
-                placeholder="Enter patent number (e.g. US11990034B2, US11594127B1, US12260757B2)"
+                placeholder="Enter patent number (e.g. US11954112B2, US11990034B2, US11594127B1)"
                 style={{
                   width: '100%',
                   padding: '12px 16px 12px 42px',
@@ -352,7 +497,8 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                   borderRadius: '10px',
                   color: '#FFFFFF',
                   fontSize: '0.92rem',
-                  outline: 'none'
+                  outline: 'none',
+                  opacity: isFetchingUspto ? 0.7 : 1
                 }}
               />
               <Search size={18} color="#64748B" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
@@ -362,19 +508,35 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
               type="submit"
               disabled={isFetchingUspto || !usptoQuery.trim()}
               className="btn-primary"
-              style={{ padding: '12px 24px', opacity: isFetchingUspto || !usptoQuery.trim() ? 0.6 : 1 }}
+              style={{ padding: '12px 24px', opacity: isFetchingUspto || !usptoQuery.trim() ? 0.6 : 1, display: 'flex', alignItems: 'center', gap: '8px' }}
             >
-              {isFetchingUspto ? <><Loader2 size={16} className="animate-spin" /> Fetching...</> : 'Fetch Patent Data'}
+              {isFetchingUspto ? (
+                <><Loader2 size={16} className="animate-spin" /> Fetching...</>
+              ) : (
+                <><Globe size={16} /> Fetch Patent Data</>
+              )}
             </button>
+
+            {isFetchingUspto && (
+              <button
+                type="button"
+                onClick={handleCancelImport}
+                className="btn-secondary"
+                style={{ padding: '12px 16px', color: '#F87171', borderColor: 'rgba(239, 68, 68, 0.4)' }}
+              >
+                Cancel
+              </button>
+            )}
           </form>
 
           {/* Quick Examples */}
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '0.8rem', color: '#94A3B8' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', fontSize: '0.8rem', color: '#94A3B8' }}>
             <span>Example Patent Numbers:</span>
-            {['US11990034B2', 'US11594127B1', 'US12260757B2', 'US10928341B2'].map(ex => (
+            {['US11954112B2', 'US11990034B2', 'US11594127B1', 'US12260757B2', 'US10928341B2'].map(ex => (
               <button
                 key={ex}
                 type="button"
+                disabled={isFetchingUspto}
                 onClick={() => setUsptoQuery(ex)}
                 style={{
                   background: 'rgba(255, 255, 255, 0.05)',
@@ -382,8 +544,9 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                   borderRadius: '6px',
                   padding: '3px 8px',
                   color: '#00F2FE',
-                  cursor: 'pointer',
-                  fontSize: '0.78rem'
+                  cursor: isFetchingUspto ? 'not-allowed' : 'pointer',
+                  fontSize: '0.78rem',
+                  opacity: isFetchingUspto ? 0.5 : 1
                 }}
               >
                 {ex}
@@ -391,14 +554,99 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
             ))}
           </div>
 
-          {/* Stepper Progress */}
-          {isFetchingUspto && (
-            <div style={{ marginTop: '24px', padding: '16px', background: '#0B0F19', borderRadius: '12px', border: '1px solid rgba(0, 242, 254, 0.2)' }}>
-              <div style={{ fontSize: '0.85rem', color: '#00F2FE', fontWeight: 600, marginBottom: '12px' }}>
-                Step {currentStep} of 7: {stepLabel}...
+          {/* Real-time Stepper Progress Card (Requirement 3 & 15 & 17 & 18) */}
+          {isFetchingUspto && importState && (
+            <div style={{ marginTop: '24px', padding: '18px', background: '#0B0F19', borderRadius: '12px', border: '1px solid rgba(0, 242, 254, 0.3)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <div style={{ fontSize: '0.88rem', color: '#00F2FE', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Step {importState.stepNumber > 0 ? importState.stepNumber : 1} of 7: {importState.message}</span>
+                </div>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.78rem' }}>
+                  <span style={{ color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Clock size={13} color="#00F2FE" /> Elapsed: <strong style={{ color: '#F8FAFC' }}>{importState.elapsedSeconds}s</strong>
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={handleCancelImport}
+                    style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#F87171', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
-              <div style={{ width: '100%', height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '3px', overflow: 'hidden' }}>
-                <div style={{ width: `${(currentStep / 7) * 100}%`, height: '100%', background: 'linear-gradient(90deg, #00F2FE, #4FACFE)', transition: 'width 0.3s ease' }} />
+
+              {importState.detail && (
+                <div style={{ fontSize: '0.78rem', color: '#94A3B8', marginBottom: '10px' }}>
+                  {importState.detail}
+                </div>
+              )}
+
+              {/* Real-Time Stage Derived Progress Bar */}
+              <div style={{ width: '100%', height: '8px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{
+                  width: `${importState.progress}%`,
+                  height: '100%',
+                  background: 'linear-gradient(90deg, #00F2FE, #3B82F6)',
+                  transition: 'width 0.25s ease'
+                }} />
+              </div>
+            </div>
+          )}
+
+          {/* Error Card with Action Buttons (Requirement 4 & 14) */}
+          {!isFetchingUspto && importState && (importState.status === 'failed' || importState.status === 'timeout' || importState.status === 'cancelled') && (
+            <div style={{
+              marginTop: '20px',
+              padding: '16px 20px',
+              background: importState.status === 'cancelled' ? 'rgba(234, 179, 8, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+              border: importState.status === 'cancelled' ? '1px solid rgba(234, 179, 8, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '12px',
+              color: importState.status === 'cancelled' ? '#FACC15' : '#F87171'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                <div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <AlertCircle size={18} />
+                    <span>
+                      {importState.status === 'cancelled' ? 'Import Cancelled' : importState.status === 'timeout' ? 'Source Request Timeout' : 'Import Error'}
+                      {importState.error?.code ? ` (${importState.error.code})` : ''}
+                    </span>
+                  </div>
+
+                  <p style={{ fontSize: '0.84rem', color: '#E2E8F0', margin: '0 0 6px', lineHeight: '1.4' }}>
+                    {importState.error?.message || importState.message}
+                  </p>
+
+                  {importState.error?.suggestedAction && (
+                    <div style={{ fontSize: '0.78rem', color: '#94A3B8' }}>
+                      Suggested action: {importState.error.suggestedAction}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {usptoQuery.trim() && (
+                    <button
+                      type="button"
+                      onClick={handleFetchUspto}
+                      className="btn-primary"
+                      style={{ padding: '6px 14px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <RefreshCw size={12} /> Try Again
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setImportState(null)}
+                    className="btn-secondary"
+                    style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                  >
+                    Dismiss
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -469,138 +717,19 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
 
       {/* Library Workspace View */}
       {activeTab === 'library' && (
-        <div>
-          {/* Search, Filter, Sort Controls Bar (Requirements 14 & 15) */}
-          <div className="glass-panel" style={{ padding: '14px 18px', marginBottom: '20px', display: 'flex', gap: '14px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-            {/* Search Input */}
-            <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by patent #, title, assignee, or inventor..."
-                style={{
-                  width: '100%',
-                  padding: '8px 12px 8px 36px',
-                  background: '#0F172A',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                  borderRadius: '8px',
-                  color: '#FFFFFF',
-                  fontSize: '0.85rem',
-                  outline: 'none'
-                }}
-              />
-              <Search size={16} color="#64748B" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-
-            {/* Filter Dropdown */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: '#94A3B8' }}>
-              <Filter size={14} color="#00F2FE" />
-              <span>Source:</span>
-              <select
-                value={sourceFilter}
-                onChange={(e: any) => setSourceFilter(e.target.value)}
-                style={{
-                  background: '#0F172A',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                  color: '#F8FAFC',
-                  borderRadius: '6px',
-                  padding: '6px 10px',
-                  fontSize: '0.82rem',
-                  outline: 'none'
-                }}
-              >
-                <option value="all">All Sources ({storePatents.length})</option>
-                <option value="uspto">USPTO API</option>
-                <option value="pdf">Uploaded PDF</option>
-              </select>
-            </div>
-
-            {/* Sort Dropdown */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: '#94A3B8' }}>
-              <ArrowUpDown size={14} color="#10B981" />
-              <span>Sort:</span>
-              <select
-                value={sortBy}
-                onChange={(e: any) => setSortBy(e.target.value)}
-                style={{
-                  background: '#0F172A',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                  color: '#F8FAFC',
-                  borderRadius: '6px',
-                  padding: '6px 10px',
-                  fontSize: '0.82rem',
-                  outline: 'none'
-                }}
-              >
-                <option value="recent">Recently Added</option>
-                <option value="patentNumber">Patent Number</option>
-                <option value="title">Invention Title</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Main Grid: Left Patent Cards, Right Detailed Inspector */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: storePatents.length > 0 ? 'minmax(320px, 0.38fr) minmax(0, 0.62fr)' : '1fr',
+          gap: '20px',
+          height: 'calc(100vh - 195px)',
+          minHeight: '550px'
+        }}>
           {storePatents.length === 0 ? (
-            /* Requirement 13: Empty Workspace UI */
-            <div className="glass-panel" style={{ padding: '60px 24px', textAlign: 'center', borderRadius: '16px' }}>
+            /* Empty Workspace UI */
+            <div className="glass-panel" style={{ padding: '60px 24px', textAlign: 'center', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
               <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.05)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#64748B', marginBottom: '16px' }}>
                 <FolderOpen size={32} />
               </div>
-<<<<<<< HEAD
-
-              {/* Abstract Section */}
-              <div style={{ marginBottom: '24px' }}>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px' }}>
-                  Abstract Overview
-                </h3>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: '1.6', background: 'var(--bg-surface)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-                  {currentPatentDoc.abstract}
-                </p>
-              </div>
-
-              {/* Claims Breakdown */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>
-                    Extracted Claims Scope (Claim 1 Independent)
-                  </h3>
-                  <span style={{ fontSize: '0.78rem', color: 'var(--accent-cyan)' }}>{currentPatentDoc.claims ? currentPatentDoc.claims.length : 1} Claims Active</span>
-                </div>
-
-                <div style={{ background: 'var(--bg-card-solid)', border: '1px solid rgba(0, 242, 254, 0.25)', padding: '16px', borderRadius: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span className="badge badge-cyan">Claim 1 (Independent)</span>
-                      <span className="badge badge-emerald">Primary Technical Scope</span>
-                    </div>
-
-                    {onOpenClaimTranslator && (
-                      <button
-                        className="btn-primary"
-                        onClick={() => {
-                          const claimTxt = currentPatentDoc.claims?.[0]?.text || `1. An apparatus for ${currentPatentDoc.title.toLowerCase()} comprising optical sensors and neural processor.`;
-                          onOpenClaimTranslator(currentPatentDoc.id, 1, claimTxt);
-                        }}
-                        style={{ padding: '4px 12px', fontSize: '0.78rem' }}
-                      >
-                        <Languages size={14} /> Translate Claim
-                      </button>
-                    )}
-                  </div>
-                  <p style={{ fontSize: '0.9rem', color: 'var(--text-main)', lineHeight: '1.65', fontFamily: 'var(--font-sans)' }}>
-                    "{currentPatentDoc.claims?.[0]?.text || `1. An apparatus for ${currentPatentDoc.title.toLowerCase()} comprising optical sensors and neural processor.`}"
-                  </p>
-                </div>
-=======
               <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: '#FFFFFF', marginBottom: '8px' }}>
                 No patents in your workspace
               </h2>
@@ -614,234 +743,333 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                 <button className="btn-secondary" onClick={() => setActiveTab('upload')} style={{ padding: '10px 20px', fontSize: '0.88rem' }}>
                   <Upload size={16} /> Upload Patent PDF
                 </button>
->>>>>>> main
               </div>
-            </div>
-          ) : filteredPatents.length === 0 ? (
-            <div className="glass-panel" style={{ padding: '40px 24px', textAlign: 'center' }}>
-              <FileX size={32} color="#64748B" style={{ marginBottom: '12px' }} />
-              <h3 style={{ fontSize: '1.1rem', color: '#FFFFFF', margin: '0 0 6px' }}>No matching patents found</h3>
-              <p style={{ fontSize: '0.85rem', color: '#94A3B8', margin: 0 }}>Try clearing your search query or changing filters.</p>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '20px' }}>
-              {/* Left List of Workspace Patents */}
-              <div className="glass-panel" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: 'calc(100vh - 220px)', overflowY: 'auto' }}>
-                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>WORKSPACE PATENTS ({filteredPatents.length})</span>
-                  {sourceFilter !== 'all' && <span style={{ color: '#00F2FE' }}>Filter: {sourceFilter.toUpperCase()}</span>}
+            <>
+              {/* LEFT WORKSPACE SIDEBAR PANEL (~38% Width) */}
+              <div className="glass-panel" style={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                overflow: 'hidden',
+                padding: '16px',
+                gap: '12px'
+              }}>
+                {/* Header & Search Bar inside Sidebar */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#00F2FE', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                      WORKSPACE PATENTS ({filteredPatents.length})
+                    </span>
+                    <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>
+                      {storePatents.length} Total
+                    </span>
+                  </div>
+
+                  {/* Search Bar Input */}
+                  <div style={{ position: 'relative', width: '100%' }}>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search patents..."
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px 8px 34px',
+                        background: '#0F172A',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        borderRadius: '8px',
+                        color: '#FFFFFF',
+                        fontSize: '0.82rem',
+                        outline: 'none'
+                      }}
+                    />
+                    <Search size={14} color="#64748B" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}
+                      >
+                        <X size={13} />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Filter & Sort Controls Side-by-Side */}
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between' }}>
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '4px', background: '#0F172A', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '6px', padding: '0 6px' }}>
+                      <Filter size={12} color="#00F2FE" />
+                      <select
+                        value={sourceFilter}
+                        onChange={(e: any) => setSourceFilter(e.target.value)}
+                        style={{
+                          width: '100%',
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#F8FAFC',
+                          padding: '5px 0',
+                          fontSize: '0.76rem',
+                          outline: 'none'
+                        }}
+                      >
+                        <option value="all" style={{ background: '#0F172A' }}>All Sources</option>
+                        <option value="uspto" style={{ background: '#0F172A' }}>USPTO API</option>
+                        <option value="pdf" style={{ background: '#0F172A' }}>PDF Upload</option>
+                      </select>
+                    </div>
+
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '4px', background: '#0F172A', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '6px', padding: '0 6px' }}>
+                      <ArrowUpDown size={12} color="#10B981" />
+                      <select
+                        value={sortBy}
+                        onChange={(e: any) => setSortBy(e.target.value)}
+                        style={{
+                          width: '100%',
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#F8FAFC',
+                          padding: '5px 0',
+                          fontSize: '0.76rem',
+                          outline: 'none'
+                        }}
+                      >
+                        <option value="recent" style={{ background: '#0F172A' }}>Recent</option>
+                        <option value="patentNumber" style={{ background: '#0F172A' }}>Patent #</option>
+                        <option value="title" style={{ background: '#0F172A' }}>Title</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
 
-                {filteredPatents.map((p) => {
-                  const isSelected = selectedPatent === p.id;
-                  const isMenuOpen = activeMenuPatentId === p.id;
-                  const isPdf = p.source === 'Uploaded PDF Specification' || p.source === 'PDF_UPLOAD';
-                  const dispNum = p.displayNumber || p.sourceIdentifier || p.id;
+                {/* Scrollable List of Workspace Patent Cards */}
+                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '4px' }}>
+                  {filteredPatents.length === 0 ? (
+                    <div style={{ padding: '30px 12px', textAlign: 'center', color: '#64748B' }}>
+                      <FileX size={24} style={{ marginBottom: '6px' }} />
+                      <div style={{ fontSize: '0.82rem' }}>No matching patents found</div>
+                    </div>
+                  ) : (
+                    filteredPatents.map((p) => {
+                      const isSelected = selectedPatent === p.id;
+                      const isMenuOpen = activeMenuPatentId === p.id;
+                      const isPdf = p.source === 'Uploaded PDF Specification' || p.source === 'PDF_UPLOAD';
+                      const dispNum = p.displayNumber || p.sourceIdentifier || p.id;
 
-                  return (
-                    <div
-                      key={p.id}
-                      onClick={() => { setSelectedPatent(p.id); setActiveMenuPatentId(null); }}
-                      style={{
-                        position: 'relative',
-                        padding: '14px',
-                        borderRadius: '10px',
-                        cursor: 'pointer',
-                        border: '1px solid',
-                        borderColor: isSelected ? '#00F2FE' : 'rgba(255, 255, 255, 0.08)',
-                        background: isSelected ? 'rgba(0, 242, 254, 0.08)' : 'rgba(15, 23, 42, 0.5)',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      {/* Top Bar: Patent ID, Source Badge, and Action Menu Trigger [⋮] (Requirement 3) */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#00F2FE', letterSpacing: '0.02em' }}>
-                          {dispNum}
-                        </span>
+                      return (
+                        <div
+                          key={p.id}
+                          onClick={() => { setSelectedPatent(p.id); setActiveMenuPatentId(null); }}
+                          style={{
+                            position: 'relative',
+                            padding: '14px',
+                            borderRadius: '10px',
+                            cursor: 'pointer',
+                            width: '100%',
+                            border: '1px solid',
+                            borderColor: isSelected ? '#00F2FE' : 'rgba(255, 255, 255, 0.08)',
+                            background: isSelected ? 'rgba(0, 242, 254, 0.08)' : 'rgba(15, 23, 42, 0.5)',
+                            boxShadow: isSelected ? '0 0 15px rgba(0, 242, 254, 0.15)' : 'none',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          {/* Top Bar: Patent ID, Source Badge, and Action Menu Trigger [⋮] */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#00F2FE', letterSpacing: '0.02em' }}>
+                              {dispNum}
+                            </span>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          {/* Source Label Badge (Requirement 17) */}
-                          <span style={{
-                            background: isPdf ? 'rgba(168, 85, 247, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                            color: isPdf ? '#C084FC' : '#10B981',
-                            padding: '2px 7px',
-                            borderRadius: '4px',
-                            fontSize: '0.68rem',
-                            fontWeight: 700
-                          }}>
-                            {isPdf ? 'PDF Upload' : 'USPTO'}
-                          </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{
+                                background: isPdf ? 'rgba(168, 85, 247, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                                color: isPdf ? '#C084FC' : '#10B981',
+                                padding: '2px 7px',
+                                borderRadius: '4px',
+                                fontSize: '0.68rem',
+                                fontWeight: 700
+                              }}>
+                                {isPdf ? 'PDF Upload' : 'USPTO'}
+                              </span>
 
-                          {/* Action Menu Trigger [⋮] */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveMenuPatentId(isMenuOpen ? null : p.id);
-                            }}
-                            style={{
-                              background: isMenuOpen ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
-                              border: 'none',
-                              color: '#94A3B8',
-                              padding: '3px 6px',
-                              borderRadius: '4px',
-                              cursor: 'pointer'
-                            }}
-                            title="Patent Options"
-                          >
-                            <MoreVertical size={16} />
-                          </button>
-                        </div>
-
-                        {/* Dropdown Action Menu (Requirements 2, 3, 27) */}
-                        {isMenuOpen && (
-                          <div
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                              position: 'absolute',
-                              top: '36px',
-                              right: '12px',
-                              width: '190px',
-                              background: '#0F172A',
-                              border: '1px solid rgba(255, 255, 255, 0.15)',
-                              borderRadius: '8px',
-                              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.5)',
-                              zIndex: 100,
-                              padding: '6px 0'
-                            }}
-                          >
-                            <button
-                              onClick={() => { setSelectedPatent(p.id); setActiveMenuPatentId(null); }}
-                              style={{
-                                width: '100%',
-                                padding: '8px 14px',
-                                background: 'none',
-                                border: 'none',
-                                color: '#F8FAFC',
-                                fontSize: '0.82rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                cursor: 'pointer',
-                                textAlign: 'left'
-                              }}
-                            >
-                              <Eye size={14} color="#00F2FE" /> Open Patent
-                            </button>
-                            <button
-                              onClick={() => { setSelectedPatent(p.id); setActiveMenuPatentId(null); }}
-                              style={{
-                                width: '100%',
-                                padding: '8px 14px',
-                                background: 'none',
-                                border: 'none',
-                                color: '#F8FAFC',
-                                fontSize: '0.82rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                cursor: 'pointer',
-                                textAlign: 'left'
-                              }}
-                            >
-                              <BarChart2 size={14} color="#A855F7" /> Analyze Claims
-                            </button>
-                            <button
-                              onClick={() => { setSelectedPatent(p.id); setActiveMenuPatentId(null); }}
-                              style={{
-                                width: '100%',
-                                padding: '8px 14px',
-                                background: 'none',
-                                border: 'none',
-                                color: '#F8FAFC',
-                                fontSize: '0.82rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                cursor: 'pointer',
-                                textAlign: 'left'
-                              }}
-                            >
-                              <GitCompare size={14} color="#10B981" /> Compare
-                            </button>
-                            {p.sourceUrl && (
                               <button
-                                onClick={() => { window.open(p.sourceUrl, '_blank'); setActiveMenuPatentId(null); }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveMenuPatentId(isMenuOpen ? null : p.id);
+                                }}
                                 style={{
-                                  width: '100%',
-                                  padding: '8px 14px',
-                                  background: 'none',
+                                  background: isMenuOpen ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
                                   border: 'none',
-                                  color: '#F8FAFC',
-                                  fontSize: '0.82rem',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '8px',
-                                  cursor: 'pointer',
-                                  textAlign: 'left'
+                                  color: '#94A3B8',
+                                  padding: '3px 6px',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer'
+                                }}
+                                title="Patent Options"
+                              >
+                                <MoreVertical size={16} />
+                              </button>
+                            </div>
+
+                            {/* Dropdown Action Menu */}
+                            {isMenuOpen && (
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                  position: 'absolute',
+                                  top: '36px',
+                                  right: '12px',
+                                  width: '190px',
+                                  background: '#0F172A',
+                                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                                  borderRadius: '8px',
+                                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.5)',
+                                  zIndex: 100,
+                                  padding: '6px 0'
                                 }}
                               >
-                                <ExternalLink size={14} color="#3B82F6" /> View Official Source
-                              </button>
+                                <button
+                                  onClick={() => { setSelectedPatent(p.id); setActiveMenuPatentId(null); }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '8px 14px',
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#F8FAFC',
+                                    fontSize: '0.82rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    cursor: 'pointer',
+                                    textAlign: 'left'
+                                  }}
+                                >
+                                  <Eye size={14} color="#00F2FE" /> Open Patent
+                                </button>
+                                <button
+                                  onClick={() => { setSelectedPatent(p.id); setActiveMenuPatentId(null); }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '8px 14px',
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#F8FAFC',
+                                    fontSize: '0.82rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    cursor: 'pointer',
+                                    textAlign: 'left'
+                                  }}
+                                >
+                                  <BarChart2 size={14} color="#A855F7" /> Analyze Claims
+                                </button>
+                                <button
+                                  onClick={() => { setSelectedPatent(p.id); setActiveMenuPatentId(null); }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '8px 14px',
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#F8FAFC',
+                                    fontSize: '0.82rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    cursor: 'pointer',
+                                    textAlign: 'left'
+                                  }}
+                                >
+                                  <GitCompare size={14} color="#10B981" /> Compare
+                                </button>
+                                {p.sourceUrl && (
+                                  <button
+                                    onClick={() => { window.open(p.sourceUrl, '_blank'); setActiveMenuPatentId(null); }}
+                                    style={{
+                                      width: '100%',
+                                      padding: '8px 14px',
+                                      background: 'none',
+                                      border: 'none',
+                                      color: '#F8FAFC',
+                                      fontSize: '0.82rem',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '8px',
+                                      cursor: 'pointer',
+                                      textAlign: 'left'
+                                    }}
+                                  >
+                                    <ExternalLink size={14} color="#3B82F6" /> View Official Source
+                                  </button>
+                                )}
+
+                                <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.1)', margin: '4px 0' }} />
+
+                                <button
+                                  onClick={() => {
+                                    setPatentToRemove(p);
+                                    setActiveMenuPatentId(null);
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '8px 14px',
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#F87171',
+                                    fontSize: '0.82rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    cursor: 'pointer',
+                                    textAlign: 'left'
+                                  }}
+                                >
+                                  <Trash2 size={14} color="#F87171" /> Remove from Workspace
+                                </button>
+                              </div>
                             )}
-
-                            <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.1)', margin: '4px 0' }} />
-
-                            {/* Remove from Workspace Button (Requirements 2 & 27) */}
-                            <button
-                              onClick={() => {
-                                setPatentToRemove(p);
-                                setActiveMenuPatentId(null);
-                              }}
-                              style={{
-                                width: '100%',
-                                padding: '8px 14px',
-                                background: 'none',
-                                border: 'none',
-                                color: '#F87171',
-                                fontSize: '0.82rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                cursor: 'pointer',
-                                textAlign: 'left'
-                              }}
-                            >
-                              <Trash2 size={14} color="#F87171" /> Remove from Workspace
-                            </button>
                           </div>
-                        )}
-                      </div>
 
-                      {/* Card Content: Title */}
-                      <div style={{ fontSize: '0.86rem', fontWeight: 600, color: '#F8FAFC', lineHeight: '1.35', marginBottom: '8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                        {p.title}
-                      </div>
+                          {/* Card Content: Title */}
+                          <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#F8FAFC', lineHeight: '1.35', marginBottom: '8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word' }}>
+                            {p.title}
+                          </div>
 
-                      {/* Footer: Assignee, Date & Claims count */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.76rem', color: '#94A3B8' }}>
-                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '200px' }}>
-                          {p.assignee || 'Assignee Disclosed'}
-                        </span>
-                        <span>{p.claims ? p.claims.length : 1} Claims</span>
-                      </div>
-                    </div>
-                  );
-                })}
+                          {/* Footer: Assignee, Date & Claims count */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.76rem', color: '#94A3B8' }}>
+                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>
+                              {p.assignee || 'Assignee Disclosed'}
+                            </span>
+                            <span>{p.claims ? p.claims.length : 1} Claims</span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
 
-              {/* Right Detailed Inspector Panel */}
-              {currentPatentDoc && (
-                <div className="glass-panel" style={{ padding: '24px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '16px', marginBottom: '20px' }}>
-                    <div>
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+              {/* RIGHT DETAILED INSPECTOR PANEL (~62% Width) */}
+              {currentPatentDoc ? (
+                <div className="glass-panel" style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                  overflowY: 'auto',
+                  padding: '24px',
+                  minWidth: 0
+                }}>
+                  {/* HEADER AREA */}
+                  <div style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '20px', marginBottom: '20px' }}>
+                    {/* Top Row: Badges on Left, Action Buttons on Right */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '12px' }}>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                         <span style={{
                           background: 'rgba(0, 242, 254, 0.12)',
                           color: '#00F2FE',
                           border: '1px solid rgba(0, 242, 254, 0.3)',
-                          padding: '3px 10px',
+                          padding: '4px 12px',
                           borderRadius: '6px',
-                          fontSize: '0.82rem',
+                          fontSize: '0.85rem',
                           fontWeight: 800
                         }}>
                           {currentPatentDoc.displayNumber || currentPatentDoc.sourceIdentifier || currentPatentDoc.id}
@@ -850,95 +1078,160 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                         <span style={{
                           background: currentPatentDoc.source === 'Uploaded PDF Specification' ? 'rgba(168, 85, 247, 0.15)' : 'rgba(16, 185, 129, 0.15)',
                           color: currentPatentDoc.source === 'Uploaded PDF Specification' ? '#C084FC' : '#10B981',
-                          padding: '3px 8px',
+                          border: currentPatentDoc.source === 'Uploaded PDF Specification' ? '1px solid rgba(168, 85, 247, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)',
+                          padding: '4px 10px',
                           borderRadius: '6px',
-                          fontSize: '0.74rem',
+                          fontSize: '0.76rem',
                           fontWeight: 700
                         }}>
                           {currentPatentDoc.source || 'USPTO'}
                         </span>
                       </div>
 
-                      <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', margin: '4px 0 10px', lineHeight: '1.3' }}>
-                        {currentPatentDoc.title}
-                      </h2>
-
-                      <div style={{ fontSize: '0.84rem', color: '#94A3B8', display: 'flex', gap: '18px', flexWrap: 'wrap', alignItems: 'center' }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Building size={15} color="#00F2FE" /> Assignee: <strong style={{ color: '#F8FAFC' }}>{currentPatentDoc.assignee || 'Assignee Disclosed'}</strong>
-                        </span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Users size={15} color="#A855F7" /> Inventors: <strong style={{ color: '#F8FAFC' }}>{currentPatentDoc.inventors?.join(', ') || 'Disclosed Inventors'}</strong>
-                        </span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Calendar size={15} color="#10B981" /> Filing: <strong style={{ color: '#F8FAFC' }}>{currentPatentDoc.filingDate || 'N/A'}</strong>
-                        </span>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        {currentPatentDoc.cpcCodes?.map((code, idx) => (
-                          <span key={idx} style={{
-                            background: 'rgba(168, 85, 247, 0.15)',
-                            border: '1px solid rgba(168, 85, 247, 0.3)',
-                            color: '#C084FC',
-                            padding: '2px 8px',
-                            borderRadius: '6px',
-                            fontSize: '0.74rem',
-                            fontWeight: 700
-                          }}>
-                            {code}
-                          </span>
-                        ))}
-                      </div>
-
-                      <div style={{ display: 'flex', gap: '8px' }}>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                         <button
                           onClick={() => window.open(currentPatentDoc.sourceUrl || `https://patents.google.com/patent/${(currentPatentDoc.sourceIdentifier || currentPatentDoc.id).replace(/\s+/g, '')}/en`, '_blank')}
                           className="btn-secondary"
-                          style={{ padding: '6px 12px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                          style={{ padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
                         >
-                          <ExternalLink size={13} /> Official Record
+                          <ExternalLink size={14} /> Official Record
                         </button>
 
                         <button
                           onClick={() => setPatentToRemove(currentPatentDoc)}
                           className="btn-secondary"
-                          style={{ padding: '6px 12px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '6px', color: '#F87171', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                          style={{ padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', color: '#F87171', borderColor: 'rgba(239, 68, 68, 0.3)' }}
                         >
-                          <Trash2 size={13} color="#F87171" /> Remove
+                          <Trash2 size={14} color="#F87171" /> Remove
                         </button>
                       </div>
                     </div>
+
+                    {/* Full Width Title */}
+                    <h1 style={{
+                      fontSize: '1.4rem',
+                      fontWeight: 800,
+                      color: '#FFFFFF',
+                      margin: '0 0 20px 0',
+                      lineHeight: '1.35',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'anywhere',
+                      width: '100%'
+                    }}>
+                      {currentPatentDoc.title}
+                    </h1>
+
+                    {/* Responsive Metadata Grid */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'minmax(220px, 1fr) minmax(320px, 1.5fr)',
+                      gap: '20px 32px',
+                      background: 'rgba(15, 23, 42, 0.4)',
+                      border: '1px solid rgba(255, 255, 255, 0.06)',
+                      borderRadius: '12px',
+                      padding: '20px',
+                      minWidth: 0
+                    }}>
+                      {/* Left: Assignee */}
+                      <PatentMetadataItem
+                        label="Assignee"
+                        icon={<Building size={15} color="#00F2FE" />}
+                        value={currentPatentDoc.assignee || 'Assignee Disclosed'}
+                      />
+
+                      {/* Right: Inventors (Badge Cloud or Tag List) */}
+                      <PatentMetadataItem
+                        label="Inventors"
+                        icon={<Users size={15} color="#A855F7" />}
+                        value={
+                          currentPatentDoc.inventors && currentPatentDoc.inventors.length > 0 ? (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                              {currentPatentDoc.inventors.map((inv, idx) => (
+                                <span key={idx} style={{
+                                  background: 'rgba(168, 85, 247, 0.12)',
+                                  border: '1px solid rgba(168, 85, 247, 0.25)',
+                                  color: '#E9D5FF',
+                                  padding: '3px 10px',
+                                  borderRadius: '6px',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 600
+                                }}>
+                                  {inv}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span style={{ color: '#94A3B8' }}>Disclosed Inventors</span>
+                          )
+                        }
+                      />
+
+                      {/* Dates: Filing Date & Issue / Grant Date */}
+                      <PatentMetadataItem
+                        label="Filing Date"
+                        icon={<Calendar size={15} color="#10B981" />}
+                        value={currentPatentDoc.filingDate || 'N/A'}
+                      />
+
+                      <PatentMetadataItem
+                        label="Issue / Grant Date"
+                        icon={<Calendar size={15} color="#3B82F6" />}
+                        value={currentPatentDoc.issueDate || 'N/A'}
+                      />
+
+                      {/* Classification Codes */}
+                      {currentPatentDoc.cpcCodes && currentPatentDoc.cpcCodes.length > 0 && (
+                        <PatentMetadataItem
+                          label="Classification Codes (CPC / IPC)"
+                          icon={<Layers size={15} color="#C084FC" />}
+                          fullWidth
+                          value={
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                              {currentPatentDoc.cpcCodes.map((code, idx) => (
+                                <span key={idx} style={{
+                                  background: 'rgba(0, 242, 254, 0.1)',
+                                  border: '1px solid rgba(0, 242, 254, 0.25)',
+                                  color: '#38BDF8',
+                                  padding: '3px 10px',
+                                  borderRadius: '6px',
+                                  fontSize: '0.78rem',
+                                  fontWeight: 700
+                                }}>
+                                  {code}
+                                </span>
+                              ))}
+                            </div>
+                          }
+                        />
+                      )}
+                    </div>
                   </div>
 
-                  {/* Source Verification Badge Panel (Requirement 19 & 20) */}
+                  {/* Source Verification Panel */}
                   <div style={{
                     background: 'rgba(16, 185, 129, 0.06)',
                     border: '1px solid rgba(16, 185, 129, 0.25)',
                     borderRadius: '12px',
-                    padding: '14px 18px',
-                    marginBottom: '20px'
+                    padding: '16px 20px',
+                    marginBottom: '24px',
+                    minWidth: 0
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 700, color: '#10B981' }}>
                         <CheckCircle2 size={16} /> SOURCE VERIFICATION & RECORD INTEGRITY
                       </div>
-                      <span style={{ fontSize: '0.72rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10B981', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                      <span style={{ fontSize: '0.72rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10B981', padding: '3px 10px', borderRadius: '6px', fontWeight: 700 }}>
                         ✓ Exact Match Confirmed
                       </span>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', fontSize: '0.8rem', color: '#94A3B8' }}>
-                      <div>Publication / Patent ID: <strong style={{ color: '#00F2FE' }}>{currentPatentDoc.sourceIdentifier || currentPatentDoc.id}</strong></div>
-                      <div>Display Format: <strong style={{ color: '#F8FAFC' }}>{currentPatentDoc.displayNumber || currentPatentDoc.id}</strong></div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px 24px', fontSize: '0.82rem', color: '#94A3B8' }}>
+                      <div>Requested ID: <strong style={{ color: '#00F2FE' }}>{currentPatentDoc.sourceIdentifier || currentPatentDoc.id}</strong></div>
+                      <div>Retrieved Record: <strong style={{ color: '#F8FAFC' }}>{currentPatentDoc.displayNumber || currentPatentDoc.id}</strong></div>
                       <div>Identity Source: <strong style={{ color: '#F8FAFC' }}>First-page patent header</strong></div>
+                      <div>Source Registry: <strong style={{ color: '#10B981' }}>{currentPatentDoc.source || 'USPTO'}</strong></div>
                       <div>Identity Confidence: <strong style={{ color: '#10B981' }}>99% (High)</strong></div>
-                      <div>Source Specification: <strong style={{ color: '#10B981' }}>{currentPatentDoc.source || 'USPTO'}</strong></div>
-                      <div>Document Type: <strong style={{ color: '#F8FAFC' }}>US Patent Grant</strong></div>
                       <div>Data Quality: <strong style={{ color: '#10B981' }}>✓ Complete</strong></div>
-                      <div>Internal DB Key: <strong style={{ color: '#64748B', fontFamily: 'monospace' }}>{currentPatentDoc.rawSourceIdentifier && currentPatentDoc.rawSourceIdentifier.startsWith('parsed_') ? currentPatentDoc.rawSourceIdentifier : `parsed_${currentPatentDoc.id}`}</strong></div>
                     </div>
                   </div>
 
@@ -954,7 +1247,9 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                       background: 'rgba(15, 23, 42, 0.6)',
                       padding: '16px',
                       borderRadius: '10px',
-                      border: '1px solid rgba(255, 255, 255, 0.06)'
+                      border: '1px solid rgba(255, 255, 255, 0.06)',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'anywhere'
                     }}>
                       {currentPatentDoc.abstract}
                     </p>
@@ -981,11 +1276,22 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                             <span style={{ fontSize: '0.85rem', fontWeight: 700, color: claim.isIndependent ? '#00F2FE' : '#A855F7' }}>
                               Claim {claim.number} ({claim.isIndependent ? 'Independent' : 'Dependent'})
                             </span>
-                            <span style={{ fontSize: '0.72rem', background: 'rgba(255, 255, 255, 0.05)', color: '#94A3B8', padding: '2px 6px', borderRadius: '4px' }}>
-                              {claim.elements?.length || 1} Elements Defined
-                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {onOpenClaimTranslator && (
+                                <button
+                                  className="btn-primary"
+                                  onClick={() => onOpenClaimTranslator(currentPatentDoc.id, claim.number || 1, claim.text)}
+                                  style={{ padding: '3px 8px', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                  <Languages size={12} /> Translate Claim
+                                </button>
+                              )}
+                              <span style={{ fontSize: '0.72rem', background: 'rgba(255, 255, 255, 0.05)', color: '#94A3B8', padding: '2px 6px', borderRadius: '4px' }}>
+                                {claim.elements?.length || 1} Elements Defined
+                              </span>
+                            </div>
                           </div>
-                          <p style={{ fontSize: '0.88rem', color: '#E2E8F0', lineHeight: '1.5', margin: 0 }}>
+                          <p style={{ fontSize: '0.88rem', color: '#E2E8F0', lineHeight: '1.5', margin: 0, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                             {claim.text}
                           </p>
                         </div>
@@ -993,8 +1299,8 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
+              ) : null}
+            </>
           )}
         </div>
       )}

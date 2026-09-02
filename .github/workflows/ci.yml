@@ -1,0 +1,46 @@
+name: PatentIntel.AI CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - 'feat/**'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    name: Build & Verify Production Bundle
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Set up Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 📦 Install Project Dependencies
+        run: npm install --force
+
+      - name: 🔍 TypeScript Compile & Type Check
+        run: npx tsc --noEmit
+
+      - name: ⚡ Build Vite Production Artifacts
+        run: npm run build
+
+      - name: ✅ Verify Build Output
+        shell: bash
+        run: |
+          if [ -f "dist/index.html" ]; then
+            echo "Production build output dist/index.html verified successfully!"
+          else
+            echo "Build artifact dist/index.html missing!" && exit 1
+          fi

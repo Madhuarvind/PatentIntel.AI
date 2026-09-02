@@ -12,7 +12,10 @@ on:
 jobs:
   build-and-test:
     name: Build & Verify Production Bundle
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
 
     steps:
       - name: 📥 Checkout Repository
@@ -25,7 +28,7 @@ jobs:
           cache: 'npm'
 
       - name: 📦 Install Project Dependencies
-        run: npm ci || npm install
+        run: npm install --force
 
       - name: 🔍 TypeScript Compile & Type Check
         run: npx tsc --noEmit

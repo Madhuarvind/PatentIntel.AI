@@ -126,12 +126,24 @@ export interface PatentDocument {
   id: string;
   title: string;
   assignee?: string;
+  assignees?: string[];
   inventors?: string[];
   cpcCodes?: string[];
+  cpc?: string[];
+  ipc?: string[];
   filingDate?: string;
   issueDate?: string;
+  publicationDate?: string;
+  grantDate?: string;
+  priorityDate?: string;
+  publicationNumber?: string;
+  patentNumber?: string;
+  country?: string;
+  kindCode?: string;
+  documentType?: 'PATENT' | string;
   abstract: string;
   claims?: Claim[];
+  claimsCount?: number;
   rawSourceIdentifier?: string;
   sourceIdentifier?: string;
   displayNumber?: string;
@@ -139,6 +151,20 @@ export interface PatentDocument {
   retrievedAt?: string;
   source?: string;
   fileHash?: string;
+  importQuality?: 'COMPLETE' | 'PARTIAL' | 'FAILED';
+}
+
+export interface ResearchDocument {
+  documentType: 'RESEARCH_PAPER';
+  id: string;
+  title: string;
+  authors: string[];
+  doi?: string;
+  journal?: string;
+  publicationYear?: number | string;
+  abstract: string;
+  source: 'OpenAlex' | 'CrossRef' | 'IEEE' | string;
+  sourceUrl: string;
 }
 
 export interface MappingPair {

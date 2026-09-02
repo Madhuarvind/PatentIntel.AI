@@ -35,6 +35,8 @@ export interface ITranslationProvider {
   ): Promise<string>;
 }
 
+import { executeRealtimeLLM } from './llmService';
+
 export class GeminiTranslationProvider implements ITranslationProvider {
   private config: TranslationProviderConfig;
 
@@ -58,8 +60,13 @@ export class GeminiTranslationProvider implements ITranslationProvider {
     systemInstruction: string,
     _terminologyMap?: TerminologyItem[]
   ): Promise<string> {
-    // In production, this invokes the Gemini API. Here we provide high-fidelity patent translation simulation.
-    return mockExecutePatentTranslation(text, sourceLang, targetLang, systemInstruction);
+    const prompt = `Translate the following ${sourceLang} patent claim to ${targetLang}:\n\n${text}`;
+    const response = await executeRealtimeLLM({
+      prompt,
+      systemInstruction,
+      temperature: this.config.temperature
+    });
+    return response.text;
   }
 }
 
@@ -650,7 +657,7 @@ export function calculateQualityMetrics(params: {
 // MOCK PATENT TRANSLATION ENGINE
 // ==========================================
 
-function mockExecutePatentTranslation(
+export function mockExecutePatentTranslation(
   text: string,
   sourceLang: ClaimLanguageCode,
   _targetLang: TargetLanguage,

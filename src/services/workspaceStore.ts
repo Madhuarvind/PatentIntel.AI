@@ -120,6 +120,10 @@ class WorkspaceStore {
             console.warn('[WorkspaceStore] Purging mismatched legacy cache entry for US11455581B2!');
             return false;
           }
+          if ((norm === 'US11650869B2' || norm === 'US11650869') && (p.title.includes('Exploitation') || p.title.includes('wind energy') || (p.assignee && p.assignee.includes('Wind')))) {
+            console.warn('[WorkspaceStore] Purging corrupted academic fallback cache entry for US11650869B2!');
+            return false;
+          }
           if ((norm === 'US11940634B2' || norm === 'US11940634') && (p.title.includes('Intelligent Control Vector') || (p.assignee && p.assignee.includes('Disclosed')))) {
             console.warn('[WorkspaceStore] Purging mismatched fallback cache entry for US11940634B2!');
             return false;

@@ -1,6 +1,8 @@
 import type { Patent, NormalizedPatent, PatentDocument, PatentClaim, ImportProgressState, ImportStatus, ImportErrorCode, ImportTimings, PatentImportResult } from '../types';
 import { normalizePatentNumber, parseClaimDependency, validatePatentIdentity } from './patentNormalizer';
 import { workspaceStore } from './workspaceStore';
+import { resolveSearchDomain } from './sourceRouter';
+import { resolvePatentViaBackend } from './patentBackend';
 
 export interface ImportProgressStep {
   step: number;
@@ -636,75 +638,52 @@ export async function fetchPatentByNumberWithProgressState(
       }
     }
 
-    // 2nd Priority Check: Multi-Source External Live Fetch (Non-blocking with Fast Timeout)
+    // 2nd Priority Check: Backend Server Proxy Endpoint (Bypasses Browser CORS Restrictions)
     if (!rawMetadata) {
-      console.log(`[${requestId}] External fetch initiated for candidates: ${candidates.join(', ')}`);
-      
+      console.log(`[${requestId}] Querying Patent Backend Proxy Endpoint for: ${normalizedInput}`);
+      try {
+        const backendRes = await resolvePatentViaBackend(normalizedInput);
+        if (backendRes && backendRes.success && backendRes.patent) {
+          const p = backendRes.patent;
+          rawMetadata = {
+            publicationNumber: p.publicationNumber || p.id || normalizedInput,
+            patentNumber: p.patentNumber || p.id || normalizedInput,
+            title: p.title,
+            abstract: p.abstract,
+            inventors: p.inventors || ['Disclosed Inventor'],
+            assignees: p.assignees || (p.assignee ? [p.assignee] : ['Disclosed Assignee']),
+            filingDate: p.filingDate || '2020-01-01',
+            publicationDate: p.publicationDate || p.issueDate || '2024-01-01',
+            grantDate: p.grantDate || p.issueDate || '2024-01-01',
+            cpc: p.cpcCodes || p.cpc || ['G06F 17/00'],
+            claims: p.claims || [],
+            source: p.source || 'USPTO Backend Proxy'
+          };
+          resolvedId = normalizedInput;
+          console.log(`[${requestId}] Backend Proxy Match: ${normalizedInput} -> "${rawMetadata.title}"`);
+        }
+      } catch (err: any) {
+        console.warn(`[${requestId}] Backend Proxy resolution attempt error:`, err);
+      }
+    }
+
+    // 3rd Priority Check: Direct Proxy Fetch Fallback
+    if (!rawMetadata) {
+      console.log(`[${requestId}] Direct Proxy fetch initiated for candidates: ${candidates.join(', ')}`);
       for (const candidate of candidates) {
         checkAborted();
         try {
-          // 4s per-request timeout to prevent hanging on slow proxies
           const data = await fetchFromGooglePatentsFast(candidate, abortSignal || internalController.signal, 4000);
           if (data && data.title) {
             rawMetadata = data;
             resolvedId = candidate;
-            console.log(`[${requestId}] Live External Fetch Match: ${candidate} -> "${data.title}"`);
+            console.log(`[${requestId}] Direct Proxy Fetch Match: ${candidate} -> "${data.title}"`);
             break;
           }
         } catch (err: any) {
           if (err.name === 'AbortError' || abortSignal?.aborted || internalController.signal.aborted) {
             throw err;
           }
-        }
-      }
-    }
-
-    // 3rd Priority Fallback: Attempt Direct OpenAlex/USPTO Network API Query
-    if (!rawMetadata) {
-      console.log(`[${requestId}] Network API Fallback query for: ${normalizedInput}`);
-      for (const cand of candidates) {
-        checkAborted();
-        try {
-          const docNum = cand.replace(/[^0-9]/g, '');
-          if (docNum.length >= 7) {
-            const url = `https://api.openalex.org/works?search=${encodeURIComponent(docNum)}`;
-            const res = await fetch(url, { signal: abortSignal || internalController.signal });
-            if (res.ok) {
-              const data = await res.json();
-              if (data && Array.isArray(data.results) && data.results.length > 0) {
-                const match = data.results[0];
-                const inventorsList = Array.isArray(match.authorships)
-                  ? match.authorships.map((a: any) => a.author?.display_name).filter(Boolean)
-                  : [];
-
-                rawMetadata = {
-                  publicationNumber: cand,
-                  patentNumber: cand,
-                  title: match.display_name || `Patent Specification ${cand}`,
-                  abstract: match.abstract_inverted_index ? reconstructAbstract(match.abstract_inverted_index) : `Official disclosure for ${cand}`,
-                  inventors: inventorsList.length > 0 ? inventorsList : ['Official Inventor'],
-                  assignees: match.primary_location?.source?.display_name ? [match.primary_location.source.display_name] : ['Patent Assignee Disclosed'],
-                  filingDate: `${match.publication_year || 2024}-01-01`,
-                  publicationDate: `${match.publication_year || 2024}-01-01`,
-                  grantDate: `${match.publication_year || 2024}-01-01`,
-                  cpc: ['G06F 17/00'],
-                  claims: [
-                    {
-                      claimNumber: 1,
-                      text: `1. An apparatus for ${match.display_name || cand}, comprising a sensor module and processing core configured to execute operations disclosed herein.`,
-                      type: 'independent',
-                      dependsOn: []
-                    }
-                  ],
-                  source: 'OpenAlex Global Network'
-                };
-                resolvedId = cand;
-                break;
-              }
-            }
-          }
-        } catch (e) {
-          // ignore network timeout
         }
       }
     }
@@ -1119,12 +1098,12 @@ export async function searchLiveUsptoPatents(query: string): Promise<Patent[]> {
   const trimmed = query.trim();
   if (!trimmed) return [];
 
+  const routeDecision = resolveSearchDomain(trimmed);
+
   console.log(`[DYNAMIC LIVE USPTO SEARCH ENGINE] Querying real-time network endpoints for: "${query}"`);
 
-  // 1. Check if query is an exact patent identifier (e.g., US11455581B2, 11455581, US10255577B2)
-  const isExactId = /^(US)?\s*\d{6,11}\s*[A-Z]?\d?$/i.test(trimmed);
-
-  if (isExactId) {
+  // 1. If query is a Patent Identifier (Rule #5 & #20)
+  if (routeDecision.isPatentId) {
     try {
       const result = await fetchPatentByNumberWithProgressState(trimmed);
       if (result.success && result.patent) {
@@ -1145,11 +1124,13 @@ export async function searchLiveUsptoPatents(query: string): Promise<Patent[]> {
         }];
       }
     } catch (e) {
-      console.warn('[SearchEngine] Exact lookup fell back to live search:', e);
+      console.warn('[SearchEngine] Patent identifier lookup failed or not found:', e);
     }
+    // MANDATORY RULE: Patent identifier MUST NEVER fall back to OpenAlex! Return empty or error.
+    return [];
   }
 
-  // 2. Execute parallel real-time API queries over the network
+  // 2. Execute parallel real-time API queries over the network for natural-language prior-art keywords
   const candidateMap = new Map<string, Patent>();
 
   const [usptoApiResults, openAlexApiResults] = await Promise.all([

@@ -1,7 +1,17 @@
-import react from '@vitejs/plugin-react'
-import { defineConfig, type Plugin } from 'vite'
+import type { PatentDocument } from '../types';
 
-function parseGooglePatentsHtmlServer(html: string, canonicalId: string): any {
+export interface PatentResolutionResult {
+  success: boolean;
+  documentType: 'PATENT';
+  patent?: PatentDocument;
+  errorCode?: 'PATENT_NOT_FOUND' | 'SOURCE_UNAVAILABLE' | 'INVALID_IDENTIFIER' | 'RATE_LIMITED' | 'SOURCE_TIMEOUT';
+  message?: string;
+}
+
+/**
+ * Normalizes Google Patents raw HTML into a canonical PatentDocument (Rule #11, #14, #15)
+ */
+export function parseGooglePatentsHtmlServer(html: string, canonicalId: string): PatentDocument | null {
   const titleMatch = html.match(/<meta name="DC\.title" content="([^"]+)"/i) ||
                      html.match(/itemprop="title"[^>]*>([\s\S]*?)<\//i) ||
                      html.match(/<meta name="title" content="([^"]+)"/i) ||
@@ -54,6 +64,7 @@ function parseGooglePatentsHtmlServer(html: string, canonicalId: string): any {
   const filingDate = dcDates[0] || '2020-01-01';
   const grantDate = dcDates[1] || dcDates[0] || '2024-01-01';
 
+  // Extract kind code & document number
   const cleanId = canonicalId.replace(/[\s\.,\-]/g, '').toUpperCase();
   const countryMatch = cleanId.match(/^([A-Z]{2})/);
   const country = countryMatch ? countryMatch[1] : 'US';
@@ -97,7 +108,6 @@ function parseGooglePatentsHtmlServer(html: string, canonicalId: string): any {
     title,
     abstract: abstractText || `Official patent specification for ${cleanId}.`,
     inventors: inventors.length > 0 ? inventors : ['Disclosed Inventor'],
-    applicants: assignees,
     assignees: assignees.length > 0 ? assignees : ['Disclosed Assignee'],
     assignee: assignees[0] || 'Disclosed Assignee',
     filingDate,
@@ -115,78 +125,63 @@ function parseGooglePatentsHtmlServer(html: string, canonicalId: string): any {
   };
 }
 
-// Vite Backend Server Plugin (Node environment - no browser CORS limitations!)
-function patentBackendPlugin(): Plugin {
-  return {
-    name: 'patent-backend-middleware',
-    configureServer(server) {
-      server.middlewares.use(async (req, res, next) => {
-        if (req.url && req.url.startsWith('/api/patents/resolve')) {
-          const urlObj = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-          const identifier = urlObj.searchParams.get('identifier') || '';
-          
-          if (!identifier) {
-            res.statusCode = 400;
-            res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify({ success: false, documentType: 'PATENT', errorCode: 'INVALID_IDENTIFIER', message: 'Missing identifier parameter' }));
-            return;
-          }
+/**
+ * Backend Proxy Service Client (Rule #8, #43, #44)
+ * Solves browser CORS restrictions by executing requests through local backend proxy /api/patents/resolve
+ */
+export async function resolvePatentViaBackend(identifier: string): Promise<PatentResolutionResult> {
+  const cleanId = identifier.trim().replace(/[\s\.,\-]/g, '').toUpperCase();
+  const normalizedId = /^\d/.test(cleanId) ? `US${cleanId}` : cleanId;
 
-          const cleanId = identifier.trim().replace(/[\s\.,\-]/g, '').toUpperCase();
-          const normalizedId = /^\d/.test(cleanId) ? `US${cleanId}` : cleanId;
+  console.log(`[PATENT BACKEND SERVICE] Request started for identifier: ${normalizedId}`);
 
-          console.log(`[BACKEND SERVER API] Resolving patent identifier: ${normalizedId}`);
-
-          try {
-            const targetUrl = `https://patents.google.com/patent/${normalizedId}/en`;
-            const proxyRes = await fetch(targetUrl, {
-              headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml'
-              }
-            });
-
-            if (proxyRes.ok) {
-              const html = await proxyRes.text();
-              const parsed = parseGooglePatentsHtmlServer(html, normalizedId);
-              if (parsed && parsed.title) {
-                console.log(`[BACKEND SERVER API] Successfully resolved ${normalizedId} -> "${parsed.title}"`);
-                res.statusCode = 200;
-                res.setHeader('Content-Type', 'application/json');
-                res.end(JSON.stringify({ success: true, documentType: 'PATENT', patent: parsed }));
-                return;
-              }
-            }
-
-            res.statusCode = 404;
-            res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify({
-              success: false,
-              documentType: 'PATENT',
-              errorCode: 'PATENT_NOT_FOUND',
-              message: `Patent record "${identifier}" (${normalizedId}) was not found in official patent registries.`
-            }));
-            return;
-          } catch (err: any) {
-            console.error(`[BACKEND SERVER API] Error resolving ${normalizedId}:`, err);
-            res.statusCode = 500;
-            res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify({
-              success: false,
-              documentType: 'PATENT',
-              errorCode: 'SOURCE_UNAVAILABLE',
-              message: `Patent source unavailable: ${err.message}`
-            }));
-            return;
-          }
-        }
-        next();
-      });
+  try {
+    const res = await fetch(`/api/patents/resolve?identifier=${encodeURIComponent(normalizedId)}`);
+    if (res.ok) {
+      const data: PatentResolutionResult = await res.json();
+      if (data && data.success && data.patent) {
+        console.log(`[PATENT BACKEND SERVICE] Successfully resolved: ${normalizedId} -> "${data.patent.title}"`);
+        return data;
+      }
     }
-  };
-}
+  } catch (err) {
+    console.warn(`[PATENT BACKEND SERVICE] /api/patents/resolve API endpoint offline, attempting direct server fetch:`, err);
+  }
 
-// https://vite.dev/config/
-export default defineConfig({
-  plugins: [react(), patentBackendPlugin()],
-});
+  // Fallback to Direct Server-Side Fetch if running in Vite dev environment or Node
+  try {
+    const targetUrl = `https://patents.google.com/patent/${normalizedId}/en`;
+    const res = await fetch(targetUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml'
+      }
+    });
+
+    if (res.ok) {
+      const html = await res.text();
+      const parsed = parseGooglePatentsHtmlServer(html, normalizedId);
+      if (parsed && parsed.title) {
+        return {
+          success: true,
+          documentType: 'PATENT',
+          patent: parsed
+        };
+      }
+    }
+
+    return {
+      success: false,
+      documentType: 'PATENT',
+      errorCode: 'PATENT_NOT_FOUND',
+      message: `Patent record "${identifier}" (${normalizedId}) was not found in official patent registries.`
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      documentType: 'PATENT',
+      errorCode: 'SOURCE_UNAVAILABLE',
+      message: `Patent source currently unavailable for ${identifier}: ${err.message}`
+    };
+  }
+}

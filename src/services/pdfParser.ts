@@ -1,5 +1,6 @@
 import type { Patent, PatentClaim } from '../types';
 import { normalizePatentNumber, parseClaimDependency } from './patentNormalizer';
+import { indexedDbStore } from './indexedDbStore';
 import * as pdfjsLib from 'pdfjs-dist';
 
 // Configure PDF.js worker for browser text layer extraction
@@ -206,6 +207,10 @@ export function extractPatentNumberFromFirstPage(text: string): {
  */
 export async function parsePatentFile(file: File): Promise<ParsedPatentResult> {
   const fileHash = await calculateFileHash(file);
+
+  // Store raw PDF binary in IndexedDB Blob Store (bypasses 5MB localStorage limit)
+  await indexedDbStore.savePdfBlob(fileHash, file.name, file);
+
   const { pages, fullText, isTextLayerAvailable } = await extractPdfTextPageByPage(file);
   const firstPageText = pages.length > 0 ? pages[0].text : fullText;
   

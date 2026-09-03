@@ -394,8 +394,8 @@ export const LiteratureModal: React.FC<Props> = ({
     }}>
       <div className="glass-panel" style={{
         width: '100%',
-        maxWidth: '1320px',
-        height: 'min(92vh, 900px)',
+        maxWidth: '1360px',
+        height: '96vh',
         borderRadius: '16px',
         display: 'flex',
         flexDirection: 'column',
@@ -408,7 +408,7 @@ export const LiteratureModal: React.FC<Props> = ({
         
         {/* Header */}
         <div style={{
-          padding: '16px 24px',
+          padding: '10px 20px',
           borderBottom: '1px solid var(--border-color)',
           display: 'flex',
           alignItems: 'center',
@@ -455,12 +455,12 @@ export const LiteratureModal: React.FC<Props> = ({
 
         {/* Search Mode & Input Controls Bar */}
         <div style={{ 
-          padding: '14px 24px', 
+          padding: '10px 20px', 
           borderBottom: '1px solid var(--border-color)', 
           background: 'var(--bg-surface)', 
           display: 'flex', 
           flexDirection: 'column', 
-          gap: '10px',
+          gap: '8px',
           flexShrink: 0,
           position: 'relative'
         }}>
@@ -772,7 +772,7 @@ export const LiteratureModal: React.FC<Props> = ({
                   'Search research papers, topics, keywords...'
                 }
                 className="input-field"
-                style={{ paddingLeft: '44px', paddingRight: searchQuery ? '36px' : '14px', height: '44px', fontSize: '0.92rem', borderRadius: '10px' }}
+                style={{ paddingLeft: '44px', paddingRight: searchQuery ? '36px' : '14px', height: '38px', fontSize: '0.88rem', borderRadius: '8px' }}
               />
               {searchQuery && (
                 <button
@@ -795,7 +795,7 @@ export const LiteratureModal: React.FC<Props> = ({
               )}
             </div>
 
-            <button type="submit" className="btn-primary" disabled={isLoading} style={{ height: '44px', padding: '0 22px' }}>
+            <button type="submit" className="btn-primary" disabled={isLoading} style={{ height: '38px', padding: '0 20px', fontSize: '0.84rem' }}>
               {isLoading ? <Loader2 size={18} className="spin-animation" /> : <Search size={18} />}
               {isLoading ? 'Retrieving APIs...' : 'Search Live Papers'}
             </button>
@@ -912,7 +912,7 @@ export const LiteratureModal: React.FC<Props> = ({
         {/* Selected Author Profile Header Card */}
         {selectedAuthor && (
           <div style={{
-            padding: '12px 24px',
+            padding: '8px 20px',
             background: 'linear-gradient(90deg, rgba(99, 102, 241, 0.15) 0%, rgba(0, 242, 254, 0.10) 100%)',
             borderBottom: '1px solid var(--accent-indigo)',
             display: 'flex',
@@ -920,10 +920,10 @@ export const LiteratureModal: React.FC<Props> = ({
             justifyContent: 'space-between',
             flexShrink: 0
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{
-                width: '38px',
-                height: '38px',
+                width: '32px',
+                height: '32px',
                 borderRadius: '50%',
                 background: 'var(--accent-indigo)',
                 color: '#fff',
@@ -931,21 +931,21 @@ export const LiteratureModal: React.FC<Props> = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontWeight: 800,
-                fontSize: '1rem'
+                fontSize: '0.90rem'
               }}>
                 {selectedAuthor.displayName.charAt(0)}
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                  <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-main)' }}>
                     AUTHOR PROFILE: {selectedAuthor.displayName}
                   </h4>
                   <span className="badge badge-purple">{selectedAuthor.source}</span>
                 </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px', display: 'flex', gap: '14px' }}>
-                  <span><Building size={12} /> {selectedAuthor.institution || 'Research Institution'}</span>
-                  <span><BookOpen size={12} /> {selectedAuthor.worksCount || papers.length} Works Found</span>
-                  <span><Award size={12} /> {selectedAuthor.citationCount} Citations</span>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px', display: 'flex', gap: '12px' }}>
+                  <span><Building size={11} /> {selectedAuthor.institution || 'Research Institution'}</span>
+                  <span><BookOpen size={11} /> {selectedAuthor.worksCount || papers.length} Works Found</span>
+                  <span><Award size={11} /> {selectedAuthor.citationCount} Citations</span>
                 </div>
               </div>
             </div>
@@ -953,15 +953,15 @@ export const LiteratureModal: React.FC<Props> = ({
             <button
               onClick={handleClearAuthorFilter}
               className="btn-secondary"
-              style={{ padding: '5px 12px', fontSize: '0.76rem', color: 'var(--accent-cyan)' }}
+              style={{ padding: '4px 10px', fontSize: '0.74rem', color: 'var(--accent-cyan)' }}
             >
               Clear Author Filter
             </button>
           </div>
         )}
 
-        {/* Papers & Author Disambiguation Results List (DOMINANT VIEWPORT AREA ~70% HEIGHT) */}
-        <div style={{ flex: 1, minHeight: 0, padding: '20px 24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        {/* Papers & Author Disambiguation Results List (DOMINANT VIEWPORT AREA ~75% HEIGHT) */}
+        <div style={{ flex: 1, minHeight: 0, padding: '14px 20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           
           {/* Loading Indicator */}
           {isLoading ? (

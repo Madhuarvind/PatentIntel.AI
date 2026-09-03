@@ -95,6 +95,16 @@ export async function resolveAuthor(authorName: string): Promise<AuthorProfile[]
     console.warn('Semantic Scholar author resolution warning:', err);
   }
 
+  // Sort profiles: exact/partial first-name match first, then by worksCount descending
+  const firstNameToken = cleanName.split(/\s+/)[0].toLowerCase();
+  profiles.sort((a, b) => {
+    const aMatch = a.displayName.toLowerCase().includes(firstNameToken);
+    const bMatch = b.displayName.toLowerCase().includes(firstNameToken);
+    if (aMatch && !bMatch) return -1;
+    if (!aMatch && bMatch) return 1;
+    return b.worksCount - a.worksCount;
+  });
+
   return profiles;
 }
 

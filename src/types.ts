@@ -12,19 +12,66 @@ export type ModuleView =
   | 'settings'
   | 'claim-synthesizer';
 
+export interface AuthorProfile {
+  id: string;
+  displayName: string;
+  worksCount: number;
+  citationCount: number;
+  hIndex?: number;
+  institution?: string;
+  orcid?: string;
+  source: 'OpenAlex' | 'Semantic Scholar' | 'Crossref';
+  profileUrl?: string;
+}
+
+export type AcademicDocType = 
+  | 'RESEARCH_PAPER'
+  | 'IEEE_JOURNAL'
+  | 'IEEE_CONFERENCE'
+  | 'CONFERENCE_PAPER'
+  | 'REVIEW'
+  | 'PREPRINT'
+  | 'BOOK_CHAPTER'
+  | 'DATASET'
+  | 'OTHER';
+
 export interface RealtimeAcademicPaper {
   id: string;
   title: string;
   authors: string[];
+  authorObjects?: AuthorProfile[];
   year: number | string;
   venue: string;
+  journal?: string;
   doi?: string;
   citationCount: number;
   abstract: string;
   pdfUrl?: string;
   url?: string;
   bibtex: string;
-  source: 'Semantic Scholar' | 'OpenAlex' | 'arXiv' | 'CrossRef';
+  source: 'Semantic Scholar' | 'OpenAlex' | 'arXiv' | 'CrossRef' | string;
+  sources?: string[];
+  documentType?: AcademicDocType;
+  publicationDate?: string;
+  publisher?: string;
+  isOpenAccess?: boolean;
+}
+
+export type AcademicSearchMode = 'TOPIC' | 'AUTHOR' | 'TITLE' | 'DOI';
+
+export interface AcademicSearchFilters {
+  mode: AcademicSearchMode;
+  query: string;
+  selectedAuthor: AuthorProfile | null;
+  yearFrom: number | null;
+  yearTo: number | null;
+  venue: string;
+  pubType: string;
+  minCitations: number;
+  sortBy: 'relevance' | 'date_desc' | 'date_asc' | 'citations_desc';
+  sourceFilter: 'ALL' | 'OpenAlex' | 'Semantic Scholar' | 'Crossref';
+  page: number;
+  pageSize: number;
 }
 
 export interface PatentClaim {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ReportExportModal } from './ReportExportModal';
 import { workspaceStore } from '../services/workspaceStore';
 import type { PatentDocument } from '../types';
+import { PatentSelector } from './PatentSelector';
 import { 
   BookOpen,
   Award,
@@ -144,31 +145,23 @@ export const AIEvidenceView: React.FC<Props> = ({ onOpenPaper }) => {
       {/* Dynamic Patent Selector Bar */}
       <div className="glass-panel" style={{ padding: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
         <div>
-          <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-cyan)', display: 'block', marginBottom: '6px' }}>Select Target Application Patent:</label>
-          <select 
-            value={targetId}
-            onChange={(e) => setTargetId(e.target.value)}
-            className="input-field"
-            style={{ width: '100%', height: '42px', fontSize: '0.88rem', fontWeight: 600 }}
-          >
-            {workspacePatents.map(p => (
-              <option key={p.id} value={p.id}>{p.id} - {p.title}</option>
-            ))}
-          </select>
+          <PatentSelector
+            patents={workspacePatents}
+            selectedPatentId={targetId}
+            onSelect={(id) => setTargetId(id)}
+            label="Select Target Application Patent:"
+            placeholder="Search target application patent..."
+          />
         </div>
 
         <div>
-          <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-indigo)', display: 'block', marginBottom: '6px' }}>Select Prior-Art Reference Patent:</label>
-          <select 
-            value={priorArtId}
-            onChange={(e) => setPriorArtId(e.target.value)}
-            className="input-field"
-            style={{ width: '100%', height: '42px', fontSize: '0.88rem', fontWeight: 600 }}
-          >
-            {workspacePatents.map(p => (
-              <option key={p.id} value={p.id}>{p.id} - {p.title}</option>
-            ))}
-          </select>
+          <PatentSelector
+            patents={workspacePatents}
+            selectedPatentId={priorArtId}
+            onSelect={(id) => setPriorArtId(id)}
+            label="Select Prior-Art Reference Patent:"
+            placeholder="Search prior-art reference patent..."
+          />
         </div>
       </div>
 

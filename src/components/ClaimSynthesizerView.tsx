@@ -29,6 +29,7 @@ import type {
 import { workspaceStore } from '../services/workspaceStore';
 import { claimDraftStore } from '../services/claimDraftStore';
 import { generateClaimSet, regenerateSection } from '../services/claimSynthesizerService';
+import { PatentSelector } from './PatentSelector';
 import {
   Wand2, Upload, FolderOpen, ChevronDown,
   CheckCircle2, AlertTriangle, XCircle, Shield,
@@ -461,10 +462,15 @@ const WorkspaceImportModal: React.FC<{
         <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 4px' }}>Import from Patent Workspace</h3>
         <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0 0 20px' }}>Select a patent and choose which content to use as the synthesis source.</p>
 
-        <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-cyan)', display: 'block', marginBottom: 6 }}>Select Patent</label>
-        <select value={selectedId} onChange={e => setSelectedId(e.target.value)} className="input-field" style={{ marginBottom: 18 }}>
-          {patents.map(p => <option key={p.id} value={p.id}>{p.id} — {p.title}</option>)}
-        </select>
+        <div style={{ marginBottom: 18 }}>
+          <PatentSelector
+            patents={patents}
+            selectedPatentId={selectedId}
+            onSelect={(id) => setSelectedId(id)}
+            label="Select Patent"
+            placeholder="Search workspace patent..."
+          />
+        </div>
 
         <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: 10 }}>Include in synthesis source:</div>
         {([

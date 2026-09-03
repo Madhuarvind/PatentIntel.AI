@@ -570,7 +570,7 @@ export const LiteratureModal: React.FC<Props> = ({
                           onChange={(e) => setAuthorQuery(e.target.value)}
                           placeholder="Filter by author..."
                           className="input-field"
-                          style={{ height: '34px', fontSize: '0.80rem' }}
+                          style={{ height: '38px', padding: '6px 12px', fontSize: '0.82rem', borderRadius: '8px' }}
                         />
 
                         {showAuthorDropdown && authorSuggestions.length > 0 && (
@@ -619,7 +619,7 @@ export const LiteratureModal: React.FC<Props> = ({
                           onChange={(e) => setDraftFilters({ ...draftFilters, yearFrom: e.target.value })}
                           placeholder="2015"
                           className="input-field"
-                          style={{ height: '34px', fontSize: '0.80rem' }}
+                          style={{ height: '38px', padding: '6px 10px', fontSize: '0.82rem', borderRadius: '8px' }}
                         />
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>–</span>
                         <input
@@ -628,7 +628,7 @@ export const LiteratureModal: React.FC<Props> = ({
                           onChange={(e) => setDraftFilters({ ...draftFilters, yearTo: e.target.value })}
                           placeholder="2026"
                           className="input-field"
-                          style={{ height: '34px', fontSize: '0.80rem' }}
+                          style={{ height: '38px', padding: '6px 10px', fontSize: '0.82rem', borderRadius: '8px' }}
                         />
                       </div>
                     </div>
@@ -643,7 +643,7 @@ export const LiteratureModal: React.FC<Props> = ({
                           value={draftFilters.venue}
                           onChange={(e) => setDraftFilters({ ...draftFilters, venue: e.target.value })}
                           className="input-field"
-                          style={{ height: '34px', fontSize: '0.80rem' }}
+                          style={{ height: '38px', padding: '6px 10px', fontSize: '0.82rem', borderRadius: '8px' }}
                         >
                           <option value="ALL">All Venues</option>
                           <option value="IEEE">IEEE Transactions & Conferences</option>
@@ -665,7 +665,7 @@ export const LiteratureModal: React.FC<Props> = ({
                           value={draftFilters.pubType}
                           onChange={(e) => setDraftFilters({ ...draftFilters, pubType: e.target.value })}
                           className="input-field"
-                          style={{ height: '34px', fontSize: '0.80rem' }}
+                          style={{ height: '38px', padding: '6px 10px', fontSize: '0.82rem', borderRadius: '8px' }}
                         >
                           <option value="ALL">All Types</option>
                           <option value="RESEARCH_PAPER">Research Paper</option>
@@ -688,7 +688,7 @@ export const LiteratureModal: React.FC<Props> = ({
                           value={draftFilters.minCitations}
                           onChange={(e) => setDraftFilters({ ...draftFilters, minCitations: parseInt(e.target.value, 10) })}
                           className="input-field"
-                          style={{ height: '34px', fontSize: '0.80rem' }}
+                          style={{ height: '38px', padding: '6px 10px', fontSize: '0.82rem', borderRadius: '8px' }}
                         >
                           <option value={0}>All Citations (0+)</option>
                           <option value={10}>10+ Citations</option>
@@ -708,7 +708,7 @@ export const LiteratureModal: React.FC<Props> = ({
                         value={draftFilters.sortBy}
                         onChange={(e) => setDraftFilters({ ...draftFilters, sortBy: e.target.value as any })}
                         className="input-field"
-                        style={{ height: '34px', fontSize: '0.80rem' }}
+                        style={{ height: '38px', padding: '6px 10px', fontSize: '0.82rem', borderRadius: '8px' }}
                       >
                         <option value="relevance">Relevance Rank</option>
                         <option value="date_desc">Publication Date (Newest First)</option>

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import type { PatentDocument } from '../types';
 import { 
   Search, 
@@ -95,10 +96,16 @@ export const PatentSelector: React.FC<Props> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [focusedIndex, setFocusedIndex] = useState(-1);
-  const [openUpward, setOpenUpward] = useState(false);
   const [recentIds, setRecentIds] = useState<string[]>([]);
+  const [popoverPos, setPopoverPos] = useState<{ top?: number; bottom?: number; left: number; width: number; openUpward: boolean }>({
+    left: 0,
+    width: 300,
+    openUpward: false
+  });
 
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   // Normalize patents list
@@ -153,12 +160,54 @@ export const PatentSelector: React.FC<Props> = ({
     ? filteredPatents 
     : [...validRecentPatents, ...normalizedPatents.filter(p => !validRecentPatents.some(r => r.id === p.id))];
 
-  // Check dropdown position relative to viewport on open
-  const handleToggle = () => {
-    if (!isOpen && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
+  // Calculate viewport-relative popover position
+  const updatePopoverPos = useCallback(() => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
-      setOpenUpward(spaceBelow < 380 && rect.top > 380);
+      const isUpward = spaceBelow < 380 && rect.top > 380;
+
+      if (isUpward) {
+        setPopoverPos({
+          bottom: window.innerHeight - rect.top + 6,
+          left: rect.left,
+          width: rect.width,
+          openUpward: true
+        });
+      } else {
+        setPopoverPos({
+          top: rect.bottom + 6,
+          left: rect.left,
+          width: rect.width,
+          openUpward: false
+        });
+      }
+    }
+  }, []);
+
+  // Update popover position when open or on scroll/resize
+  useEffect(() => {
+    if (!isOpen) return;
+
+    updatePopoverPos();
+
+    const handleScrollResize = () => {
+      updatePopoverPos();
+    };
+
+    window.addEventListener('resize', handleScrollResize);
+    window.addEventListener('scroll', handleScrollResize, true);
+
+    return () => {
+      window.removeEventListener('resize', handleScrollResize);
+      window.removeEventListener('scroll', handleScrollResize, true);
+    };
+  }, [isOpen, updatePopoverPos]);
+
+  // Toggle open state
+  const handleToggle = () => {
+    if (!isOpen) {
+      updatePopoverPos();
     }
     setIsOpen(!isOpen);
     setSearchQuery('');
@@ -177,7 +226,11 @@ export const PatentSelector: React.FC<Props> = ({
   // Click outside and ESC listener
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        triggerRef.current && !triggerRef.current.contains(target) &&
+        dropdownRef.current && !dropdownRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
@@ -223,6 +276,7 @@ export const PatentSelector: React.FC<Props> = ({
 
       {/* Collapsed Trigger Button */}
       <button
+        ref={triggerRef}
         type="button"
         role="combobox"
         aria-expanded={isOpen}
@@ -269,24 +323,28 @@ export const PatentSelector: React.FC<Props> = ({
         />
       </button>
 
-      {/* Expanded Command-Style Dropdown Popover */}
-      {isOpen && (
+      {/* Portal-rendered Dropdown Popover */}
+      {isOpen && createPortal(
         <div 
+          ref={dropdownRef}
           role="listbox"
           style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            ...(openUpward ? { bottom: 'calc(100% + 6px)' } : { top: 'calc(100% + 6px)' }),
-            zIndex: 600,
+            position: 'fixed',
+            left: `${popoverPos.left}px`,
+            width: `${popoverPos.width}px`,
+            ...(popoverPos.openUpward 
+              ? { bottom: `${popoverPos.bottom}px` } 
+              : { top: `${popoverPos.top}px` }),
+            zIndex: 9999,
             background: 'var(--bg-card-solid)',
             border: '1px solid var(--accent-cyan)',
             borderRadius: '12px',
-            boxShadow: '0 16px 36px rgba(0,0,0,0.65), var(--shadow-glow)',
+            boxShadow: '0 16px 36px rgba(0,0,0,0.75), 0 0 25px rgba(0, 242, 254, 0.25)',
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
-            maxHeight: '400px'
+            maxHeight: '400px',
+            pointerEvents: 'auto'
           }}
         >
           {/* Top Search Input Bar */}
@@ -413,7 +471,8 @@ export const PatentSelector: React.FC<Props> = ({
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Optional Compact Selected Patent Summary Box Below Selector */}

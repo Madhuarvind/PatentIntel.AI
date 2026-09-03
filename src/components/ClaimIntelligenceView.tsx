@@ -66,7 +66,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
       </div>
 
       {/* Patent Selection Bar */}
-      <div className="glass-panel" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+      <div className="glass-panel" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', position: 'relative', zIndex: 100 }}>
         <div style={{ flex: 1, minWidth: '300px' }}>
           <PatentSelector
             patents={workspacePatents}
@@ -80,7 +80,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
       </div>
 
       {/* Main Split Content */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', position: 'relative', zIndex: 1 }}>
         {/* Left: Original Claim Text */}
         <div className="glass-panel" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>

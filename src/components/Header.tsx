@@ -1,4 +1,5 @@
 import React from 'react';
+import { PatentIntelLogo } from './PatentIntelLogo';
 import { 
   Search, 
   BookOpen, 
@@ -43,18 +44,7 @@ export const Header: React.FC<Props> = ({
       {/* Brand & Workspace Indicator */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <img 
-            src="/patentintel_logo.png" 
-            alt="PatentIntel.AI Logo" 
-            style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '10px',
-              objectFit: 'cover',
-              border: '1px solid rgba(0, 242, 254, 0.4)',
-              boxShadow: '0 0 16px rgba(0, 242, 254, 0.4)'
-            }}
-          />
+          <PatentIntelLogo size={38} />
           <div>
             <div style={{ fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.01em', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '4px' }}>
               PatentIntel<span className="gradient-text">.AI</span>

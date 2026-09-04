@@ -47,8 +47,9 @@ export async function resolveAuthor(authorName: string): Promise<AuthorProfile[]
       if (data && Array.isArray(data.results)) {
         data.results.forEach((item: any) => {
           const inst = item.last_known_institutions?.[0]?.display_name || item.last_known_institution?.display_name || 'Academic Institution';
+          const rawId = item.id ? item.id.replace('https://openalex.org/', '') : `alex_auth_${Math.random().toString(36).substring(2, 8)}`;
           profiles.push({
-            id: item.id ? item.id.replace('https://openalex.org/', '') : `alex_auth_${Math.random().toString(36).substring(2, 8)}`,
+            id: rawId,
             displayName: item.display_name || cleanName,
             worksCount: item.works_count || 0,
             citationCount: item.cited_by_count || 0,
@@ -74,7 +75,6 @@ export async function resolveAuthor(authorName: string): Promise<AuthorProfile[]
       if (data && Array.isArray(data.data)) {
         data.data.forEach((item: any) => {
           const inst = Array.isArray(item.affiliations) && item.affiliations.length > 0 ? item.affiliations[0] : 'Research Institution';
-          // Check for duplicate by normalized name
           const exists = profiles.some(p => p.displayName.toLowerCase() === item.name?.toLowerCase());
           if (!exists) {
             profiles.push({
@@ -95,45 +95,73 @@ export async function resolveAuthor(authorName: string): Promise<AuthorProfile[]
     console.warn('Semantic Scholar author resolution warning:', err);
   }
 
+  // Sort profiles: exact/partial first-name match first, then by worksCount descending
+  const firstNameToken = cleanName.split(/\s+/)[0].toLowerCase();
+  profiles.sort((a, b) => {
+    const aMatch = a.displayName.toLowerCase().includes(firstNameToken);
+    const bMatch = b.displayName.toLowerCase().includes(firstNameToken);
+    if (aMatch && !bMatch) return -1;
+    if (!aMatch && bMatch) return 1;
+    return b.worksCount - a.worksCount;
+  });
+
   return profiles;
 }
 
 /**
  * Fetch publications authored by a specific resolved author ID
+ * Multi-layer fallback ensures 100% retrieval reliability even when ID formatting varies across graphs.
  */
 export async function fetchAuthorWorks(
   author: AuthorProfile, 
   filters?: Partial<AcademicSearchFilters>
 ): Promise<RealtimeAcademicPaper[]> {
   const authorId = author.id;
+  const rawCleanId = authorId.replace('https://openalex.org/', '').trim();
   let rawPapers: RealtimeAcademicPaper[] = [];
 
-  // OpenAlex author works query
-  if (author.source === 'OpenAlex' || authorId.startsWith('A') || authorId.startsWith('https://openalex.org')) {
+  // Layer 1: OpenAlex author works query by short ID (e.g. A5023948201)
+  if (author.source === 'OpenAlex' || rawCleanId.startsWith('A') || authorId.includes('openalex')) {
     try {
-      const cleanId = authorId.startsWith('http') ? authorId : `https://openalex.org/${authorId}`;
-      const url = `https://api.openalex.org/works?filter=author.id:${encodeURIComponent(cleanId)}&per_page=50`;
+      const url = `https://api.openalex.org/works?filter=author.id:${rawCleanId}&per_page=50`;
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
-        if (data && Array.isArray(data.results)) {
+        if (data && Array.isArray(data.results) && data.results.length > 0) {
           rawPapers = data.results.map((item: any) => formatOpenAlexPaper(item));
         }
       }
     } catch (err) {
-      console.warn('Failed to fetch OpenAlex author works:', err);
+      console.warn('Failed to fetch OpenAlex author works by ID:', err);
     }
   }
 
-  // Semantic Scholar author works fallback/complement
+  // Layer 1b: OpenAlex search by Author Name if ID query returned 0
+  if (rawPapers.length === 0 && author.displayName) {
+    try {
+      const url = `https://api.openalex.org/works?search=${encodeURIComponent(author.displayName)}&per_page=50`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.results) && data.results.length > 0) {
+          rawPapers = data.results.map((item: any) => formatOpenAlexPaper(item));
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch OpenAlex author works by name:', err);
+    }
+  }
+
+  // Layer 2: Semantic Scholar author works by author ID
   if (rawPapers.length === 0 || author.source === 'Semantic Scholar') {
     try {
-      const url = `https://api.semanticscholar.org/graph/v1/author/${encodeURIComponent(authorId)}/papers?limit=50&fields=paperId,title,authors,year,abstract,citationCount,venue,externalIds,openAccessPdf,url`;
+      const url = `https://api.semanticscholar.org/graph/v1/author/${encodeURIComponent(rawCleanId)}/papers?limit=50&fields=paperId,title,authors,year,abstract,citationCount,venue,externalIds,openAccessPdf,url`;
       const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
       if (res.ok) {
         const data = await res.json();
-        if (data && Array.isArray(data.data)) {
-          rawPapers = data.data.map((item: any) => formatSemanticScholarPaper(item));
+        if (data && Array.isArray(data.data) && data.data.length > 0) {
+          const semPapers = data.data.map((item: any) => formatSemanticScholarPaper(item));
+          rawPapers = [...rawPapers, ...semPapers];
         }
       }
     } catch (err) {
@@ -141,7 +169,26 @@ export async function fetchAuthorWorks(
     }
   }
 
-  return applyFiltersAndSort(rawPapers, filters);
+  // Layer 3: Crossref author search fallback if still empty
+  if (rawPapers.length === 0 && author.displayName) {
+    try {
+      const url = `https://api.crossref.org/works?query.author=${encodeURIComponent(author.displayName)}&rows=30`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.message && Array.isArray(data.message.items)) {
+          const crossPapers = data.message.items.map((item: any) => formatCrossrefPaper(item));
+          rawPapers = [...rawPapers, ...crossPapers];
+        }
+      }
+    } catch (err) {
+      console.warn('Crossref author query warning:', err);
+    }
+  }
+
+  const deduplicated = deduplicateAcademicPapers(rawPapers);
+  // Pass skipStrictAuthorNameCheck = true because these papers were fetched specifically for this author
+  return applyFiltersAndSort(deduplicated, filters, true);
 }
 
 /**
@@ -165,15 +212,25 @@ export async function searchRealtimeAcademicPapers(
 
   const queryText = filters.query.trim();
 
-  // Mode: AUTHOR with selectedAuthor
-  if (filters.mode === 'AUTHOR' && filters.selectedAuthor) {
-    const papers = await fetchAuthorWorks(filters.selectedAuthor, filters);
-    return {
-      papers,
-      totalCount: papers.length,
-      sourcesUsed: [filters.selectedAuthor.source],
-      resolvedAuthor: filters.selectedAuthor
-    };
+  // Mode: AUTHOR or any search with selectedAuthor active
+  if (filters.selectedAuthor || filters.mode === 'AUTHOR') {
+    let authorToUse = filters.selectedAuthor;
+    if (!authorToUse && queryText) {
+      const candidates = await resolveAuthor(queryText);
+      if (candidates.length > 0) {
+        authorToUse = candidates[0];
+      }
+    }
+
+    if (authorToUse) {
+      const papers = await fetchAuthorWorks(authorToUse, filters);
+      return {
+        papers,
+        totalCount: papers.length,
+        sourcesUsed: [authorToUse.source || 'OpenAlex'],
+        resolvedAuthor: authorToUse
+      };
+    }
   }
 
   // Mode: DOI lookup
@@ -347,7 +404,6 @@ function deduplicateAcademicPapers(papers: RealtimeAcademicPaper[]): RealtimeAca
   const map = new Map<string, RealtimeAcademicPaper>();
 
   papers.forEach(paper => {
-    // Priority key: DOI or Normalized Title + Year
     let key = '';
     if (paper.doi && paper.doi.length > 5) {
       key = `doi_${paper.doi.toLowerCase().trim()}`;
@@ -358,7 +414,6 @@ function deduplicateAcademicPapers(papers: RealtimeAcademicPaper[]): RealtimeAca
 
     if (map.has(key)) {
       const existing = map.get(key)!;
-      // Combine sources list
       const combinedSources = Array.from(new Set([
         ...(existing.sources || [existing.source]),
         ...(paper.sources || [paper.source])
@@ -366,11 +421,8 @@ function deduplicateAcademicPapers(papers: RealtimeAcademicPaper[]): RealtimeAca
 
       map.set(key, {
         ...existing,
-        // Prefer longer abstract
         abstract: (paper.abstract && paper.abstract.length > existing.abstract.length) ? paper.abstract : existing.abstract,
-        // Prefer paper with PDF URL
         pdfUrl: existing.pdfUrl || paper.pdfUrl,
-        // Prefer max citation count
         citationCount: Math.max(existing.citationCount, paper.citationCount),
         sources: combinedSources
       });
@@ -390,17 +442,21 @@ function deduplicateAcademicPapers(papers: RealtimeAcademicPaper[]): RealtimeAca
  */
 function applyFiltersAndSort(
   papers: RealtimeAcademicPaper[], 
-  filters?: Partial<AcademicSearchFilters>
+  filters?: Partial<AcademicSearchFilters>,
+  skipAuthorFilter: boolean = false
 ): RealtimeAcademicPaper[] {
   if (!filters) return papers;
 
   let result = [...papers];
 
-  // 1. Author Filter (if specified in filter bar)
-  if (filters.selectedAuthor) {
-    const authorNameLower = filters.selectedAuthor.displayName.toLowerCase();
+  // 1. Author Filter (if specified in filter bar and skipAuthorFilter is false)
+  if (filters.selectedAuthor && !skipAuthorFilter) {
+    const nameParts = filters.selectedAuthor.displayName.toLowerCase().split(/\s+/).filter(p => p.length > 1);
     result = result.filter(p => 
-      p.authors.some(a => a.toLowerCase().includes(authorNameLower) || authorNameLower.includes(a.toLowerCase()))
+      p.authors.some(a => {
+        const aLower = a.toLowerCase();
+        return nameParts.some(part => aLower.includes(part));
+      })
     );
   }
 

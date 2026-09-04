@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import type { ModuleView, PatentDocument } from '../types';
 import { workspaceStore } from '../services/workspaceStore';
+import { PatentSelector } from './PatentSelector';
 import { 
   GitBranch, 
   ArrowRight,
-  FolderKanban,
   FileCheck,
   Languages
 } from 'lucide-react';
@@ -66,26 +66,21 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
       </div>
 
       {/* Patent Selection Bar */}
-      <div className="glass-panel" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <FolderKanban size={20} color="var(--accent-cyan)" />
-          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>Select Workspace Patent to Decompose:</span>
+      <div className="glass-panel" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', position: 'relative', zIndex: 100 }}>
+        <div style={{ flex: 1, minWidth: '300px' }}>
+          <PatentSelector
+            patents={workspacePatents}
+            selectedPatentId={selectedPatentId}
+            onSelect={(id) => setSelectedPatentId(id)}
+            label="Select Workspace Patent to Decompose:"
+            placeholder="Search patents by ID, title, assignee..."
+            onNavigateWorkspace={() => onNavigate('workspace')}
+          />
         </div>
-
-        <select 
-          value={selectedPatentId}
-          onChange={(e) => setSelectedPatentId(e.target.value)}
-          className="input-field"
-          style={{ width: '380px', height: '40px', fontSize: '0.88rem', padding: '0 12px' }}
-        >
-          {workspacePatents.map(p => (
-            <option key={p.id} value={p.id}>{p.id} - {p.title}</option>
-          ))}
-        </select>
       </div>
 
       {/* Main Split Content */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', position: 'relative', zIndex: 1 }}>
         {/* Left: Original Claim Text */}
         <div className="glass-panel" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>

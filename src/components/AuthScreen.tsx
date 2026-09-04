@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { AuthMode } from '../types';
 import { dbStore } from '../services/dbStore';
 import { OrganizationSelector } from './OrganizationSelector';
+import { PatentIntelLogo } from './PatentIntelLogo';
 import { 
   ShieldCheck, 
   Lock, 
@@ -12,7 +13,6 @@ import {
   Sparkles, 
   ArrowRight, 
   CheckCircle2, 
-  Cpu, 
   GitMerge, 
   Search, 
   KeyRound,
@@ -145,18 +145,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
         {/* Brand Top Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <div style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '14px',
-              background: 'linear-gradient(135deg, #00F2FE 0%, #4FACFE 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 0 24px rgba(0, 242, 254, 0.45)'
-            }}>
-              <Cpu size={26} color="#0B0F19" />
-            </div>
+            <PatentIntelLogo size={48} />
             <div>
               <div style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#FFFFFF' }}>
                 PatentIntel<span style={{ background: 'linear-gradient(135deg, #00F2FE 0%, #4FACFE 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>.AI</span>

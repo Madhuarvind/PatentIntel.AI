@@ -1,11 +1,11 @@
 import React from 'react';
-import { PatentIntelLogo } from './PatentIntelLogo';
 import { 
   Search, 
   BookOpen, 
   Sun, 
   Moon, 
   LogOut, 
+  Cpu, 
   CheckCircle
 } from 'lucide-react';
 
@@ -43,10 +43,21 @@ export const Header: React.FC<Props> = ({
     }}>
       {/* Brand & Workspace Indicator */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <PatentIntelLogo size={38} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '10px',
+            background: 'var(--gradient-primary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: 'var(--shadow-glow)'
+          }}>
+            <Cpu size={20} color="#0B0F19" />
+          </div>
           <div>
-            <div style={{ fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.01em', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <div style={{ fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.01em', color: 'var(--text-main)' }}>
               PatentIntel<span className="gradient-text">.AI</span>
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', fontWeight: 600 }}>

@@ -16,6 +16,7 @@ import { SettingsView } from './components/SettingsView';
 import { LiteratureModal } from './components/LiteratureModal';
 import { ClaimSynthesizerView } from './components/ClaimSynthesizerView';
 import { ClaimTranslatorModal } from './components/ClaimTranslatorModal';
+import { IdeaNoveltyView } from './components/IdeaNoveltyView';
 
 export const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -37,6 +38,8 @@ export const App: React.FC = () => {
   const [literatureQuery, setLiteratureQuery] = useState<string>('patent claim similarity SBERT');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  const [synthesizerMetadata, setSynthesizerMetadata] = useState<any>(null);
+
   // WIPO Claim Translator Modal State
   const [isTranslatorOpen, setIsTranslatorOpen] = useState<boolean>(false);
   const [translatorPatentId, setTranslatorPatentId] = useState<string>('US10928341B2');
@@ -47,6 +50,13 @@ export const App: React.FC = () => {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  const handleNavigateWithMetadata = (view: ModuleView, metadata?: any) => {
+    if (metadata) {
+      setSynthesizerMetadata(metadata);
+    }
+    setActiveView(view);
+  };
 
   const openLiteratureWithQuery = (query?: string) => {
     if (query) setLiteratureQuery(query);
@@ -176,7 +186,13 @@ export const App: React.FC = () => {
           )}
 
           {activeView === 'claim-synthesizer' && (
-            <ClaimSynthesizerView />
+            <ClaimSynthesizerView initialData={synthesizerMetadata} />
+          )}
+
+          {activeView === 'idea-novelty' && (
+            <IdeaNoveltyView 
+              onNavigate={handleNavigateWithMetadata}
+            />
           )}
         </main>
       </div>

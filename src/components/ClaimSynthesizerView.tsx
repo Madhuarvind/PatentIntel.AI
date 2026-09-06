@@ -15,7 +15,7 @@
  * This is an AI-assisted drafting workspace — NOT legal advice.
  */
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type {
   ClaimCandidate,
   GeneratedClaim,
@@ -591,10 +591,34 @@ const ExportModal: React.FC<{
 // ---------------------------------------------------------------------------
 // MAIN COMPONENT
 // ---------------------------------------------------------------------------
-export const ClaimSynthesizerView: React.FC = () => {
+interface ClaimSynthesizerViewProps {
+  initialData?: {
+    projectId?: string;
+    title?: string;
+    components?: any[];
+    relationships?: any[];
+  } | null;
+}
+
+export const ClaimSynthesizerView: React.FC<ClaimSynthesizerViewProps> = ({ initialData }) => {
   // --- Input state ---
   const [sourceText, setSourceText] = useState('');
   const [technologyDomain, setTechnologyDomain] = useState('');
+
+  useEffect(() => {
+    if (initialData) {
+      if (initialData.title) {
+        let text = `Invention Title: ${initialData.title}\n\nTechnical Components & Feature Set:\n`;
+        if (initialData.components && initialData.components.length > 0) {
+          initialData.components.forEach((c: any) => {
+            text += `- [${c.featureCode || 'F'}] ${c.term || c.name}: ${c.description || ''}\n`;
+          });
+        }
+        setSourceText(text);
+        setTechnologyDomain('Artificial Intelligence & Edge Systems');
+      }
+    }
+  }, [initialData]);
   const [targetJurisdiction, setTargetJurisdiction] = useState('');
   const [strategy, setStrategy] = useState<ClaimStrategy>('balanced');
   const [claimCategories, setClaimCategories] = useState<ClaimCategory[]>(['apparatus']);

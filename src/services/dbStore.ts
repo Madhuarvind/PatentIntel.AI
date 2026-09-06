@@ -1,4 +1,15 @@
-import type { PatentDocument, ClaimTranslationSession, TerminologyItem } from '../types';
+import type { 
+  PatentDocument, 
+  ClaimTranslationSession, 
+  TerminologyItem,
+  InnovationProject,
+  InnovationDocument,
+  NoveltyBenchmarkReport,
+  InnovationVersion,
+  PatentReviewSubmission,
+  ReviewComment,
+  ReviewDecision
+} from '../types';
 
 export interface UserAccount {
   id: string;
@@ -28,6 +39,13 @@ const DB_KEYS = {
   SEARCH_HISTORY: 'patentintel_db_search_history',
   TRANSLATIONS: 'patentintel_db_claim_translations',
   TERMINOLOGY_MEMORY: 'patentintel_db_terminology_memory',
+  INNOVATION_PROJECTS: 'patentintel_db_innovation_projects',
+  INNOVATION_DOCUMENTS: 'patentintel_db_innovation_documents',
+  BENCHMARK_REPORTS: 'patentintel_db_benchmark_reports',
+  INNOVATION_VERSIONS: 'patentintel_db_innovation_versions',
+  REVIEW_SUBMISSIONS: 'patentintel_db_review_submissions',
+  REVIEW_COMMENTS: 'patentintel_db_review_comments',
+  REVIEW_DECISIONS: 'patentintel_db_review_decisions'
 };
 
 class CloudDatabaseService {
@@ -222,6 +240,237 @@ class CloudDatabaseService {
     try {
       const memStore = JSON.parse(memData);
       return memStore[familyId] || [];
+    } catch {
+      return [];
+    }
+  }
+
+  // --- INNOVATION PROJECTS PERSISTENCE ---
+  public getInnovationProjects(ownerId?: string): InnovationProject[] {
+    const data = localStorage.getItem(DB_KEYS.INNOVATION_PROJECTS);
+    if (!data) return [];
+    try {
+      const all: InnovationProject[] = JSON.parse(data);
+      if (!ownerId) return all;
+      return all.filter(p => p.ownerId === ownerId || !p.ownerId);
+    } catch {
+      return [];
+    }
+  }
+
+  public getInnovationProjectById(id: string): InnovationProject | null {
+    const all = this.getInnovationProjects();
+    return all.find(p => p.id === id) || null;
+  }
+
+  public saveInnovationProject(project: InnovationProject): InnovationProject {
+    const all = this.getInnovationProjects();
+    const idx = all.findIndex(p => p.id === project.id);
+    if (idx >= 0) {
+      all[idx] = { ...project, updatedAt: new Date().toISOString() };
+    } else {
+      all.unshift(project);
+    }
+    localStorage.setItem(DB_KEYS.INNOVATION_PROJECTS, JSON.stringify(all));
+    this.notifyListeners();
+    return project;
+  }
+
+  public deleteInnovationProject(id: string) {
+    const all = this.getInnovationProjects();
+    const filtered = all.filter(p => p.id !== id);
+    localStorage.setItem(DB_KEYS.INNOVATION_PROJECTS, JSON.stringify(filtered));
+    this.notifyListeners();
+  }
+
+  // --- INNOVATION DOCUMENTS PERSISTENCE ---
+  public saveInnovationDocument(doc: InnovationDocument): InnovationDocument {
+    const data = localStorage.getItem(DB_KEYS.INNOVATION_DOCUMENTS);
+    let all: InnovationDocument[] = [];
+    if (data) {
+      try { all = JSON.parse(data); } catch {}
+    }
+    const idx = all.findIndex(d => d.id === doc.id);
+    if (idx >= 0) {
+      all[idx] = doc;
+    } else {
+      all.unshift(doc);
+    }
+    localStorage.setItem(DB_KEYS.INNOVATION_DOCUMENTS, JSON.stringify(all));
+    return doc;
+  }
+
+  public getInnovationDocumentByProjectId(projectId: string): InnovationDocument | null {
+    const data = localStorage.getItem(DB_KEYS.INNOVATION_DOCUMENTS);
+    if (!data) return null;
+    try {
+      const all: InnovationDocument[] = JSON.parse(data);
+      return all.find(d => d.innovationProjectId === projectId) || null;
+    } catch {
+      return null;
+    }
+  }
+
+  // --- NOVELTY BENCHMARK REPORTS PERSISTENCE ---
+  public getBenchmarkReports(projectId?: string): NoveltyBenchmarkReport[] {
+    const data = localStorage.getItem(DB_KEYS.BENCHMARK_REPORTS);
+    if (!data) return [];
+    try {
+      const all: NoveltyBenchmarkReport[] = JSON.parse(data);
+      if (!projectId) return all;
+      return all.filter(r => r.innovationProjectId === projectId);
+    } catch {
+      return [];
+    }
+  }
+
+  public getBenchmarkReportById(id: string): NoveltyBenchmarkReport | null {
+    const all = this.getBenchmarkReports();
+    return all.find(r => r.id === id) || null;
+  }
+
+  public getLatestBenchmarkReport(projectId: string): NoveltyBenchmarkReport | null {
+    const reports = this.getBenchmarkReports(projectId);
+    if (reports.length === 0) return null;
+    return reports.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+  }
+
+  public saveBenchmarkReport(report: NoveltyBenchmarkReport): NoveltyBenchmarkReport {
+    const all = this.getBenchmarkReports();
+    const idx = all.findIndex(r => r.id === report.id);
+    if (idx >= 0) {
+      all[idx] = report;
+    } else {
+      all.unshift(report);
+    }
+    localStorage.setItem(DB_KEYS.BENCHMARK_REPORTS, JSON.stringify(all));
+    this.notifyListeners();
+    return report;
+  }
+
+  // --- INNOVATION VERSIONS PERSISTENCE ---
+  public getInnovationVersions(projectId: string): InnovationVersion[] {
+    const data = localStorage.getItem(DB_KEYS.INNOVATION_VERSIONS);
+    if (!data) return [];
+    try {
+      const all: InnovationVersion[] = JSON.parse(data);
+      return all.filter(v => v.innovationProjectId === projectId).sort((a, b) => b.versionNumber - a.versionNumber);
+    } catch {
+      return [];
+    }
+  }
+
+  public saveInnovationVersion(version: InnovationVersion): InnovationVersion {
+    const data = localStorage.getItem(DB_KEYS.INNOVATION_VERSIONS);
+    let all: InnovationVersion[] = [];
+    if (data) {
+      try { all = JSON.parse(data); } catch {}
+    }
+    all.unshift(version);
+    localStorage.setItem(DB_KEYS.INNOVATION_VERSIONS, JSON.stringify(all));
+    this.notifyListeners();
+    return version;
+  }
+
+  // --- PATENT REVIEW SUBMISSIONS & DECISIONS PERSISTENCE ---
+  public getReviewSubmissions(statusFilter?: string): PatentReviewSubmission[] {
+    const data = localStorage.getItem(DB_KEYS.REVIEW_SUBMISSIONS);
+    if (!data) return [];
+    try {
+      const all: PatentReviewSubmission[] = JSON.parse(data);
+      if (!statusFilter || statusFilter === 'ALL') return all;
+      return all.filter(s => s.status === statusFilter);
+    } catch {
+      return [];
+    }
+  }
+
+  public getReviewSubmissionById(id: string): PatentReviewSubmission | null {
+    const all = this.getReviewSubmissions();
+    return all.find(s => s.id === id) || null;
+  }
+
+  public getReviewSubmissionByProjectId(projectId: string): PatentReviewSubmission | null {
+    const all = this.getReviewSubmissions();
+    return all.find(s => s.innovationProjectId === projectId) || null;
+  }
+
+  public saveReviewSubmission(sub: PatentReviewSubmission): PatentReviewSubmission {
+    const all = this.getReviewSubmissions();
+    const idx = all.findIndex(s => s.id === sub.id);
+    if (idx >= 0) {
+      all[idx] = { ...sub, updatedAt: new Date().toISOString() };
+    } else {
+      all.unshift(sub);
+    }
+    localStorage.setItem(DB_KEYS.REVIEW_SUBMISSIONS, JSON.stringify(all));
+
+    // Also sync InnovationProject status
+    const project = this.getInnovationProjectById(sub.innovationProjectId);
+    if (project) {
+      project.status = sub.status;
+      this.saveInnovationProject(project);
+    }
+
+    this.notifyListeners();
+    return sub;
+  }
+
+  public saveReviewComment(comment: ReviewComment): ReviewComment {
+    const data = localStorage.getItem(DB_KEYS.REVIEW_COMMENTS);
+    let all: ReviewComment[] = [];
+    if (data) {
+      try { all = JSON.parse(data); } catch {}
+    }
+    all.push(comment);
+    localStorage.setItem(DB_KEYS.REVIEW_COMMENTS, JSON.stringify(all));
+    this.notifyListeners();
+    return comment;
+  }
+
+  public getReviewComments(submissionId: string): ReviewComment[] {
+    const data = localStorage.getItem(DB_KEYS.REVIEW_COMMENTS);
+    if (!data) return [];
+    try {
+      const all: ReviewComment[] = JSON.parse(data);
+      return all.filter(c => c.submissionId === submissionId);
+    } catch {
+      return [];
+    }
+  }
+
+  public saveReviewDecision(decision: ReviewDecision): ReviewDecision {
+    const data = localStorage.getItem(DB_KEYS.REVIEW_DECISIONS);
+    let all: ReviewDecision[] = [];
+    if (data) {
+      try { all = JSON.parse(data); } catch {}
+    }
+    all.unshift(decision);
+    localStorage.setItem(DB_KEYS.REVIEW_DECISIONS, JSON.stringify(all));
+
+    // Update submission status based on decision
+    const sub = this.getReviewSubmissionById(decision.submissionId);
+    if (sub) {
+      if (decision.decision === 'APPROVED_FOR_DRAFTING') {
+        sub.status = 'APPROVED_FOR_DRAFTING';
+      } else if (decision.decision === 'NEEDS_REVISION') {
+        sub.status = 'NEEDS_REVISION';
+      } else if (decision.decision === 'REJECTED') {
+        sub.status = 'COMPLETED';
+      }
+      this.saveReviewSubmission(sub);
+    }
+
+    this.notifyListeners();
+    return decision;
+  }
+
+  public getReviewDecisions(submissionId: string): ReviewDecision[] {
+    const data = localStorage.getItem(DB_KEYS.REVIEW_DECISIONS);
+    if (!data) return [];
+    try {
+      const all: ReviewDecision[] = JSON.parse(data);
+      return all.filter(d => d.submissionId === submissionId);
     } catch {
       return [];
     }

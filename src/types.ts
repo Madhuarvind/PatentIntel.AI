@@ -10,7 +10,238 @@ export type ModuleView =
   | 'ai-evidence'
   | 'analytics'
   | 'settings'
-  | 'claim-synthesizer';
+  | 'claim-synthesizer'
+  | 'idea-novelty';
+
+export interface PriorArtMatch {
+  sourceType: 'PATENT' | 'PAPER';
+  id: string;
+  title: string;
+  publicationNumber?: string;
+  similarityScore: number;
+  matchingExcerpt: string;
+  sectionOrClaim?: string;
+  sourceUrl?: string;
+}
+
+export interface EvidenceReference {
+  id: string;
+  sourceDocumentId: string;
+  sourceType: 'PATENT' | 'PAPER' | 'MANUSCRIPT';
+  sourceIdentifier: string;
+  title: string;
+  pageNumber?: number;
+  section?: string;
+  passage: string;
+  similarityScore: number;
+  retrievalMethod?: string;
+  createdAt: string;
+}
+
+export interface ExtractedIdeaComponent {
+  id: string;
+  innovationProjectId: string;
+  featureCode: string;
+  name: string;
+  term: string;
+  category: 
+    | 'COMPONENT' 
+    | 'FUNCTION' 
+    | 'DATA' 
+    | 'PROCESS' 
+    | 'RELATIONSHIP' 
+    | 'CONSTRAINT' 
+    | 'INPUT' 
+    | 'OUTPUT' 
+    | 'TECHNICAL_EFFECT' 
+    | 'OBJECTIVE' 
+    | 'OTHER';
+  description: string;
+  importance: 'CORE' | 'SUPPORTING' | 'OPTIONAL';
+  overlapStatus: 'KNOWN_PRIOR_ART' | 'PARTIAL_OVERLAP' | 'POTENTIALLY_DISTINCTIVE' | 'INSUFFICIENT_EVIDENCE';
+  overlapConfidence: number;
+  matchedPriorArt: PriorArtMatch[];
+  supportingEvidence: EvidenceReference[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ComponentRelationship {
+  id: string;
+  fromComponentId: string;
+  toComponentId: string;
+  fromTerm: string;
+  toTerm: string;
+  relationshipType: string;
+  description: string;
+  overlapStatus: 'KNOWN_PRIOR_ART' | 'PARTIAL_OVERLAP' | 'POTENTIALLY_DISTINCTIVE' | 'INSUFFICIENT_EVIDENCE';
+}
+
+export interface InnovationProject {
+  id: string;
+  ownerId: string;
+  ownerName: string;
+  workspaceId?: string;
+  title: string;
+  description: string;
+  domain?: string;
+  technicalProblem?: string;
+  proposedSolution?: string;
+  expectedTechnicalEffect?: string;
+  status: 
+    | 'DRAFT' 
+    | 'ANALYZING' 
+    | 'READY_FOR_REVIEW' 
+    | 'SUBMITTED' 
+    | 'UNDER_REVIEW' 
+    | 'NEEDS_REVISION' 
+    | 'APPROVED_FOR_DRAFTING' 
+    | 'COMPLETED';
+  currentVersionNumber: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InnovationDocument {
+  id: string;
+  innovationProjectId: string;
+  fileName?: string;
+  fileHash?: string;
+  mimeType?: string;
+  textContent?: string;
+  storageReference?: string;
+  pageCount?: number;
+  extractedTextStatus: 'NOT_STARTED' | 'SUCCESS' | 'PARTIAL' | 'FAILED';
+  createdAt: string;
+}
+
+export interface DifferentiatorRecommendation {
+  id: string;
+  innovationProjectId: string;
+  title: string;
+  description: string;
+  relatedComponents: string[];
+  priorArtGap: string;
+  supportingEvidence: EvidenceReference[];
+  confidence: number;
+  status: 'SUGGESTED' | 'ACCEPTED' | 'REJECTED' | 'CUSTOMIZED';
+  createdAt: string;
+}
+
+export interface NoveltyBenchmarkReport {
+  id: string;
+  innovationProjectId: string;
+  noveltyRunId: string;
+  ideaTitle: string;
+  priorArtConcern: 'HIGH' | 'MODERATE' | 'LOW' | 'INSUFFICIENT_EVIDENCE';
+  overallNoveltyScore?: number; // legacy back-compat
+  priorArtOverlapRisk?: 'HIGH' | 'MODERATE' | 'LOW'; // legacy back-compat
+  reviewReadinessScore: number; // 0 - 100%
+  directOverlapCount: number;
+  partialOverlapCount: number;
+  potentiallyDistinctiveCount: number;
+  insufficientEvidenceCount: number;
+  patentCandidatesReviewed: number;
+  academicCandidatesReviewed: number;
+  extractedComponents: ExtractedIdeaComponent[];
+  componentRelationships: ComponentRelationship[];
+  topMatchedPatents: PatentDocument[];
+  topMatchedPapers: RealtimeAcademicPaper[];
+  recommendations: DifferentiatorRecommendation[];
+  proposedSystemRecommendations?: string[]; // legacy back-compat
+  searchScopeHealth: {
+    patentSources: string[];
+    academicSources: string[];
+    patentStatus: 'SUCCESS' | 'PARTIAL' | 'FAILED';
+    academicStatus: 'SUCCESS' | 'PARTIAL' | 'FAILED';
+    queriesUsed: string[];
+  };
+  createdAt: string;
+}
+
+export interface NoveltyRun {
+  id: string;
+  innovationProjectId: string;
+  startedBy: string;
+  status: 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+  model: string;
+  modelVersion: string;
+  promptVersion: string;
+  patentSearchQuery: string;
+  academicSearchQuery: string;
+  startedAt: string;
+  completedAt?: string;
+  errorMessage?: string;
+}
+
+export interface NoveltyCandidate {
+  id: string;
+  noveltyRunId: string;
+  documentType: 'PATENT' | 'IEEE_JOURNAL' | 'IEEE_CONFERENCE' | 'RESEARCH_PAPER' | 'CONFERENCE_PAPER' | 'PREPRINT' | 'OTHER';
+  documentId: string;
+  rank: number;
+  retrievalScore: number;
+  source: string;
+  createdAt: string;
+}
+
+export interface NoveltyEvidence {
+  id: string;
+  noveltyMatchId: string;
+  sourceDocumentId: string;
+  sourceType: string;
+  sourceIdentifier: string;
+  pageNumber?: number;
+  section?: string;
+  passage: string;
+  createdAt: string;
+}
+
+export interface PatentReviewSubmission {
+  id: string;
+  innovationProjectId: string;
+  submittedBy: string;
+  submittedByName: string;
+  status: 'SUBMITTED' | 'UNDER_REVIEW' | 'NEEDS_REVISION' | 'APPROVED_FOR_DRAFTING' | 'COMPLETED';
+  priorArtConcern: 'HIGH' | 'MODERATE' | 'LOW' | 'INSUFFICIENT_EVIDENCE';
+  versionNumber: number;
+  submittedAt: string;
+  updatedAt: string;
+}
+
+export interface ReviewComment {
+  id: string;
+  submissionId: string;
+  authorId: string;
+  authorName: string;
+  comment: string;
+  componentId?: string;
+  createdAt: string;
+  resolvedAt?: string;
+}
+
+export interface ReviewDecision {
+  id: string;
+  submissionId: string;
+  reviewerId: string;
+  reviewerName: string;
+  decision: 'APPROVED_FOR_DRAFTING' | 'NEEDS_REVISION' | 'REJECTED' | 'MORE_INFORMATION_REQUIRED';
+  reason: string;
+  createdAt: string;
+}
+
+export interface InnovationVersion {
+  id: string;
+  innovationProjectId: string;
+  versionNumber: number;
+  title: string;
+  description: string;
+  features: ExtractedIdeaComponent[];
+  relationships: ComponentRelationship[];
+  recommendations: DifferentiatorRecommendation[];
+  author: string;
+  createdAt: string;
+}
 
 export interface AuthorProfile {
   id: string;

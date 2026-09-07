@@ -144,25 +144,30 @@ def generate_dataset_sample(idx: int) -> dict:
         "output": output_text
     }
 
-def build_master_dataset(total_samples: int = 250):
+import argparse
+
+def build_master_dataset(total_samples: int = 5000):
     print("=" * 70)
-    print(f"Generating Master PatentIntel Patent Training Dataset ({total_samples} samples)...")
+    print(f"Generating Master PatentIntel Patent Training Dataset ({total_samples:,} samples)...")
     print("=" * 70)
 
     dataset = [generate_dataset_sample(i) for i in range(total_samples)]
 
     output_dir = os.path.join(os.path.dirname(__file__), "..", "datasets")
     os.makedirs(output_dir, exist_ok=True)
-    output_file = os.path.join(output_dir, "patentintel_master_dataset.json")
+    output_file = os.path.join(output_dir, f"patentintel_master_dataset_{total_samples}.json")
 
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(dataset, f, indent=2)
 
-    file_size_kb = os.path.getsize(output_file) / 1024
+    file_size_mb = os.path.getsize(output_file) / (1024 * 1024)
     print(f"\n[SUCCESS] Dataset successfully generated and saved to: {os.path.abspath(output_file)}")
-    print(f"   Total Training Records: {len(dataset)}")
-    print(f"   File Size: {file_size_kb:.2f} KB")
+    print(f"   Total Training Records: {len(dataset):,}")
+    print(f"   File Size: {file_size_mb:.2f} MB")
     print(f"   Ready for Hugging Face Hub Upload & AutoTrain Fine-Tuning!")
 
 if __name__ == "__main__":
-    build_master_dataset(300)
+    parser = argparse.ArgumentParser(description="Generate large-scale patent datasets")
+    parser.add_argument("--samples", type=int, default=5000, help="Number of instruction training samples (e.g. 5000, 10000, 50000)")
+    args = parser.parse_args()
+    build_master_dataset(args.samples)

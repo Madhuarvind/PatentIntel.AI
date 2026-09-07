@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Key, Save } from 'lucide-react';
+import { Key, Save, Cpu, Globe } from 'lucide-react';
 import { getStoredSettings, saveStoredSettings } from '../services/llmService';
 
 export const SettingsView: React.FC = () => {
@@ -8,6 +8,8 @@ export const SettingsView: React.FC = () => {
   const [similarityCutoff, setSimilarityCutoff] = useState(initialSettings.similarityCutoff || 0.75);
   const [vectorEngine, setVectorEngine] = useState(initialSettings.vectorEngine || 'faiss');
   const [apiKey, setApiKey] = useState(initialSettings.apiKey || '');
+  const [customEndpoint, setCustomEndpoint] = useState(initialSettings.customEndpoint || 'http://localhost:11434/api/generate');
+  const [customModelName, setCustomModelName] = useState(initialSettings.customModelName || 'patentintel-llama3');
   const [saved, setSaved] = useState(false);
 
   const handleSave = (e: React.FormEvent) => {
@@ -16,7 +18,9 @@ export const SettingsView: React.FC = () => {
       provider: llmProvider,
       apiKey: apiKey.trim(),
       similarityCutoff,
-      vectorEngine
+      vectorEngine,
+      customEndpoint: customEndpoint.trim(),
+      customModelName: customModelName.trim()
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -26,10 +30,10 @@ export const SettingsView: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '800px' }}>
       <div>
         <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 4px' }}>
-          Platform System & AI Settings
+          Platform System & AI Model Settings
         </h1>
         <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-          Configure LLM reasoning provider, vector retrieval indexing parameters, and candidate filtering thresholds.
+          Configure LLM reasoning provider, custom fine-tuned self-hosted model endpoints, vector retrieval indexing parameters, and candidate filtering thresholds.
         </p>
       </div>
 
@@ -46,14 +50,58 @@ export const SettingsView: React.FC = () => {
           >
             <option value="gemini">Google Gemini 1.5 Pro (Recommended - 1M Context Window)</option>
             <option value="gpt4">OpenAI GPT-4o (Strict RAG Evidence Mode)</option>
-            <option value="claude">Anthropic Claude 3.5 Sonnet</option>
+            <option value="custom_model">Custom Fine-Tuned AI Model (Ollama / vLLM / HuggingFace Endpoint)</option>
             <option value="local">Local Ollama Llama-3-70B (Offline Mode)</option>
           </select>
         </div>
 
+        {(llmProvider === 'custom_model' || llmProvider === 'local') && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: 'rgba(99, 102, 241, 0.08)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent-indigo)', marginBottom: '6px' }}>
+                Custom AI Server Endpoint URL
+              </label>
+              <div style={{ position: 'relative' }}>
+                <Globe size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--accent-indigo)' }} />
+                <input
+                  type="text"
+                  value={customEndpoint}
+                  onChange={(e) => setCustomEndpoint(e.target.value)}
+                  placeholder="http://localhost:11434/api/generate"
+                  className="input-field"
+                  style={{ paddingLeft: '34px', fontSize: '0.82rem' }}
+                />
+              </div>
+              <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>
+                Ollama: http://localhost:11434/api/generate | vLLM: http://localhost:8000/v1/chat/completions
+              </span>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent-indigo)', marginBottom: '6px' }}>
+                Custom Model Identifier
+              </label>
+              <div style={{ position: 'relative' }}>
+                <Cpu size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--accent-indigo)' }} />
+                <input
+                  type="text"
+                  value={customModelName}
+                  onChange={(e) => setCustomModelName(e.target.value)}
+                  placeholder="patentintel-llama3"
+                  className="input-field"
+                  style={{ paddingLeft: '34px', fontSize: '0.82rem' }}
+                />
+              </div>
+              <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>
+                Name of your fine-tuned model (e.g. patentintel-llama3:8b)
+              </span>
+            </div>
+          </div>
+        )}
+
         <div>
           <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '6px' }}>
-            LLM API Key
+            LLM API Key (Optional for Local Models)
           </label>
           <div style={{ position: 'relative' }}>
             <Key size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
@@ -61,6 +109,7 @@ export const SettingsView: React.FC = () => {
               type="password"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
+              placeholder="Paste your Gemini or OpenAI API Key..."
               className="input-field"
               style={{ paddingLeft: '40px' }}
             />

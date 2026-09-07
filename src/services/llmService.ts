@@ -33,11 +33,20 @@ export function getStoredSettings() {
     provider: 'gemini',
     apiKey: '',
     similarityCutoff: 0.75,
-    vectorEngine: 'faiss'
+    vectorEngine: 'faiss',
+    customEndpoint: 'http://localhost:11434/api/generate',
+    customModelName: 'patentintel-llama3'
   };
 }
 
-export function saveStoredSettings(settings: { provider?: string; apiKey?: string; similarityCutoff?: number; vectorEngine?: string }) {
+export function saveStoredSettings(settings: { 
+  provider?: string; 
+  apiKey?: string; 
+  similarityCutoff?: number; 
+  vectorEngine?: string;
+  customEndpoint?: string;
+  customModelName?: string;
+}) {
   try {
     const current = getStoredSettings();
     const updated = { ...current, ...settings };

@@ -22,6 +22,10 @@ export interface PriorArtMatch {
   matchingExcerpt: string;
   sectionOrClaim?: string;
   sourceUrl?: string;
+  legalStatus?: 'ACTIVE_MONOPOLY' | 'EXPIRED_PUBLIC_DOMAIN' | 'LAPSED_MAINTENANCE' | 'PENDING_APPLICATION';
+  ftoRisk?: 'HIGH_COLLISION' | 'SAFE_PUBLIC_DOMAIN' | 'UNCERTAIN';
+  figNumber?: string;
+  diagramSnippet?: string;
 }
 
 export interface EvidenceReference {
@@ -149,6 +153,32 @@ export interface NoveltyBenchmarkReport {
   topMatchedPapers: RealtimeAcademicPaper[];
   recommendations: DifferentiatorRecommendation[];
   proposedSystemRecommendations?: string[]; // legacy back-compat
+  statutoryEligibility?: {
+    status: 'PASS' | 'WARNING' | 'NON_STATUTORY_RISK';
+    sectionRef: string;
+    reason: string;
+    recommendations: string[];
+  };
+  multimodalSchematics?: {
+    diagramCount: number;
+    schematicMatches: {
+      figureId: string;
+      priorArtId: string;
+      priorArtTitle: string;
+      visualSimilarity: number;
+      matchingBlocks: string[];
+      diagramSnippet?: string;
+    }[];
+  };
+  tsmObviousnessRisk?: {
+    score: number; // 0-100%
+    level: 'HIGH' | 'MODERATE' | 'LOW';
+    combinedReferences: {
+      ref1: string;
+      ref2: string;
+      motivationReason: string;
+    }[];
+  };
   searchScopeHealth: {
     patentSources: string[];
     academicSources: string[];

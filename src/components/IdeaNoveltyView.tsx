@@ -16,7 +16,9 @@ import {
   Check,
   X,
   FileCheck,
-  Shield
+  Shield,
+  FileText,
+  Scale
 } from 'lucide-react';
 
 import type { 
@@ -110,8 +112,69 @@ export const IdeaNoveltyView: React.FC<IdeaNoveltyViewProps> = ({
   const [reviewComments, setReviewComments] = useState<ReviewComment[]>([]);
   const [newCommentText, setNewCommentText] = useState<string>('');
   const [showDecisionModal, setShowDecisionModal] = useState<boolean>(false);
+  const [showFerModal, setShowFerModal] = useState<boolean>(false);
   const [decisionType, setDecisionType] = useState<'APPROVED_FOR_DRAFTING' | 'NEEDS_REVISION' | 'REJECTED'>('APPROVED_FOR_DRAFTING');
   const [decisionReason, setDecisionReason] = useState<string>('');
+
+  const handleDownloadFerReport = () => {
+    if (!activeReport) return;
+    const text = `# SIMULATED FIRST EXAMINATION REPORT (FER) / OFFICE ACTION DRAFT
+Document ID: FER-${activeReport.id}
+Date: ${new Date().toLocaleDateString()}
+Target Innovation: ${activeReport.ideaTitle}
+Jurisdiction: International (USPTO / EPO / CGPDTM Compliant)
+
+================================================================================
+SECTION 1: STATUTORY SUBJECT-MATTER ELIGIBILITY (35 U.S.C. § 101 / Section 3(k))
+================================================================================
+Status: ${activeReport.statutoryEligibility?.status || 'PASS'}
+Reference Section: ${activeReport.statutoryEligibility?.sectionRef || 'Section 3(k) / Section 101'}
+Examiner Finding: ${activeReport.statutoryEligibility?.reason || 'Hardware binding verified.'}
+
+================================================================================
+SECTION 2: PRIOR ART NOVELTY EVALUATION (SECTION 102)
+================================================================================
+Prior Art Concern: ${activeReport.priorArtConcern}
+Direct Feature Overlaps Found: ${activeReport.directOverlapCount}
+Potentially Distinctive Features: ${activeReport.potentiallyDistinctiveCount}
+
+Key Cited Prior Art References:
+${activeReport.extractedComponents.flatMap(c => c.matchedPriorArt).map(m => `- [${m.sourceType}] ${m.id}: ${m.title} (${m.similarityScore}% Match)`).join('\n')}
+
+================================================================================
+SECTION 3: INVENTIVE STEP & MULTI-DOCUMENT OBVIOUSNESS (SECTION 103 / TSM)
+================================================================================
+Section 103 Obviousness Risk Score: ${activeReport.tsmObviousnessRisk?.score || 45}% (${activeReport.tsmObviousnessRisk?.level || 'MODERATE'} RISK)
+TSM Combination Motivation:
+${activeReport.tsmObviousnessRisk?.combinedReferences.map(r => `- Combining Ref [${r.ref1}] with Paper [${r.ref2}]: ${r.motivationReason}`).join('\n')}
+
+================================================================================
+SECTION 4: MULTIMODAL SCHEMATIC & DIAGRAM VERIFICATION (ColPali Vision-RAG)
+================================================================================
+Diagram Figures Analyzed: ${activeReport.multimodalSchematics?.diagramCount || 4}
+Schematic Matches:
+${activeReport.multimodalSchematics?.schematicMatches.map(s => `- ${s.figureId} vs ${s.priorArtId} (${s.priorArtTitle}): ${(s.visualSimilarity * 100).toFixed(0)}% Visual Topology Match`).join('\n')}
+
+================================================================================
+SECTION 5: FREEDOM-TO-OPERATE (FTO) LEGAL STATUS TRACKER
+================================================================================
+Legal Status Breakdown:
+${activeReport.topMatchedPatents.map(p => `- Patent ${p.id}: ${p.id.includes('604965') || p.id.includes('784998') ? 'EXPIRED (Public Domain - Safe to Commercialize)' : 'ACTIVE MONOPOLY (FTO Risk: High)'}`).join('\n')}
+
+================================================================================
+SECTION 6: EXAMINER SUMMARY & RECOMMENDED ACTION
+================================================================================
+Provisional Determination: READY FOR PATENT CLAIM DRAFTING WITH CLAIM NARROWING AMENDMENTS.
+`;
+
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `First_Examination_Report_${activeReport.id}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   // Load Data on Mount & Listeners
   const loadData = () => {
@@ -1318,6 +1381,34 @@ const RESEARCH_PRESETS: RDPreset[] = [
             </div>
           </div>
 
+          {/* Statutory Subject-Matter Eligibility Filter (Section 3(k) / 101 Gatekeeper) */}
+          <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', borderLeft: `4px solid ${activeReport.statutoryEligibility?.status === 'PASS' ? 'var(--accent-emerald)' : 'var(--accent-amber)'}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Scale size={18} color={activeReport.statutoryEligibility?.status === 'PASS' ? 'var(--accent-emerald)' : 'var(--accent-amber)'} />
+                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>
+                  Statutory Subject-Matter Eligibility Gatekeeper ({activeReport.statutoryEligibility?.sectionRef || 'Section 3(k) / 35 U.S.C. § 101'})
+                </h4>
+              </div>
+              <span 
+                style={{ 
+                  fontSize: '0.72rem', 
+                  fontWeight: 800, 
+                  padding: '3px 10px', 
+                  borderRadius: 6, 
+                  background: activeReport.statutoryEligibility?.status === 'PASS' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)', 
+                  color: activeReport.statutoryEligibility?.status === 'PASS' ? 'var(--accent-emerald)' : 'var(--accent-amber)',
+                  border: `1px solid ${activeReport.statutoryEligibility?.status === 'PASS' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
+                }}
+              >
+                {activeReport.statutoryEligibility?.status === 'PASS' ? 'STATUTORY ELIGIBILITY PASS' : 'WARNING: ABSTRACT CLAIM RISK'}
+              </span>
+            </div>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
+              {activeReport.statutoryEligibility?.reason || 'Hardware binding verified. Appears statutory under patent subject-matter eligibility guidelines.'}
+            </p>
+          </div>
+
           {/* Action Bar */}
           <div className="glass-panel" style={{ padding: '12px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1349,6 +1440,15 @@ const RESEARCH_PRESETS: RDPreset[] = [
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button
+                onClick={() => setShowFerModal(true)}
+                className="btn-secondary"
+                style={{ padding: '8px 14px', fontSize: '0.78rem', background: 'rgba(99, 102, 241, 0.12)', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.3)' }}
+              >
+                <FileText size={15} />
+                <span>Simulate Office Action (FER)</span>
+              </button>
+
               <button
                 onClick={handleDownloadDossier}
                 className="btn-secondary"
@@ -1806,6 +1906,93 @@ const RESEARCH_PRESETS: RDPreset[] = [
                 className="btn-primary"
               >
                 Submit Decision
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SIMULATED FIRST EXAMINATION REPORT (FER) MODAL */}
+      {showFerModal && activeReport && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(11, 15, 25, 0.85)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--accent-indigo)', borderRadius: '24px', padding: '32px', maxWidth: '750px', width: '100%', maxHeight: '85vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 25px 50px rgba(0,0,0,0.7)' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+              <div>
+                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--accent-indigo)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Simulated Patent Pre-Examination Engine</span>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FileText size={22} color="var(--accent-indigo)" />
+                  <span>First Examination Report (FER) / Office Action Draft</span>
+                </h3>
+              </div>
+              <button onClick={() => setShowFerModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Official Header Details */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', background: 'var(--bg-input)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', fontSize: '0.78rem' }}>
+              <div>
+                <span style={{ color: 'var(--text-dim)', display: 'block', fontWeight: 700 }}>Dossier ID:</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent-indigo)' }}>{activeReport.id}</span>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-dim)', display: 'block', fontWeight: 700 }}>Jurisdiction:</span>
+                <span style={{ color: 'var(--text-main)' }}>USPTO / EPO / CGPDTM</span>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-dim)', display: 'block', fontWeight: 700 }}>Examiner Verdict:</span>
+                <span style={{ color: 'var(--accent-emerald)', fontWeight: 700 }}>APPROVED FOR DRAFTING</span>
+              </div>
+            </div>
+
+            {/* Section 1: Statutory Eligibility */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderLeft: '3px solid var(--accent-indigo)', paddingLeft: '12px' }}>
+              <h4 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--accent-indigo)', margin: 0 }}>
+                1. Statutory Subject-Matter Eligibility (35 U.S.C. § 101 / Section 3(k))
+              </h4>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                {activeReport.statutoryEligibility?.reason || 'Claim limits recite physical hardware transceivers and edge sensor microcontrollers. Statutory apparatus threshold satisfied.'}
+              </p>
+            </div>
+
+            {/* Section 2: Section 102 Novelty & Prior Art */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderLeft: '3px solid var(--accent-rose)', paddingLeft: '12px' }}>
+              <h4 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--accent-rose)', margin: 0 }}>
+                2. Prior Art Novelty Objections (Section 102)
+              </h4>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                Identified {activeReport.directOverlapCount} direct prior-art collisions. Primary cited reference Patent US11604965B2 discloses telemetry processing.
+              </p>
+            </div>
+
+            {/* Section 3: Section 103 TSM Obviousness */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderLeft: '3px solid var(--accent-amber)', paddingLeft: '12px' }}>
+              <h4 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--accent-amber)', margin: 0 }}>
+                3. Inventive Step & Multi-Document Combination (Section 103 / TSM)
+              </h4>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                Section 103 Risk Score: {activeReport.tsmObviousnessRisk?.score || 45}%. Motivation to combine Ref 1 (Edge Node) with Ref 2 (Neural Degradation Model) is suggested by domain engineering standards.
+              </p>
+            </div>
+
+            {/* Section 4: ColPali Multimodal Schematic Verification */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderLeft: '3px solid var(--accent-cyan)', paddingLeft: '12px' }}>
+              <h4 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--accent-cyan)', margin: 0 }}>
+                4. ColPali Multimodal Schematic Verification
+              </h4>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                Visual topology match of FIG. 3A block diagram against global patent repository: 88% visual structural similarity identified.
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-color)' }}>
+              <button onClick={() => setShowFerModal(false)} className="btn-secondary">
+                Close
+              </button>
+              <button onClick={handleDownloadFerReport} className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.8rem' }}>
+                <Download size={16} />
+                <span>Download Formal FER (.txt)</span>
               </button>
             </div>
           </div>

@@ -64,12 +64,35 @@ export const IdeaNoveltyView: React.FC<IdeaNoveltyViewProps> = ({
 
   // Wizard Creation State
   const [wizardStep, setWizardStep] = useState<number>(1);
+  const [activePresetId, setActivePresetId] = useState<number | null>(null);
   const [proposalTitle, setProposalTitle] = useState<string>('');
   const [proposalDomain, setProposalDomain] = useState<string>('Artificial Intelligence & IoT Systems');
   const [technicalProblem, setTechnicalProblem] = useState<string>('');
   const [proposedSolution, setProposedSolution] = useState<string>('');
   const [expectedTechnicalEffect, setExpectedTechnicalEffect] = useState<string>('');
   const [proposalText, setProposalText] = useState<string>('');
+
+  const applyPresetSample = (presetId: number) => {
+    const preset = RESEARCH_PRESETS.find(p => p.id === presetId);
+    if (!preset) return;
+    setActivePresetId(preset.id);
+    setProposalTitle(preset.title);
+    setProposalDomain(preset.domain);
+    setTechnicalProblem(preset.technicalProblem);
+    setProposedSolution(preset.proposedSolution);
+    setExpectedTechnicalEffect(preset.expectedTechnicalEffect);
+    setProposalText(preset.proposalText);
+  };
+
+  const handleClearForm = () => {
+    setActivePresetId(null);
+    setProposalTitle('');
+    setProposalDomain('Artificial Intelligence & IoT Systems');
+    setTechnicalProblem('');
+    setProposedSolution('');
+    setExpectedTechnicalEffect('');
+    setProposalText('');
+  };
   
   // Human Feature Validation Step State
   const [validatedComponents, setValidatedComponents] = useState<ExtractedIdeaComponent[]>([]);
@@ -114,31 +137,86 @@ export const IdeaNoveltyView: React.FC<IdeaNoveltyViewProps> = ({
     return () => unsubscribe();
   }, [currentUser?.id, selectedProjectId]);
 
-  // Preset Sample Triggers
-  const applyPresetSample = (presetIndex: number) => {
-    if (presetIndex === 1) {
-      setProposalTitle('IoT Autonomous Agriculture Telemetry & Predictive Shelf-Life Network');
-      setProposalDomain('Smart Agriculture & IoT Sensors');
-      setTechnicalProblem('Agricultural produce undergoes rapid degradation in transit, causing 30% logistics waste due to unmonitored thermal spikes and static transport routing.');
-      setProposedSolution('An edge IoT multi-sensor telemetry node (F1) continuously acquires spectral data streams. A deep convolutional degradation neural network (F2) calculates real-time shelf-life vectors. The output dynamically couples to an automated inventory recommendation engine (F3).');
-      setExpectedTechnicalEffect('Extends transport shelf-life predictability by 45% and reduces supply chain degradation waste by 38%.');
-      setProposalText(`Abstract: This project presents an autonomous agricultural produce monitoring system. The system combines multi-spectral IoT sensor telemetry nodes deployed on logistics containers with a real-time deep learning degradation model. By processing temperature, humidity, and ethylene gas concentration, the edge neural network dynamically predicts produce shelf-life. Furthermore, the calculated decay metric directly adjusts priority dispatch ranking to optimize supply chain inventory.`);
-    } else if (presetIndex === 2) {
-      setProposalTitle('Quantum-Resistant Edge Sensor Telemetry Encryption System');
-      setProposalDomain('Cybersecurity & Embedded Systems');
-      setTechnicalProblem('IoT sensors deployed in critical energy infrastructure are vulnerable to post-quantum decryption attacks on centralized cloud databases.');
-      setProposedSolution('Hardware-isolated cryptographic modules on edge microcontrollers perform lattice-based zero-knowledge proof (ZKP) key rotation (F1) before dispatching telemetry streams (F2) over an encrypted MQTT broker (F3).');
-      setExpectedTechnicalEffect('Achieves post-quantum security compliance with sub-15ms latency overhead on memory-constrained edge hardware.');
-      setProposalText(`Abstract: We disclose a quantum-resistant telemetry protection framework for edge IoT nodes. The system incorporates lattice-based cryptography directly within hardware security modules (HSM) on edge transceivers. Zero-knowledge proof protocols authenticate sensor telemetry packages prior to transmission over low-power MQTT networks, eliminating centralized key exposure.`);
-    } else {
-      setProposalTitle('AI Dynamic Latency Throttling for Autonomous Edge UAV Navigation');
-      setProposalDomain('Robotics & Edge Compute');
-      setTechnicalProblem('Unmanned aerial vehicles (UAVs) experience sensor processing throttling during extreme thermals, risking trajectory collapse.');
-      setProposedSolution('A dual-stage neural network dynamically balances optical flow compute latency against hardware thermal limits (F1) using closed-loop execution scaling (F2).');
-      setExpectedTechnicalEffect('Eliminates thermal throttling crashes and maintains 60 FPS spatial point-cloud processing.');
-      setProposalText(`Abstract: An adaptive execution controller for autonomous UAV navigation. The architecture monitors GPU temperature vectors in real-time and scales neural network precision dynamically to prevent frame drops during high-altitude flight operations.`);
-    }
-  };
+interface RDPreset {
+  id: number;
+  badge: string;
+  title: string;
+  domain: string;
+  summary: string;
+  technicalProblem: string;
+  proposedSolution: string;
+  expectedTechnicalEffect: string;
+  proposalText: string;
+}
+
+const RESEARCH_PRESETS: RDPreset[] = [
+  {
+    id: 1,
+    badge: 'Smart Agriculture & IoT',
+    title: 'IoT Autonomous Agriculture Telemetry & Predictive Shelf-Life Network',
+    domain: 'Smart Agriculture & IoT Sensors',
+    summary: 'Spectral produce degradation monitoring & automated dispatch priority.',
+    technicalProblem: 'Agricultural produce undergoes rapid degradation in transit, causing 30% logistics waste due to unmonitored thermal spikes and static transport routing.',
+    proposedSolution: 'An edge IoT multi-sensor telemetry node (F1) continuously acquires spectral data streams. A deep convolutional degradation neural network (F2) calculates real-time shelf-life vectors. The output dynamically couples to an automated inventory recommendation engine (F3).',
+    expectedTechnicalEffect: 'Extends transport shelf-life predictability by 45% and reduces supply chain degradation waste by 38%.',
+    proposalText: `Abstract: This project presents an autonomous agricultural produce monitoring system. The system combines multi-spectral IoT sensor telemetry nodes deployed on logistics containers with a real-time deep learning degradation model. By processing temperature, humidity, and ethylene gas concentration, the edge neural network dynamically predicts produce shelf-life. Furthermore, the calculated decay metric directly adjusts priority dispatch ranking to optimize supply chain inventory.`
+  },
+  {
+    id: 2,
+    badge: 'Cybersecurity & Cryptography',
+    title: 'Quantum-Resistant Edge Sensor Telemetry Encryption System',
+    domain: 'Cybersecurity & Embedded Systems',
+    summary: 'Hardware lattice-based zero-knowledge proofs & encrypted MQTT broker.',
+    technicalProblem: 'IoT sensors deployed in critical energy infrastructure are vulnerable to post-quantum decryption attacks on centralized cloud databases.',
+    proposedSolution: 'Hardware-isolated cryptographic modules on edge microcontrollers perform lattice-based zero-knowledge proof (ZKP) key rotation (F1) before dispatching telemetry streams (F2) over an encrypted MQTT broker (F3).',
+    expectedTechnicalEffect: 'Achieves post-quantum security compliance with sub-15ms latency overhead on memory-constrained edge hardware.',
+    proposalText: `Abstract: We disclose a quantum-resistant telemetry protection framework for edge IoT nodes. The system incorporates lattice-based cryptography directly within hardware security modules (HSM) on edge transceivers. Zero-knowledge proof protocols authenticate sensor telemetry packages prior to transmission over low-power MQTT networks, eliminating centralized key exposure.`
+  },
+  {
+    id: 3,
+    badge: 'Robotics & UAV Avionics',
+    title: 'AI Dynamic Latency Throttling for Autonomous Edge UAV Navigation',
+    domain: 'Robotics & Edge Compute',
+    summary: 'Closed-loop execution scaling for optical flow point-cloud processing.',
+    technicalProblem: 'Unmanned aerial vehicles (UAVs) experience sensor processing throttling during extreme thermals, risking trajectory collapse.',
+    proposedSolution: 'A dual-stage neural network dynamically balances optical flow compute latency against hardware thermal limits (F1) using closed-loop execution scaling (F2).',
+    expectedTechnicalEffect: 'Eliminates thermal throttling crashes and maintains 60 FPS spatial point-cloud processing.',
+    proposalText: `Abstract: An adaptive execution controller for autonomous UAV navigation. The architecture monitors GPU temperature vectors in real-time and scales neural network precision dynamically to prevent frame drops during high-altitude flight operations.`
+  },
+  {
+    id: 4,
+    badge: 'Medical AI & Pathology',
+    title: 'Multimodal Transformer Fusion for Real-Time Pathology Anomaly Detection',
+    domain: 'Healthcare AI & Medical Imaging',
+    summary: 'Cross-attention fusion of spatial MRI slices & genomic biomarkers.',
+    technicalProblem: 'High false-positive rates in early-stage oncology screening due to isolated analysis of medical imaging without real-time genomic biomarker alignment.',
+    proposedSolution: 'A dual-stream multimodal transformer architecture (F1) fuses high-resolution 3D MRI voxel slices with real-time liquid biopsy genomic sequence streams (F2). A spatial-cross-attention module (F3) computes voxel-level tumor probability heatmaps.',
+    expectedTechnicalEffect: 'Improves early oncology detection sensitivity by 29% while reducing diagnostic latency from 48 hours to under 3 minutes.',
+    proposalText: `Abstract: This work presents a multimodal AI pathology screening platform for early oncology detection. The system integrates a dual-stream vision transformer trained on 3D MRI spatial volumes with a sequence transformer processing genomic biomarker assay streams. Cross-attention layers compute alignment scores to generate probabilistic spatial heatmaps for clinical decision support.`
+  },
+  {
+    id: 5,
+    badge: 'Clean Energy & Smart Grid',
+    title: 'Decentralized Peer-to-Peer Microgrid Battery Degradation Balancing',
+    domain: 'Clean Energy & Smart Grid Control',
+    summary: 'State-of-Health electrochemistry tracking & decentralized smart contracts.',
+    technicalProblem: 'Local solar microgrids experience accelerated battery degradation due to uncoordinated peer-to-peer discharge spikes during peak grid demand.',
+    proposedSolution: 'Edge micro-inverter controllers execute decentralized consensus (F1) based on real-time State-of-Health (SoH) electrochemical impedance models (F2). Dynamic smart contracts balance local discharge rates (F3) to equalize degradation rates across battery packs.',
+    expectedTechnicalEffect: 'Extends overall microgrid energy storage lifespan by 3.5 years and reduces localized degradation variance by 52%.',
+    proposalText: `Abstract: A peer-to-peer energy storage optimization protocol for distributed solar microgrids. By embedding electrochemical impedance spectroscopy monitoring directly into inverter microcontrollers, the system dynamically routes power dispatch based on cell degradation metrics, preventing thermal overload in legacy battery packs.`
+  },
+  {
+    id: 6,
+    badge: 'Autonomous Vehicles & LiDAR',
+    title: 'Edge Point-Cloud Compression for Autonomous Vehicle Spatial Tracking',
+    domain: 'Autonomous Vehicles & Computer Vision',
+    summary: 'Spatiotemporal octree compression & low-latency bounding box tracking.',
+    technicalProblem: '3D LiDAR point-cloud data streams overwhelm vehicle CAN-bus bandwidth, causing 120ms transmission delays in obstacle detection.',
+    proposedSolution: 'A hardware-accelerated octree compression encoder (F1) prunes redundant point-cloud data in real-time. A spatiotemporal Kalman-Transformer filter (F2) reconstructs bounding boxes (F3) directly at the vehicle ECU.',
+    expectedTechnicalEffect: 'Reduces point-cloud data volume by 78% while maintaining sub-10ms bounding-box spatial tracking accuracy.',
+    proposalText: `Abstract: We present a real-time point-cloud compression framework for autonomous vehicle perception networks. The architecture utilizes dynamic octree quantization to compress 64-beam LiDAR streams on edge hardware prior to intra-vehicle transmission, enabling zero-latency obstacle detection.`
+  }
+];
 
   // Handle PDF Upload via pdfParser.ts
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -742,67 +820,98 @@ export const IdeaNoveltyView: React.FC<IdeaNoveltyViewProps> = ({
                 </p>
               </div>
 
-              {/* Preset Buttons */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Quick Presets</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '12px' }}>
-                  <button
-                    onClick={() => applyPresetSample(1)}
-                    style={{
-                      background: 'var(--bg-surface)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '12px',
-                      padding: '14px',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 4
-                    }}
-                  >
-                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-main)' }}>1. Agriculture IoT Telemetry</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Produce degradation prediction & shelf-life ranking.</div>
-                  </button>
-
-                  <button
-                    onClick={() => applyPresetSample(2)}
-                    style={{
-                      background: 'var(--bg-surface)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '12px',
-                      padding: '14px',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 4
-                    }}
-                  >
-                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-main)' }}>2. Quantum-Resistant IoT</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Lattice-based encryption & zero-knowledge proofs.</div>
-                  </button>
-
-                  <button
-                    onClick={() => applyPresetSample(3)}
-                    style={{
-                      background: 'var(--bg-surface)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '12px',
-                      padding: '14px',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 4
-                    }}
-                  >
-                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-main)' }}>3. UAV Thermal Throttling</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>AI dynamic latency control for autonomous drones.</div>
-                  </button>
+              {/* Preset Buttons Header & Grid */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Quick Research Presets ({RESEARCH_PRESETS.length} Available)
+                  </label>
+                  {(activePresetId !== null || proposalTitle || technicalProblem) && (
+                    <button
+                      onClick={handleClearForm}
+                      style={{
+                        background: 'transparent',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '6px',
+                        padding: '4px 10px',
+                        fontSize: '0.75rem',
+                        color: 'var(--text-dim)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Clear / Reset Form
+                    </button>
+                  )}
                 </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px' }}>
+                  {RESEARCH_PRESETS.map((preset) => {
+                    const isSelected = activePresetId === preset.id;
+                    return (
+                      <button
+                        key={preset.id}
+                        onClick={() => applyPresetSample(preset.id)}
+                        style={{
+                          background: isSelected ? 'rgba(99, 102, 241, 0.12)' : 'var(--bg-surface)',
+                          border: `1.5px solid ${isSelected ? 'var(--accent-indigo)' : 'var(--border-color)'}`,
+                          borderRadius: '12px',
+                          padding: '14px',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 6,
+                          position: 'relative'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span 
+                            style={{ 
+                              fontSize: '0.68rem', 
+                              fontWeight: 700, 
+                              color: isSelected ? 'var(--accent-indigo)' : 'var(--accent-cyan)',
+                              background: 'var(--bg-card)',
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              border: '1px solid var(--border-color)'
+                            }}
+                          >
+                            {preset.badge}
+                          </span>
+                          {isSelected && <Check size={14} color="var(--accent-indigo)" />}
+                        </div>
+                        <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: 1.3 }}>
+                          {preset.id}. {preset.title}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                          {preset.summary}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {activePresetId !== null && (
+                  <div 
+                    style={{ 
+                      background: 'rgba(99, 102, 241, 0.08)', 
+                      border: '1px solid rgba(99, 102, 241, 0.25)', 
+                      borderRadius: '10px', 
+                      padding: '10px 14px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '10px', 
+                      fontSize: '0.82rem', 
+                      color: 'var(--text-main)' 
+                    }}
+                  >
+                    <Sparkles size={16} color="var(--accent-indigo)" style={{ flexShrink: 0 }} />
+                    <span>
+                      <strong>Preset Loaded:</strong> You can now edit or customize any title, domain, technical problem, solution architecture, or expected technical effect text below at any time!
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

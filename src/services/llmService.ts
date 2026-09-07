@@ -146,6 +146,48 @@ export async function executeRealtimeLLM(options: LLMRequestOptions): Promise<LL
     }
   }
 
+  // 3. Custom Self-Hosted Fine-Tuned Model (Ollama / vLLM / HuggingFace / Local GPU Endpoint)
+  if (provider === 'custom_model' || settings.customEndpoint) {
+    const customEndpoint = settings.customEndpoint || 'http://localhost:11434/api/generate';
+    try {
+      console.log(`[LLM SERVICE] Querying custom AI model endpoint: ${customEndpoint}`);
+      const isOllamaNative = customEndpoint.includes('/api/generate');
+
+      const body = isOllamaNative ? {
+        model: settings.customModelName || 'patentintel-llama3',
+        prompt: (options.systemInstruction ? `${options.systemInstruction}\n\n` : '') + options.prompt,
+        stream: false,
+        options: { temperature: options.temperature ?? 0.2 }
+      } : {
+        model: settings.customModelName || 'patentintel-llama3',
+        messages: [
+          ...(options.systemInstruction ? [{ role: 'system', content: options.systemInstruction }] : []),
+          { role: 'user', content: options.prompt }
+        ],
+        temperature: options.temperature ?? 0.2
+      };
+
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+
+      const res = await fetch(customEndpoint, { method: 'POST', headers, body: JSON.stringify(body) });
+      if (res.ok) {
+        const data = await res.json();
+        const responseText = isOllamaNative ? data.response : (data.choices?.[0]?.message?.content || data.response);
+        if (responseText) {
+          return {
+            text: responseText,
+            provider: 'openai',
+            model: settings.customModelName || 'custom-fine-tuned-patentintel-model',
+            raw: data
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('[NOVELTY ENGINE] Custom AI Model Endpoint fetch exception:', err);
+    }
+  }
+
   // 3. Dynamic Rule Engine NLP Fallback (When API Key is not set or rate-limited)
   // Completely dynamic based on user prompt — NO static mock string!
   console.log('[LLM SERVICE] Executing Dynamic Real-Time NLP Processing (Enter API Key in Settings to enable direct Gemini/OpenAI API completions)');

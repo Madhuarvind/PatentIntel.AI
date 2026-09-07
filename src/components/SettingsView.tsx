@@ -60,7 +60,7 @@ export const SettingsView: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: 'rgba(99, 102, 241, 0.08)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent-indigo)', marginBottom: '6px' }}>
-                Custom AI Server Endpoint URL
+                {llmProvider === 'huggingface' ? 'Hugging Face Inference Endpoint URL' : 'Custom AI Server Endpoint URL'}
               </label>
               <div style={{ position: 'relative' }}>
                 <Globe size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--accent-indigo)' }} />
@@ -68,19 +68,19 @@ export const SettingsView: React.FC = () => {
                   type="text"
                   value={customEndpoint}
                   onChange={(e) => setCustomEndpoint(e.target.value)}
-                  placeholder="http://localhost:11434/api/generate"
+                  placeholder={llmProvider === 'huggingface' ? "https://api-inference.huggingface.co/models/madhuaravind21/patentintel-llama3-1m" : "http://localhost:11434/api/generate"}
                   className="input-field"
                   style={{ paddingLeft: '34px', fontSize: '0.82rem' }}
                 />
               </div>
               <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>
-                Ollama: http://localhost:11434/api/generate | vLLM: http://localhost:8000/v1/chat/completions
+                {llmProvider === 'huggingface' ? 'Format: https://api-inference.huggingface.co/models/your-username/your-model' : 'Ollama: http://localhost:11434/api/generate | vLLM: http://localhost:8000/v1/chat/completions'}
               </span>
             </div>
 
             <div>
               <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent-indigo)', marginBottom: '6px' }}>
-                Custom Model Identifier
+                {llmProvider === 'huggingface' ? 'Hugging Face Model ID' : 'Custom Model Identifier'}
               </label>
               <div style={{ position: 'relative' }}>
                 <Cpu size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--accent-indigo)' }} />
@@ -88,13 +88,13 @@ export const SettingsView: React.FC = () => {
                   type="text"
                   value={customModelName}
                   onChange={(e) => setCustomModelName(e.target.value)}
-                  placeholder="patentintel-llama3"
+                  placeholder={llmProvider === 'huggingface' ? "madhuaravind21/patentintel-llama3-1m" : "patentintel-llama3"}
                   className="input-field"
                   style={{ paddingLeft: '34px', fontSize: '0.82rem' }}
                 />
               </div>
               <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>
-                Name of your fine-tuned model (e.g. patentintel-llama3:8b)
+                {llmProvider === 'huggingface' ? 'e.g. madhuaravind21/patentintel-llama3-1m' : 'Name of your fine-tuned model (e.g. patentintel-llama3:8b)'}
               </span>
             </div>
           </div>
@@ -102,7 +102,7 @@ export const SettingsView: React.FC = () => {
 
         <div>
           <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '6px' }}>
-            LLM API Key (Optional for Local Models)
+            {llmProvider === 'huggingface' ? 'Hugging Face User Access Token (Write/Read)' : 'LLM API Key (Optional for Local Models)'}
           </label>
           <div style={{ position: 'relative' }}>
             <Key size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
@@ -110,7 +110,7 @@ export const SettingsView: React.FC = () => {
               type="password"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder="Paste your Gemini or OpenAI API Key..."
+              placeholder={llmProvider === 'huggingface' ? "Paste your Hugging Face Access Token (hf_...)" : "Paste your Gemini or OpenAI API Key..."}
               className="input-field"
               style={{ paddingLeft: '40px' }}
             />

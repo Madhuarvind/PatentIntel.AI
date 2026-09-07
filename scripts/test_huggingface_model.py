@@ -55,6 +55,7 @@ def test_patent_model(token: str, model_id: str = "madhuaravind21/patentintel-ll
 
         except Exception as e:
             err_msg = str(e)
+            print(f"   [API RESPONSE DETAIL] {err_msg}")
             if "503" in err_msg or "loading" in err_msg.lower() or "429" in err_msg:
                 print(f"   [WAIT] Model is loading into Hugging Face GPU memory...")
                 print(f"          Waiting 20 seconds for GPU warm-up... (Retry {attempt}/{max_retries})")
@@ -64,8 +65,11 @@ def test_patent_model(token: str, model_id: str = "madhuaravind21/patentintel-ll
                 print(f"           Retrying in 10 seconds... (Attempt {attempt}/{max_retries})")
                 time.sleep(10)
             else:
-                print(f"\n[NOTICE] {err_msg}")
-                print("   If the model was fine-tuned as a LoRA adapter or base model, test live in PatentIntel.AI UI!")
+                print("\n[INFO] Standard Hugging Face Notice:")
+                print("   New custom fine-tuned repositories on Hugging Face Hub require either:")
+                print("   1) Enabling 'Inference API' on the HF repository page: https://huggingface.co/madhuaravind21/patentintel-llama3-1m")
+                print("   2) Deploying a 1-click HF Dedicated Endpoint or local Ollama server.")
+                print("   3) Testing directly inside PatentIntel.AI UI Settings!")
                 break
 
 if __name__ == "__main__":

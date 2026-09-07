@@ -155,7 +155,70 @@ export async function executeRealtimeLLM(options: LLMRequestOptions): Promise<LL
     }
   }
 
-  // 3. Custom Self-Hosted Fine-Tuned Model (Ollama / vLLM / HuggingFace / Local GPU Endpoint)
+  // 3. Hugging Face Serverless Inference API / Dedicated Endpoint
+  if (provider === 'huggingface' || (provider === 'custom_model' && (settings.customEndpoint?.includes('huggingface.co') || settings.customEndpoint?.includes('hf.space')))) {
+    const hfModel = settings.customModelName || 'meta-llama/Llama-3.1-8B-Instruct';
+    const hfEndpoint = settings.customEndpoint || `https://api-inference.huggingface.co/models/${hfModel}`;
+    const hfToken = apiKey || (import.meta as any).env?.VITE_HF_API_TOKEN || '';
+
+    try {
+      console.log(`[LLM SERVICE] Querying Hugging Face Model (${hfModel}) via Endpoint: ${hfEndpoint}`);
+      
+      const isChatCompletion = hfEndpoint.includes('/v1/chat/completions');
+
+      const body = isChatCompletion ? {
+        model: hfModel,
+        messages: [
+          ...(options.systemInstruction ? [{ role: 'system', content: options.systemInstruction }] : []),
+          { role: 'user', content: options.prompt }
+        ],
+        temperature: options.temperature ?? 0.2,
+        max_tokens: options.maxTokens ?? 2048
+      } : {
+        inputs: (options.systemInstruction ? `${options.systemInstruction}\n\n` : '') + options.prompt,
+        parameters: {
+          temperature: options.temperature ?? 0.2,
+          max_new_tokens: options.maxTokens ?? 2048,
+          return_full_text: false
+        }
+      };
+
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (hfToken) headers['Authorization'] = `Bearer ${hfToken}`;
+
+      const res = await fetch(hfEndpoint, { method: 'POST', headers, body: JSON.stringify(body) });
+
+      if (res.ok) {
+        const data = await res.json();
+        let responseText = '';
+
+        if (Array.isArray(data) && data[0]?.generated_text) {
+          responseText = data[0].generated_text;
+        } else if (data.choices?.[0]?.message?.content) {
+          responseText = data.choices[0].message.content;
+        } else if (typeof data === 'string') {
+          responseText = data;
+        }
+
+        if (responseText) {
+          console.log(`[LLM SERVICE] Hugging Face Inference API successfully returned response.`);
+          return {
+            text: responseText.trim(),
+            provider: 'openai',
+            model: hfModel,
+            raw: data
+          };
+        }
+      } else {
+        const errText = await res.text();
+        console.warn(`[LLM SERVICE] Hugging Face API error ${res.status}:`, errText);
+      }
+    } catch (err) {
+      console.error('[LLM SERVICE] Hugging Face API fetch exception:', err);
+    }
+  }
+
+  // 4. Custom Self-Hosted Fine-Tuned Model (Ollama / vLLM / Local GPU Endpoint)
   if (provider === 'custom_model' || settings.customEndpoint) {
     const customEndpoint = settings.customEndpoint || 'http://localhost:11434/api/generate';
     try {

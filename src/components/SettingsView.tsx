@@ -50,12 +50,13 @@ export const SettingsView: React.FC = () => {
           >
             <option value="gemini">Google Gemini 1.5 Pro (Recommended - 1M Context Window)</option>
             <option value="gpt4">OpenAI GPT-4o (Strict RAG Evidence Mode)</option>
-            <option value="custom_model">Custom Fine-Tuned AI Model (Ollama / vLLM / HuggingFace Endpoint)</option>
+            <option value="huggingface">Hugging Face Inference API / Dedicated Endpoint (HF Hub Model)</option>
+            <option value="custom_model">Custom Fine-Tuned AI Model (Ollama / vLLM / Local Endpoint)</option>
             <option value="local">Local Ollama Llama-3-70B (Offline Mode)</option>
           </select>
         </div>
 
-        {(llmProvider === 'custom_model' || llmProvider === 'local') && (
+        {(llmProvider === 'huggingface' || llmProvider === 'custom_model' || llmProvider === 'local') && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: 'rgba(99, 102, 241, 0.08)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent-indigo)', marginBottom: '6px' }}>

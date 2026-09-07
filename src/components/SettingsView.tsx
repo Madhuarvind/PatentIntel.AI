@@ -153,6 +153,27 @@ export const SettingsView: React.FC = () => {
           </select>
         </div>
 
+        {/* Advanced AI Innovations Panel */}
+        <div style={{ background: 'rgba(16, 185, 129, 0.08)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.25)', marginTop: '8px' }}>
+          <h4 style={{ margin: '0 0 10px 0', fontSize: '0.88rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            ⚡ Advanced AI Engine Capabilities
+          </h4>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: 'var(--text-main)', cursor: 'pointer' }}>
+              <input type="checkbox" defaultChecked style={{ accentColor: '#10b981' }} />
+              DeepSeek-R1 Chain-of-Thought (&lt;think&gt;)
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: 'var(--text-main)', cursor: 'pointer' }}>
+              <input type="checkbox" defaultChecked style={{ accentColor: '#10b981' }} />
+              ColPali Multi-Modal Vision AI
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: 'var(--text-main)', cursor: 'pointer' }}>
+              <input type="checkbox" defaultChecked style={{ accentColor: '#10b981' }} />
+              Self-Reflective RAG Self-Correction
+            </label>
+          </div>
+        </div>
+
         <button type="submit" className="btn-primary" style={{ width: 'fit-content', padding: '12px 24px', fontSize: '0.92rem' }}>
           <Save size={18} /> {saved ? 'Configuration Saved!' : 'Save System Settings'}
         </button>

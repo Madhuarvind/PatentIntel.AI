@@ -11,6 +11,7 @@ import type {
 import { dbStore } from './dbStore';
 import { workspaceStore } from './workspaceStore';
 import { searchRealtimeAcademicPapers, DEFAULT_ACADEMIC_FILTERS } from './academicApi';
+import { executeRealtimeLLM } from './llmService';
 
 /**
  * Technical Component Categories for Structured Disclosure
@@ -203,6 +204,198 @@ export function extractInnovationComponents(
 }
 
 /**
+ * AI-Assisted Component & Relationship Extractor via Real-Time LLM
+ */
+export async function extractInnovationComponentsAsync(
+  proposalText: string,
+  projectId: string = 'proj_default'
+): Promise<{ components: ExtractedIdeaComponent[]; relationships: ComponentRelationship[] }> {
+  try {
+    const prompt = `You are a Senior Patent Examiner and Technical Architect. Analyze the following R&D innovation proposal and extract key technical components, functions, data streams, computational processes, constraints, technical effects, and inter-component relationships.
+
+Return ONLY a valid JSON object with the following structure (no markdown, no pre-amble):
+{
+  "components": [
+    {
+      "term": "Name of technical feature",
+      "category": "COMPONENT",
+      "description": "Brief technical description",
+      "importance": "CORE"
+    }
+  ],
+  "relationships": [
+    {
+      "fromTerm": "Source component term",
+      "toTerm": "Target component term",
+      "relationshipType": "feeds data to",
+      "description": "Relationship description"
+    }
+  ]
+}
+
+Valid categories: "COMPONENT", "FUNCTION", "DATA", "PROCESS", "RELATIONSHIP", "CONSTRAINT", "TECHNICAL_EFFECT".
+Valid importance: "CORE", "SUPPORTING", "OPTIONAL".
+
+Proposal Text:
+${proposalText.substring(0, 3000)}`;
+
+    const llmRes = await executeRealtimeLLM({
+      prompt,
+      systemInstruction: 'You extract precise technical features and system architecture from technical disclosures.',
+      temperature: 0.1,
+      maxTokens: 2048
+    });
+
+    if (llmRes && llmRes.text) {
+      const cleanJson = llmRes.text.replace(/```json/g, '').replace(/```/g, '').trim();
+      const parsed = JSON.parse(cleanJson);
+
+      if (parsed.components && Array.isArray(parsed.components) && parsed.components.length > 0) {
+        const components: ExtractedIdeaComponent[] = parsed.components.map((c: any, idx: number) => ({
+          id: `comp_${projectId}_${idx + 1}`,
+          innovationProjectId: projectId,
+          featureCode: `F${idx + 1}`,
+          name: c.term || `Feature ${idx + 1}`,
+          term: c.term || `Feature ${idx + 1}`,
+          category: c.category || 'COMPONENT',
+          description: c.description || 'AI Extracted technical feature from proposal disclosure.',
+          importance: c.importance || (idx < 3 ? 'CORE' : 'SUPPORTING'),
+          overlapStatus: 'POTENTIALLY_DISTINCTIVE',
+          overlapConfidence: 0.85,
+          matchedPriorArt: [],
+          supportingEvidence: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }));
+
+        const relationships: ComponentRelationship[] = (parsed.relationships || []).map((r: any, idx: number) => {
+          const fromComp = components.find(comp => comp.term.toLowerCase() === (r.fromTerm || '').toLowerCase()) || components[0];
+          const toComp = components.find(comp => comp.term.toLowerCase() === (r.toTerm || '').toLowerCase()) || components[1] || components[0];
+
+          return {
+            id: `rel_${projectId}_${idx + 1}`,
+            fromComponentId: fromComp.id,
+            toComponentId: toComp.id,
+            fromTerm: fromComp.term,
+            toTerm: toComp.term,
+            relationshipType: r.relationshipType || 'interacts with',
+            description: r.description || `${fromComp.term} interacts with ${toComp.term}.`,
+            overlapStatus: 'POTENTIALLY_DISTINCTIVE'
+          };
+        });
+
+        console.log(`[NOVELTY ENGINE] Live LLM successfully extracted ${components.length} components and ${relationships.length} relationships.`);
+        return { components, relationships };
+      }
+    }
+  } catch (err) {
+    console.warn('[NOVELTY ENGINE] LLM extraction fallback to pattern matcher:', err);
+  }
+
+  // Synchronous fallback
+  return extractInnovationComponents(proposalText, projectId);
+}
+
+/**
+ * AI-Assisted Grounded Differentiator Generator via Real-Time LLM
+ */
+export async function generateLLMDifferentiatorRecommendations(
+  proposalText: string,
+  extractedComponents: ExtractedIdeaComponent[],
+  projectId: string
+): Promise<DifferentiatorRecommendation[]> {
+  try {
+    const compTerms = extractedComponents.map(c => `${c.featureCode}: ${c.term} (${c.category})`).join(', ');
+    const prompt = `You are a Senior Patent Attorney & Innovation Strategist. Based on the R&D proposal text and extracted technical components, generate 3 highly novel technical differentiator recommendations to help the inventor overcome prior-art collisions and ensure patent eligibility under Section 101/102/103.
+
+Return ONLY a valid JSON array of 3 objects (no markdown, no pre-amble):
+[
+  {
+    "title": "Short title of proposed differentiator",
+    "description": "Specific technical modification or dynamic architectural coupling to add to the claim scope",
+    "priorArtGap": "Explain why existing prior-art literature lacks this specific technical coupling",
+    "relatedComponents": ["Term 1", "Term 2"]
+  }
+]
+
+Proposal Text:
+${proposalText.substring(0, 2000)}
+
+Extracted Components:
+${compTerms}`;
+
+    const llmRes = await executeRealtimeLLM({
+      prompt,
+      systemInstruction: 'You are an expert patent attorney generating precise, non-obvious claim differentiators to overcome prior art overlap.',
+      temperature: 0.3,
+      maxTokens: 1500
+    });
+
+    if (llmRes && llmRes.text) {
+      const cleanJson = llmRes.text.replace(/```json/g, '').replace(/```/g, '').trim();
+      const parsed = JSON.parse(cleanJson);
+
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((rec: any, idx: number) => ({
+          id: `rec_${projectId}_${idx + 1}`,
+          innovationProjectId: projectId,
+          title: rec.title || `AI Differentiator ${idx + 1}`,
+          description: rec.description || 'Dynamic architectural modification to enhance patent eligibility.',
+          relatedComponents: rec.relatedComponents || [extractedComponents[0]?.term || 'Component 1'],
+          priorArtGap: rec.priorArtGap || 'Prior art fails to disclose dynamic coupling of these components.',
+          supportingEvidence: [],
+          confidence: 0.88 - idx * 0.03,
+          status: 'SUGGESTED',
+          createdAt: new Date().toISOString()
+        }));
+      }
+    }
+  } catch (err) {
+    console.warn('[NOVELTY ENGINE] LLM Differentiator generation fallback:', err);
+  }
+
+  // Fallback defaults
+  return [
+    {
+      id: `rec_${projectId}_1`,
+      innovationProjectId: projectId,
+      title: 'Dynamic Telemetry & Expiry-Driven Feedback Coupling',
+      description: `Tie the predicted metric directly to the priority ranking algorithm for ${extractedComponents[0]?.term || 'core system output'}.`,
+      relatedComponents: [extractedComponents[0]?.term || 'Component 1', extractedComponents[1]?.term || 'Component 2'],
+      priorArtGap: 'Retrieved prior art discloses individual prediction and recommendation, but lacks direct dynamic coupling vector.',
+      supportingEvidence: [],
+      confidence: 0.88,
+      status: 'SUGGESTED',
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: `rec_${projectId}_2`,
+      innovationProjectId: projectId,
+      title: 'Zero-Knowledge Edge Telemetry Hardening',
+      description: 'Incorporate ZKP verification on edge node hardware transceivers before dispatching payload streams.',
+      relatedComponents: [extractedComponents[2]?.term || 'Component 3'],
+      priorArtGap: 'Existing patents rely on central database authentication rather than zero-knowledge edge verification.',
+      supportingEvidence: [],
+      confidence: 0.85,
+      status: 'SUGGESTED',
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: `rec_${projectId}_3`,
+      innovationProjectId: projectId,
+      title: 'Closed-Loop Real-Time Feedback Optimization Engine',
+      description: 'Implement a continuous feedback loop updating parameters based on real-time consumption telemetry.',
+      relatedComponents: [extractedComponents[0]?.term || 'Component 1'],
+      priorArtGap: 'Prior academic literature operates on static inventory snapshots without dynamic closed-loop feedback.',
+      supportingEvidence: [],
+      confidence: 0.82,
+      status: 'SUGGESTED',
+      createdAt: new Date().toISOString()
+    }
+  ];
+}
+
+/**
  * Calculates Review Readiness Score (0 - 100%)
  */
 export function calculateReviewReadinessScore(
@@ -273,8 +466,8 @@ export async function analyzeIdeaProposal(
     dbStore.saveInnovationProject(project);
   }
 
-  // 2. Extract Technical Components & Relationships
-  const { components: extractedComponents, relationships } = extractInnovationComponents(proposalText, pId);
+  // 2. Extract Technical Components & Relationships (Live LLM with Pattern Fallback)
+  const { components: extractedComponents, relationships } = await extractInnovationComponentsAsync(proposalText, pId);
 
   // Save Innovation Document
   dbStore.saveInnovationDocument({
@@ -439,45 +632,8 @@ export async function analyzeIdeaProposal(
     priorArtConcern = 'INSUFFICIENT_EVIDENCE';
   }
 
-  // 6. Grounded Potential Differentiator Recommendations
-  const recommendations: DifferentiatorRecommendation[] = [
-    {
-      id: `rec_${pId}_1`,
-      innovationProjectId: pId,
-      title: 'Dynamic Expiry-Driven Recommendation Coupling',
-      description: `Tie the predicted shelf-life decay metric directly to the priority ranking algorithm for ${extractedComponents[0]?.term || 'core system output'}.`,
-      relatedComponents: [extractedComponents[0]?.term || 'Component 1', extractedComponents[1]?.term || 'Component 2'],
-      priorArtGap: 'Retrieved prior art discloses individual prediction and recommendation, but lacks direct dynamic coupling vector.',
-      supportingEvidence: [],
-      confidence: 0.88,
-      status: 'SUGGESTED',
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: `rec_${pId}_2`,
-      innovationProjectId: pId,
-      title: 'Zero-Knowledge Edge Telemetry Hardening',
-      description: 'Incorporate ZKP verification on edge node hardware transceivers before dispatching payload streams.',
-      relatedComponents: [extractedComponents[2]?.term || 'Component 3'],
-      priorArtGap: 'Existing patents rely on central database authentication rather than zero-knowledge edge verification.',
-      supportingEvidence: [],
-      confidence: 0.85,
-      status: 'SUGGESTED',
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: `rec_${pId}_3`,
-      innovationProjectId: pId,
-      title: 'Closed-Loop Waste Minimization Feedback Engine',
-      description: 'Implement a continuous feedback loop updating meal recommendations based on real-time consumption telemetry.',
-      relatedComponents: [extractedComponents[0]?.term || 'Component 1'],
-      priorArtGap: 'Prior academic literature operates on static inventory snapshots without dynamic closed-loop feedback.',
-      supportingEvidence: [],
-      confidence: 0.82,
-      status: 'SUGGESTED',
-      createdAt: new Date().toISOString()
-    }
-  ];
+  // 6. Grounded Potential Differentiator Recommendations (Live LLM with Fallback)
+  const recommendations = await generateLLMDifferentiatorRecommendations(proposalText, extractedComponents, pId);
 
   // 7. Calculate Review Readiness Score
   const reviewReadinessScore = calculateReviewReadinessScore(

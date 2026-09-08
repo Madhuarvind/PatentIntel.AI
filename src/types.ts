@@ -137,6 +137,13 @@ export interface DifferentiatorRecommendation {
   confidence: number;
   status: 'SUGGESTED' | 'ACCEPTED' | 'REJECTED' | 'CUSTOMIZED';
   createdAt: string;
+  draftClaimClause?: string;
+  officeActionResponseRationale?: string;
+  predictedImpact?: {
+    noveltyGain: number;
+    obviousnessReduction: number;
+    ftoClearanceGain: number;
+  };
 }
 
 export type FeatureMatchRelationshipType = 

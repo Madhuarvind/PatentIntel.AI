@@ -73,6 +73,8 @@ export const IdeaNoveltyView: React.FC<IdeaNoveltyViewProps> = ({
   const [activeSubmission, setActiveSubmission] = useState<PatentReviewSubmission | null>(null);
   const [expandedScorePatId, setExpandedScorePatId] = useState<string | null>(null);
   const [show103Formula, setShow103Formula] = useState<boolean>(false);
+  const [expandedClaimRecId, setExpandedClaimRecId] = useState<string | null>(null);
+  const [expandedOfficeActionRecId, setExpandedOfficeActionRecId] = useState<string | null>(null);
 
   // Wizard Creation State
   const [wizardStep, setWizardStep] = useState<number>(1);
@@ -2475,34 +2477,93 @@ const RESEARCH_PRESETS: RDPreset[] = [
           {/* TAB D: DIFFERENTIATOR ADVISOR */}
           {activeReportTab === 'differentiators' && (
             <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Potential Differentiator Advisor</h3>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4, margin: 0 }}>
-                  Accepting a recommendation adds the differentiator to your innovation proposal and creates Version 2.
-                </p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Sparkles size={20} color="var(--accent-indigo)" />
+                    Potential Differentiator Advisor & Synthetic Claim Generator
+                  </h3>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4, margin: 0 }}>
+                    Accepting a recommendation integrates the non-obvious claim limitation into your innovation proposal and automatically generates Version 2.0.
+                  </p>
+                </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '16px' }}>
                 {activeReport.recommendations.map((rec) => (
-                  <div key={rec.id} style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '16px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div key={rec.id} style={{ background: 'var(--bg-input)', border: `1px solid ${rec.status === 'ACCEPTED' ? 'var(--accent-emerald)' : 'var(--border-color)'}`, borderRadius: '14px', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '16px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                        <h4 style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--accent-indigo)', margin: 0 }}>{rec.title}</h4>
-                        <span style={{ fontSize: '0.68rem', padding: '2px 6px', borderRadius: 4, fontWeight: 700, textTransform: 'uppercase', background: rec.status === 'ACCEPTED' ? 'rgba(16, 185, 129, 0.2)' : 'var(--bg-surface)', color: rec.status === 'ACCEPTED' ? 'var(--accent-emerald)' : 'var(--text-dim)' }}>
+                        <h4 style={{ fontWeight: 700, fontSize: '0.98rem', color: 'var(--accent-indigo)', margin: 0 }}>{rec.title}</h4>
+                        <span style={{ fontSize: '0.68rem', padding: '3px 8px', borderRadius: 6, fontWeight: 700, textTransform: 'uppercase', background: rec.status === 'ACCEPTED' ? 'rgba(16, 185, 129, 0.2)' : 'var(--bg-surface)', color: rec.status === 'ACCEPTED' ? 'var(--accent-emerald)' : 'var(--text-dim)', border: `1px solid ${rec.status === 'ACCEPTED' ? 'rgba(16, 185, 129, 0.4)' : 'var(--border-color)'}` }}>
                           {rec.status}
                         </span>
                       </div>
-                      <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>{rec.description}</p>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', background: 'var(--bg-surface)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+
+                      <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>{rec.description}</p>
+
+                      {/* Predicted Impact Badges */}
+                      {rec.predictedImpact && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', fontSize: '0.68rem', fontWeight: 700, background: 'var(--bg-surface)', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                          <div style={{ color: 'var(--accent-emerald)' }}>📈 Novelty: +{rec.predictedImpact.noveltyGain}%</div>
+                          <div style={{ color: 'var(--accent-indigo)' }}>🛡️ Obviousness: -{rec.predictedImpact.obviousnessReduction}%</div>
+                          <div style={{ color: 'var(--accent-amber)' }}>🔓 FTO Gain: +{rec.predictedImpact.ftoClearanceGain}%</div>
+                        </div>
+                      )}
+
+                      {/* Prior-Art Gap Card */}
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', background: 'var(--bg-surface)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                         <strong style={{ color: 'var(--text-main)' }}>Prior-Art Gap:</strong> {rec.priorArtGap}
                       </div>
+
+                      {/* Draft Statutory Claim Clause Accordion */}
+                      {rec.draftClaimClause && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedClaimRecId(expandedClaimRecId === rec.id ? null : rec.id)}
+                            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-indigo)' }}
+                          >
+                            <FileCode size={14} />
+                            <span>{expandedClaimRecId === rec.id ? 'Hide Draft Claim Clause' : '📜 Inspect Draft Statutory Independent Claim Clause'}</span>
+                          </button>
+                          
+                          {expandedClaimRecId === rec.id && (
+                            <div style={{ background: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.3)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.75rem', color: 'var(--text-main)', fontFamily: 'var(--font-mono)', lineHeight: 1.4 }}>
+                              <strong>Draft Claim 1 Limitation:</strong>
+                              <p style={{ margin: '4px 0 0 0', fontStyle: 'italic' }}>"{rec.draftClaimClause}"</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Office Action Traverse Strategy Accordion */}
+                      {rec.officeActionResponseRationale && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedOfficeActionRecId(expandedOfficeActionRecId === rec.id ? null : rec.id)}
+                            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-amber)' }}
+                          >
+                            <Scale size={14} />
+                            <span>{expandedOfficeActionRecId === rec.id ? 'Hide Traverse Strategy' : '⚖️ View § 103 Office Action Traverse Strategy'}</span>
+                          </button>
+
+                          {expandedOfficeActionRecId === rec.id && (
+                            <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.75rem', color: 'var(--text-main)', lineHeight: 1.4 }}>
+                              <strong>Statutory Traverse Argument (35 U.S.C. § 103):</strong>
+                              <p style={{ margin: '4px 0 0 0', fontStyle: 'italic' }}>"{rec.officeActionResponseRationale}"</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {rec.status !== 'ACCEPTED' && (
                       <button
                         onClick={() => handleAcceptRecommendation(rec)}
                         className="btn-primary"
-                        style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem', padding: '8px 12px' }}
+                        style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem', padding: '8px 12px', marginTop: 4 }}
                       >
                         Accept & Create Version 2
                       </button>

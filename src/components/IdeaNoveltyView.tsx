@@ -1770,26 +1770,204 @@ const RESEARCH_PRESETS: RDPreset[] = [
 
               {/* Selected Component Drawer */}
               {selectedNodeComponent && (
-                <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--accent-indigo)', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--accent-indigo)', margin: 0 }}>
-                      Feature Inspection: {selectedNodeComponent.featureCode} — {selectedNodeComponent.term}
-                    </h4>
-                    <button onClick={() => setSelectedNodeComponent(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
+                <div 
+                  className="glass-panel"
+                  style={{ 
+                    background: 'var(--bg-surface)', 
+                    border: '1px solid var(--accent-indigo)', 
+                    borderRadius: '16px', 
+                    padding: '24px', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: '16px',
+                    boxShadow: '0 8px 30px rgba(99, 102, 241, 0.15)',
+                    animation: 'fadeIn 0.3s ease-in-out'
+                  }}
+                >
+                  {/* Drawer Header */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                      <span 
+                        style={{ 
+                          fontFamily: 'var(--font-mono)', 
+                          fontSize: '0.82rem', 
+                          fontWeight: 800, 
+                          padding: '4px 10px', 
+                          borderRadius: 6, 
+                          background: 'var(--accent-indigo)', 
+                          color: '#FFFFFF' 
+                        }}
+                      >
+                        {selectedNodeComponent.featureCode}
+                      </span>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                        {selectedNodeComponent.term}
+                      </h4>
+                      <span 
+                        style={{ 
+                          fontSize: '0.72rem', 
+                          fontWeight: 700, 
+                          padding: '3px 8px', 
+                          borderRadius: 999, 
+                          background: 'rgba(255,255,255,0.06)', 
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-muted)' 
+                        }}
+                      >
+                        {selectedNodeComponent.category}
+                      </span>
+                      <span 
+                        style={{ 
+                          fontSize: '0.72rem', 
+                          fontWeight: 700, 
+                          padding: '3px 10px', 
+                          borderRadius: 999, 
+                          background: selectedNodeComponent.overlapStatus === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.15)' :
+                                      selectedNodeComponent.overlapStatus === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.15)' :
+                                      'rgba(16, 185, 129, 0.15)',
+                          color: selectedNodeComponent.overlapStatus === 'KNOWN_PRIOR_ART' ? 'var(--accent-rose)' :
+                                 selectedNodeComponent.overlapStatus === 'PARTIAL_OVERLAP' ? 'var(--accent-amber)' :
+                                 'var(--accent-emerald)',
+                          border: `1px solid ${
+                            selectedNodeComponent.overlapStatus === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.3)' :
+                            selectedNodeComponent.overlapStatus === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.3)' :
+                            'rgba(16, 185, 129, 0.3)'
+                          }`
+                        }}
+                      >
+                        {selectedNodeComponent.overlapStatus.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+
+                    <button 
+                      onClick={() => setSelectedNodeComponent(null)} 
+                      style={{ 
+                        background: 'var(--bg-input)', 
+                        border: '1px solid var(--border-color)', 
+                        borderRadius: '8px', 
+                        padding: '6px', 
+                        color: 'var(--text-dim)', 
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
                       <X size={18} />
                     </button>
                   </div>
 
-                  <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>{selectedNodeComponent.description}</p>
+                  {/* Feature Description & Core Role */}
+                  <div style={{ background: 'var(--bg-input)', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 4 }}>
+                      Feature Description & Operational Scope:
+                    </div>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-main)', margin: 0, lineHeight: 1.5 }}>
+                      {selectedNodeComponent.description}
+                    </p>
+                  </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Supporting Prior-Art Evidence:</span>
-                    {selectedNodeComponent.supportingEvidence.map((ev) => (
-                      <div key={ev.id} style={{ background: 'var(--bg-input)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', fontSize: '0.78rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <div style={{ fontWeight: 700, color: 'var(--accent-indigo)' }}>[{ev.sourceType}] {ev.title}</div>
-                        <p style={{ fontStyle: 'italic', color: 'var(--text-muted)', margin: 0 }}>"{ev.passage}"</p>
+                  {/* Matched Prior-Art Patents List */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>
+                        Matched Prior-Art Patent References ({selectedNodeComponent.matchedPriorArt.length}):
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--accent-indigo)', fontWeight: 600 }}>
+                        Multi-Signal SBERT + Vector Distance
+                      </span>
+                    </div>
+
+                    {selectedNodeComponent.matchedPriorArt.length > 0 ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '10px' }}>
+                        {selectedNodeComponent.matchedPriorArt.map((pat) => (
+                          <div 
+                            key={pat.id} 
+                            style={{ 
+                              background: 'var(--bg-input)', 
+                              padding: '12px 14px', 
+                              borderRadius: '10px', 
+                              border: '1px solid var(--border-color)', 
+                              fontSize: '0.8rem', 
+                              display: 'flex', 
+                              flexDirection: 'column', 
+                              gap: '6px' 
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span style={{ fontWeight: 800, color: 'var(--accent-indigo)', fontFamily: 'var(--font-mono)' }}>
+                                [{pat.sourceType}] {pat.id}
+                              </span>
+                              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: pat.similarityScore > 80 ? 'var(--accent-rose)' : 'var(--accent-amber)' }}>
+                                {pat.similarityScore}% Similarity
+                              </span>
+                            </div>
+                            <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.82rem' }}>
+                              {pat.title}
+                            </div>
+                            {pat.matchingExcerpt && (
+                              <p style={{ fontStyle: 'italic', color: 'var(--text-muted)', margin: 0, fontSize: '0.75rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                "{pat.matchingExcerpt}"
+                              </p>
+                            )}
+                            {pat.sourceUrl && (
+                              <a 
+                                href={pat.sourceUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: 'var(--accent-indigo)', textDecoration: 'none', fontWeight: 600, marginTop: 2 }}
+                              >
+                                <span>Inspect Disclosure</span>
+                                <ExternalLink size={12} />
+                              </a>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    ) : (
+                      <div style={{ background: 'var(--bg-input)', padding: '12px 16px', borderRadius: '10px', border: '1px dashed var(--border-color)', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        No direct prior-art patent disclosures anticipate this specific feature node. This technical element exhibits high structural novelty.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Supporting Evidence Passages */}
+                  {selectedNodeComponent.supportingEvidence.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>
+                        Grounded Citation Evidence Passages:
+                      </span>
+                      {selectedNodeComponent.supportingEvidence.map((ev) => (
+                        <div key={ev.id} style={{ background: 'var(--bg-input)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', fontSize: '0.78rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <div style={{ fontWeight: 700, color: 'var(--accent-indigo)' }}>[{ev.sourceType}] {ev.title}</div>
+                          <p style={{ fontStyle: 'italic', color: 'var(--text-muted)', margin: 0 }}>"{ev.passage}"</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Action Shortcuts */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: 4, flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => {
+                        setSelectedFilterStatus(selectedNodeComponent.overlapStatus);
+                        setActiveReportTab('matrix');
+                      }}
+                      className="btn-secondary"
+                      style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                    >
+                      <Search size={14} />
+                      <span>View in Feature Overlap Matrix</span>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveReportTab('differentiators')}
+                      className="btn-primary"
+                      style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                    >
+                      <Sparkles size={14} />
+                      <span>View Differentiator Recommendations</span>
+                    </button>
                   </div>
                 </div>
               )}

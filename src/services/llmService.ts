@@ -219,7 +219,7 @@ export async function executeRealtimeLLM(options: LLMRequestOptions): Promise<LL
   }
 
   // 4. Custom Self-Hosted Fine-Tuned Model (Ollama / vLLM / Local GPU Endpoint)
-  if (provider === 'custom_model' || settings.customEndpoint) {
+  if (provider === 'custom_model' || provider === 'local') {
     const customEndpoint = settings.customEndpoint || 'http://localhost:11434/api/generate';
     try {
       console.log(`[LLM SERVICE] Querying custom AI model endpoint: ${customEndpoint}`);

@@ -65,6 +65,6 @@ export async function generateLitigationClaimChart(proposalTitle: string, target
     totalElementsMapped: 3,
     overallInfringementRisk: 18.4,
     mappings,
-    litigationClearanceSummary: 'LOW LITIGATION INFRINGEMENT RISK (18.4%). Element 1(c)Recites novel duty-cycling under variable RF noise which creates a clear prosecution history estoppel barrier for competitors.'
+    litigationClearanceSummary: 'LOW LITIGATION INFRINGEMENT RISK (18.4%). Element 1(c) Recites novel duty-cycling under variable RF noise which creates a clear prosecution history estoppel barrier for competitors.'
   };
 }

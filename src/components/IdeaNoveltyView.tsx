@@ -72,6 +72,7 @@ export const IdeaNoveltyView: React.FC<IdeaNoveltyViewProps> = ({
   const [reviewSubmissions, setReviewSubmissions] = useState<PatentReviewSubmission[]>([]);
   const [activeSubmission, setActiveSubmission] = useState<PatentReviewSubmission | null>(null);
   const [expandedScorePatId, setExpandedScorePatId] = useState<string | null>(null);
+  const [show103Formula, setShow103Formula] = useState<boolean>(false);
 
   // Wizard Creation State
   const [wizardStep, setWizardStep] = useState<number>(1);
@@ -2312,15 +2313,49 @@ const RESEARCH_PRESETS: RDPreset[] = [
                   </p>
                 </div>
 
-                {/* Statutory Risk Gauge Chip */}
+                {/* Statutory Risk Gauge Chip & Formula Transparency */}
                 {activeReport.tsmObviousnessRisk && (
-                  <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', padding: '10px 16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div>
-                      <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>§ 103 Obviousness Risk:</div>
-                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: activeReport.tsmObviousnessRisk.level === 'HIGH' ? 'var(--accent-rose)' : activeReport.tsmObviousnessRisk.level === 'MODERATE' ? 'var(--accent-amber)' : 'var(--accent-emerald)' }}>
-                        {activeReport.tsmObviousnessRisk.score}% ({activeReport.tsmObviousnessRisk.level} RISK)
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                    <div 
+                      onClick={() => setShow103Formula(!show103Formula)}
+                      style={{ 
+                        background: 'var(--bg-input)', 
+                        border: `1px solid ${activeReport.tsmObviousnessRisk.level === 'HIGH' ? 'rgba(244, 63, 94, 0.4)' : 'var(--border-color)'}`, 
+                        padding: '8px 14px', 
+                        borderRadius: '12px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '10px', 
+                        cursor: 'pointer' 
+                      }}
+                      title="Click to view transparent 35 U.S.C. § 103 Obviousness Risk calculation formula"
+                    >
+                      <div>
+                        <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <span>§ 103 Obviousness Risk:</span>
+                          <HelpCircle size={12} />
+                        </div>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 800, color: activeReport.tsmObviousnessRisk.level === 'HIGH' ? 'var(--accent-rose)' : activeReport.tsmObviousnessRisk.level === 'MODERATE' ? 'var(--accent-amber)' : 'var(--accent-emerald)' }}>
+                          {activeReport.tsmObviousnessRisk.score}% ({activeReport.tsmObviousnessRisk.level} RISK)
+                        </div>
                       </div>
                     </div>
+
+                    {show103Formula && (
+                      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--accent-indigo)', padding: '12px', borderRadius: '10px', fontSize: '0.75rem', width: '320px', display: 'flex', flexDirection: 'column', gap: '6px', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+                        <div style={{ fontWeight: 800, color: 'var(--accent-indigo)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <Activity size={14} />
+                          <span>How 35 U.S.C. § 103 Score ({activeReport.tsmObviousnessRisk.score}%) is Calculated:</span>
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-main)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <div>• <strong>Direct Prior-Art Overlaps (N_direct):</strong> {activeReport.directOverlapCount} components (× 28%)</div>
+                          <div>• <strong>Partial Overlaps (N_partial):</strong> {activeReport.partialOverlapCount} components (× 14%)</div>
+                        </div>
+                        <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', fontStyle: 'italic', borderTop: '1px dashed var(--border-color)', paddingTop: 4 }}>
+                          Formula: min(95%, {activeReport.directOverlapCount}×28 + {activeReport.partialOverlapCount}×14) = {activeReport.tsmObviousnessRisk.score}%
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

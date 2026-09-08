@@ -2254,44 +2254,86 @@ const RESEARCH_PRESETS: RDPreset[] = [
             </div>
           )}
 
-          {/* TAB C: COMBINATION ANALYSIS */}
+          {/* TAB C: COMBINATION ANALYSIS & 35 U.S.C. § 103 OBVIOUSNESS SCREENING */}
           {activeReportTab === 'combinations' && (
-            <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Inter-Component Combination Novelty</h3>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4, margin: 0 }}>
-                  Analyzes whether combinations of individual components create a non-obvious synergistic technical effect.
-                </p>
+            <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Scale size={20} color="var(--accent-indigo)" />
+                    Inter-Component Combination Novelty & Multi-Document § 103 Screening
+                  </h3>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4, margin: 0 }}>
+                    Evaluates whether combining separate prior-art disclosures creates a non-obvious synergistic technical effect under Teaching-Suggestion-Motivation (TSM) examination.
+                  </p>
+                </div>
+
+                {/* Statutory Risk Gauge Chip */}
+                {activeReport.tsmObviousnessRisk && (
+                  <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', padding: '10px 16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div>
+                      <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>§ 103 Obviousness Risk:</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: activeReport.tsmObviousnessRisk.level === 'HIGH' ? 'var(--accent-rose)' : activeReport.tsmObviousnessRisk.level === 'MODERATE' ? 'var(--accent-amber)' : 'var(--accent-emerald)' }}>
+                        {activeReport.tsmObviousnessRisk.score}% ({activeReport.tsmObviousnessRisk.level} RISK)
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {/* TSM Combined Prior-Art Warning Box */}
+              {activeReport.tsmObviousnessRisk && activeReport.tsmObviousnessRisk.combinedReferences.length > 0 && (
+                <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '14px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-amber)', fontWeight: 800, fontSize: '0.88rem' }}>
+                    <AlertTriangle size={18} />
+                    <span>Examiner Rejection Risk: Multi-Document Prior-Art Combination (TSM Framework)</span>
+                  </div>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
+                    Patent examiners under 35 U.S.C. § 103 / EPO Article 56 combine multiple references to construct an obviousness rejection. Below are the anticipated reference pairs an examiner will cite:
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '10px', marginTop: 4 }}>
+                    {activeReport.tsmObviousnessRisk.combinedReferences.map((comb, idx) => (
+                      <div key={idx} style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', fontSize: '0.78rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ fontWeight: 800, color: 'var(--accent-indigo)' }}>
+                          Combining Ref [{comb.ref1}] + Ref [{comb.ref2}]
+                        </div>
+                        <p style={{ color: 'var(--text-muted)', margin: 0, fontStyle: 'italic' }}>
+                          "{comb.motivationReason}"
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Workflow Chain Analysis Card */}
               {activeReport.combinationAnalysis && (
-                <div style={{ background: 'var(--bg-input)', border: '1px solid var(--accent-indigo)', borderRadius: '14px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--accent-indigo)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ background: 'var(--bg-input)', border: '1px solid var(--accent-indigo)', borderRadius: '14px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', boxShadow: '0 4px 20px rgba(99, 102, 241, 0.1)' }}>
+                  <h4 style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--accent-indigo)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Sparkles size={18} /> Grounded Workflow Combination Breakdown
                   </h4>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-                      <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
-                        Shared Prior-Art Chain
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                    <div style={{ background: 'var(--bg-surface)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
+                        Shared Prior-Art Chain (Known in Literature)
                       </span>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                         {activeReport.combinationAnalysis.sharedWorkflowChain.map((item, idx) => (
-                          <span key={idx} style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: 6, background: 'rgba(244, 63, 94, 0.12)', color: 'var(--accent-rose)', border: '1px solid rgba(244, 63, 94, 0.3)', fontWeight: 600 }}>
+                          <span key={idx} style={{ fontSize: '0.78rem', padding: '5px 10px', borderRadius: 6, background: 'rgba(244, 63, 94, 0.12)', color: 'var(--accent-rose)', border: '1px solid rgba(244, 63, 94, 0.3)', fontWeight: 700 }}>
                             {item}
                           </span>
                         ))}
                       </div>
                     </div>
 
-                    <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-                      <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
-                        Proposal-Specific Limitations
+                    <div style={{ background: 'var(--bg-surface)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
+                        Proposal-Specific Novel Limitations
                       </span>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                         {activeReport.combinationAnalysis.proposalSpecificElements.map((item, idx) => (
-                          <span key={idx} style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: 6, background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent-emerald)', border: '1px solid rgba(16, 185, 129, 0.3)', fontWeight: 600 }}>
+                          <span key={idx} style={{ fontSize: '0.78rem', padding: '5px 10px', borderRadius: 6, background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent-emerald)', border: '1px solid rgba(16, 185, 129, 0.3)', fontWeight: 700 }}>
                             {item}
                           </span>
                         ))}
@@ -2299,27 +2341,52 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     </div>
                   </div>
 
-                  <div style={{ background: 'rgba(99, 102, 241, 0.08)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.2)', fontSize: '0.8rem', color: 'var(--text-main)' }}>
-                    <strong>Synergistic Differentiator Recommendation: </strong>
+                  <div style={{ background: 'rgba(99, 102, 241, 0.1)', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(99, 102, 241, 0.25)', fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: 1.5 }}>
+                    <strong style={{ color: 'var(--accent-indigo)' }}>Synergistic Differentiator Recommendation: </strong>
                     {activeReport.combinationAnalysis.potentialDifferentiator}
                   </div>
                 </div>
               )}
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {/* Inter-Component Topology Relationships */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>
+                    Inter-Component Technical Flow Relationships ({activeReport.componentRelationships.length}):
+                  </span>
+                </div>
+
                 {activeReport.componentRelationships.map((rel) => (
-                  <div key={rel.id} style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--accent-indigo)', fontWeight: 600 }}>
-                        <span>{rel.fromTerm}</span>
-                        <span style={{ color: 'var(--text-dim)' }}>➔ [{rel.relationshipType}] ➔</span>
-                        <span>{rel.toTerm}</span>
+                  <div key={rel.id} style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'all 0.2s ease' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--accent-indigo)', fontWeight: 700 }}>
+                        <span style={{ background: 'var(--bg-surface)', padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border-color)' }}>{rel.fromTerm}</span>
+                        <span style={{ color: 'var(--text-dim)', fontSize: '0.78rem', fontWeight: 600 }}>➔ [{rel.relationshipType}] ➔</span>
+                        <span style={{ background: 'var(--bg-surface)', padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border-color)' }}>{rel.toTerm}</span>
                       </div>
-                      <span style={{ fontSize: '0.7rem', padding: '3px 8px', borderRadius: 4, background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent-emerald)', border: '1px solid rgba(16, 185, 129, 0.3)', fontWeight: 700 }}>
-                        {rel.overlapStatus}
+                      <span 
+                        style={{ 
+                          fontSize: '0.72rem', 
+                          padding: '4px 10px', 
+                          borderRadius: 999, 
+                          background: rel.overlapStatus === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.12)' :
+                                      rel.overlapStatus === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.12)' :
+                                      'rgba(16, 185, 129, 0.12)', 
+                          color: rel.overlapStatus === 'KNOWN_PRIOR_ART' ? 'var(--accent-rose)' :
+                                 rel.overlapStatus === 'PARTIAL_OVERLAP' ? 'var(--accent-amber)' :
+                                 'var(--accent-emerald)', 
+                          border: `1px solid ${
+                            rel.overlapStatus === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.3)' :
+                            rel.overlapStatus === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.3)' :
+                            'rgba(16, 185, 129, 0.3)'
+                          }`, 
+                          fontWeight: 700 
+                        }}
+                      >
+                        {rel.overlapStatus.replace(/_/g, ' ')}
                       </span>
                     </div>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>{rel.description}</p>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>{rel.description}</p>
                   </div>
                 ))}
               </div>

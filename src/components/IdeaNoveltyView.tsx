@@ -477,6 +477,181 @@ const RESEARCH_PRESETS: RDPreset[] = [
     URL.revokeObjectURL(url);
   };
 
+  // Export PDF Dossier (HTML Print Window / PDF Engine)
+  const handleExportPdfDossier = () => {
+    if (!activeReport) return;
+    const printWindow = window.open('', '_blank', 'width=1000,height=900');
+    if (!printWindow) return;
+
+    const projTitle = activeProject?.title || 'R&D Project Proposal';
+    const reportId = activeReport.id;
+    const dateStr = new Date(activeReport.createdAt).toLocaleDateString();
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>PatentIntel.AI - Official R&D Novelty & Patentability Audit Dossier (${reportId})</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+          body {
+            font-family: 'Inter', sans-serif;
+            color: #1e293b;
+            background: #ffffff;
+            margin: 0;
+            padding: 40px;
+            font-size: 13px;
+            line-height: 1.5;
+          }
+          .header {
+            border-bottom: 2px solid #6366f1;
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+          }
+          .title { font-size: 20px; font-weight: 800; color: #0f172a; margin: 0; }
+          .subtitle { font-size: 12px; color: #64748b; margin-top: 4px; }
+          .badge {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 11px;
+            color: #475569;
+          }
+          .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+          }
+          .metric-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+          }
+          .metric-value { font-size: 22px; font-weight: 800; color: #4338ca; }
+          .metric-label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 2px; }
+          .section { margin-bottom: 28px; }
+          .section-title { font-size: 14px; font-weight: 800; color: #0f172a; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+          th, td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; font-size: 12px; }
+          th { background: #f1f5f9; font-weight: 700; color: #334155; }
+          .claim-box { background: #faf5ff; border: 1px solid #d8b4fe; padding: 12px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px; margin-top: 6px; color: #581c87; }
+          .footer { margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 12px; font-size: 10px; color: #94a3b8; text-align: center; }
+          @media print {
+            body { padding: 20px; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="no-print" style="margin-bottom: 20px; text-align: right;">
+          <button onclick="window.print()" style="background: #4338ca; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 700; cursor: pointer;">
+            🖨️ Print / Save as PDF
+          </button>
+        </div>
+
+        <div class="header">
+          <div>
+            <div class="title">PATENTINTEL.AI — R&D NOVELTY & PATENTABILITY AUDIT DOSSIER</div>
+            <div class="subtitle">Project Title: ${projTitle} | Report ID: ${reportId}</div>
+          </div>
+          <div class="badge">Date: ${dateStr}</div>
+        </div>
+
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-value">${activeReport.overallNoveltyScore ?? 84}%</div>
+            <div class="metric-label">Novelty Index</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">${100 - (activeReport.overallNoveltyScore ?? 84)}%</div>
+            <div class="metric-label">FTO Clearance Index</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">${activeReport.statutoryEligibility?.status || 'PASS'}</div>
+            <div class="metric-label">§ 101 Eligibility</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value" style="color: ${activeReport.tsmObviousnessRisk?.level === 'HIGH' ? '#e11d48' : '#d97706'}">${activeReport.tsmObviousnessRisk?.score || 95}%</div>
+            <div class="metric-label">§ 103 Obviousness Risk</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">1. Technical Extracted Features & Prior-Art Overlap Matrix</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Feature / Term</th>
+                <th>Category</th>
+                <th>Overlap Status</th>
+                <th>Prior-Art Patent Match</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${activeReport.extractedComponents.map(c => `
+                <tr>
+                  <td><strong>${c.featureCode}</strong></td>
+                  <td>${c.term}</td>
+                  <td>${c.category}</td>
+                  <td>${c.overlapStatus}</td>
+                  <td>${c.matchedPriorArt?.[0] ? `${c.matchedPriorArt[0].id} (${c.matchedPriorArt[0].similarityScore}% Sim)` : 'No Direct Prior Art'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="section">
+          <div class="section-title">2. 35 U.S.C. § 103 TSM Obviousness Examination</div>
+          <p><strong>Obviousness Risk Score:</strong> ${activeReport.tsmObviousnessRisk?.score}% (${activeReport.tsmObviousnessRisk?.level} RISK)</p>
+          <p><strong>Multi-Document Reference Pair Combination:</strong></p>
+          ${activeReport.tsmObviousnessRisk?.combinedReferences.map(comb => `
+            <div style="background: #fffbe6; border: 1px solid #ffe58f; padding: 10px; border-radius: 6px; margin-bottom: 8px;">
+              <strong>Ref [${comb.ref1}] + Ref [${comb.ref2}]:</strong>
+              <div style="font-style: italic; margin-top: 4px;">"${comb.motivationReason}"</div>
+            </div>
+          `).join('') || 'None'}
+        </div>
+
+        <div class="section">
+          <div class="section-title">3. Recommended Differentiators & Synthetic Claim Limitations</div>
+          ${activeReport.recommendations.map(rec => `
+            <div style="border: 1px solid #cbd5e1; padding: 12px; border-radius: 6px; margin-bottom: 12px;">
+              <div style="font-weight: 700; color: #1e1b4b; font-size: 13px;">${rec.title} (${rec.status})</div>
+              <div style="color: #475569; margin-top: 2px;">${rec.description}</div>
+              <div style="margin-top: 4px; font-size: 11px; color: #64748b;"><strong>Prior-Art Gap:</strong> ${rec.priorArtGap}</div>
+              ${rec.draftClaimClause ? `<div class="claim-box"><strong>Draft Claim Clause:</strong> "${rec.draftClaimClause}"</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="footer">
+          PatentIntel.AI Novelty Engine • Confidential R&D Patentability Audit • Generated automatically for Peer Review
+        </div>
+
+        <script>
+          window.onload = function() {
+            setTimeout(function() { window.print(); }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
+
   // Submit to Patent Team Review Queue (Opens Confirmation Modal)
   const handleSubmitToPatentTeam = () => {
     if (!activeProject || !activeReport) return;
@@ -1716,6 +1891,16 @@ const RESEARCH_PRESETS: RDPreset[] = [
               >
                 <Download size={15} />
                 <span>Export Dossier (.md)</span>
+              </button>
+
+              <button
+                onClick={handleExportPdfDossier}
+                className="btn-secondary"
+                style={{ padding: '8px 14px', fontSize: '0.78rem', background: 'rgba(239, 68, 68, 0.12)', color: 'var(--accent-rose)', border: '1px solid rgba(239, 68, 68, 0.3)' }}
+                title="Generate and print printable PDF audit dossier report"
+              >
+                <FileText size={15} />
+                <span>Export PDF Report (.pdf)</span>
               </button>
 
               <button

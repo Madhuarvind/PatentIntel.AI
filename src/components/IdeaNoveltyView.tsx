@@ -18,7 +18,11 @@ import {
   FileCheck,
   Shield,
   FileText,
-  Scale
+  Scale,
+  ExternalLink,
+  HelpCircle,
+  Search,
+  FileCode
 } from 'lucide-react';
 
 import type { 
@@ -30,14 +34,17 @@ import type {
   DifferentiatorRecommendation,
   PatentReviewSubmission,
   ReviewComment,
-  InnovationVersion
+  InnovationVersion,
+  NoveltyFeatureMatch
 } from '../types';
 
 import { dbStore } from '../services/dbStore';
 import { 
   extractInnovationComponents, 
   analyzeIdeaProposal, 
-  generateMarkdownAuditDossier
+  generateMarkdownAuditDossier,
+  ensureFeatureMatches,
+  generateStatutoryEligibilityAnalysis
 } from '../services/noveltyBenchmarkService';
 import { extractPdfTextPageByPage } from '../services/pdfParser';
 
@@ -107,6 +114,13 @@ export const IdeaNoveltyView: React.FC<IdeaNoveltyViewProps> = ({
   const [selectedFilterStatus, setSelectedFilterStatus] = useState<string>('ALL');
   const [activeReportTab, setActiveReportTab] = useState<'graph' | 'matrix' | 'combinations' | 'differentiators' | 'versions'>('graph');
   const [selectedNodeComponent, setSelectedNodeComponent] = useState<ExtractedIdeaComponent | null>(null);
+
+  // Interactive Drill-down & Screening Modals
+  const [selectedFeatureForModal, setSelectedFeatureForModal] = useState<NoveltyFeatureMatch | null>(null);
+  const [showStatutoryWhyModal, setShowStatutoryWhyModal] = useState<boolean>(false);
+  const [showSubmitConfirmModal, setShowSubmitConfirmModal] = useState<boolean>(false);
+  const [activeStatutoryTab, setActiveStatutoryTab] = useState<'india' | 'us' | 'claim'>('india');
+  const [selectedTokenForExplanation, setSelectedTokenForExplanation] = useState<{ text: string; category: string; explanation: string } | null>(null);
 
   // Review Workspace State
   const [reviewComments, setReviewComments] = useState<ReviewComment[]>([]);
@@ -189,7 +203,10 @@ Provisional Determination: READY FOR PATENT CLAIM DRAFTING WITH CLAIM NARROWING 
       if (foundP) {
         setActiveProject(foundP);
         const rep = dbStore.getLatestBenchmarkReport(foundP.id);
-        if (rep) setActiveReport(rep);
+        if (rep) {
+          const fullRep = ensureFeatureMatches(rep);
+          setActiveReport(fullRep);
+        }
       }
     }
   };
@@ -366,8 +383,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
               report.extractedComponents = validatedComponents;
             }
 
-            setActiveReport(report);
-            const proj = dbStore.getInnovationProjectById(report.innovationProjectId);
+            const fullReport = ensureFeatureMatches(report);
+            setActiveReport(fullReport);
+            const proj = dbStore.getInnovationProjectById(fullReport.innovationProjectId);
             setActiveProject(proj);
             setIsAnalyzing(false);
             setActiveTab('audit');
@@ -454,8 +472,13 @@ const RESEARCH_PRESETS: RDPreset[] = [
     URL.revokeObjectURL(url);
   };
 
-  // Submit to Patent Team Review Queue
+  // Submit to Patent Team Review Queue (Opens Confirmation Modal)
   const handleSubmitToPatentTeam = () => {
+    if (!activeProject || !activeReport) return;
+    setShowSubmitConfirmModal(true);
+  };
+
+  const executeFinalSubmission = () => {
     if (!activeProject || !activeReport) return;
 
     const submission: PatentReviewSubmission = {
@@ -479,10 +502,11 @@ const RESEARCH_PRESETS: RDPreset[] = [
       submissionId: submission.id,
       authorId: 'sys_bot',
       authorName: 'PatentIntel Audit Engine',
-      comment: `Project submitted for patent team review. Review Readiness Score: ${activeReport.reviewReadinessScore}%. Prior-Art Concern: ${activeReport.priorArtConcern}.`,
+      comment: `Project submitted for patent team review. Review Readiness Score: ${activeReport.reviewReadinessScore}%. Prior-Art Concern: ${activeReport.priorArtConcern}. Direct Overlaps: ${activeReport.directOverlapCount}.`,
       createdAt: new Date().toISOString()
     });
 
+    setShowSubmitConfirmModal(false);
     setActiveTab('review_queue');
   };
 
@@ -1357,57 +1381,288 @@ const RESEARCH_PRESETS: RDPreset[] = [
               </div>
             </div>
 
-            {/* Component Status Counts */}
+            {/* Component Status Counts (Clickable Filter Buttons) */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn: 'span 2' }}>
-              <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-dim)' }}>Component Overlap Breakdown</span>
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-dim)' }}>
+                Component Overlap Breakdown (Click Card to Drill Down)
+              </span>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', textAlign: 'center' }}>
-                <div style={{ background: 'rgba(244, 63, 94, 0.1)', border: '1px solid rgba(244, 63, 94, 0.3)', borderRadius: 10, padding: 8 }}>
+                <div 
+                  onClick={() => { 
+                    setSelectedFilterStatus('KNOWN_PRIOR_ART'); 
+                    setActiveReportTab('matrix');
+                    document.getElementById('feature-matrix-section')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  style={{ 
+                    background: selectedFilterStatus === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.25)' : 'rgba(244, 63, 94, 0.1)', 
+                    border: `1px solid ${selectedFilterStatus === 'KNOWN_PRIOR_ART' ? 'var(--accent-rose)' : 'rgba(244, 63, 94, 0.4)'}`, 
+                    boxShadow: selectedFilterStatus === 'KNOWN_PRIOR_ART' ? '0 0 12px rgba(244, 63, 94, 0.4)' : 'none',
+                    borderRadius: 10, 
+                    padding: 8, 
+                    cursor: 'pointer', 
+                    transition: 'all 0.2s ease' 
+                  }}
+                >
                   <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--accent-rose)', fontSize: '1.2rem' }}>{activeReport.directOverlapCount}</div>
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>Known</div>
+                  <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--accent-rose)' }}>Known Prior Art</div>
                 </div>
-                <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 10, padding: 8 }}>
+
+                <div 
+                  onClick={() => { 
+                    setSelectedFilterStatus('PARTIAL_OVERLAP'); 
+                    setActiveReportTab('matrix');
+                    document.getElementById('feature-matrix-section')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  style={{ 
+                    background: selectedFilterStatus === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.25)' : 'rgba(245, 158, 11, 0.1)', 
+                    border: `1px solid ${selectedFilterStatus === 'PARTIAL_OVERLAP' ? 'var(--accent-amber)' : 'rgba(245, 158, 11, 0.4)'}`, 
+                    boxShadow: selectedFilterStatus === 'PARTIAL_OVERLAP' ? '0 0 12px rgba(245, 158, 11, 0.4)' : 'none',
+                    borderRadius: 10, 
+                    padding: 8, 
+                    cursor: 'pointer', 
+                    transition: 'all 0.2s ease' 
+                  }}
+                >
                   <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--accent-amber)', fontSize: '1.2rem' }}>{activeReport.partialOverlapCount}</div>
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>Partial</div>
+                  <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--accent-amber)' }}>Partial Overlap</div>
                 </div>
-                <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 10, padding: 8 }}>
+
+                <div 
+                  onClick={() => { 
+                    setSelectedFilterStatus('POTENTIALLY_DISTINCTIVE'); 
+                    setActiveReportTab('matrix');
+                    document.getElementById('feature-matrix-section')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  style={{ 
+                    background: selectedFilterStatus === 'POTENTIALLY_DISTINCTIVE' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(16, 185, 129, 0.1)', 
+                    border: `1px solid ${selectedFilterStatus === 'POTENTIALLY_DISTINCTIVE' ? 'var(--accent-emerald)' : 'rgba(16, 185, 129, 0.4)'}`, 
+                    boxShadow: selectedFilterStatus === 'POTENTIALLY_DISTINCTIVE' ? '0 0 12px rgba(16, 185, 129, 0.4)' : 'none',
+                    borderRadius: 10, 
+                    padding: 8, 
+                    cursor: 'pointer', 
+                    transition: 'all 0.2s ease' 
+                  }}
+                >
                   <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--accent-emerald)', fontSize: '1.2rem' }}>{activeReport.potentiallyDistinctiveCount}</div>
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>Distinctive</div>
+                  <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--accent-emerald)' }}>Distinctive</div>
                 </div>
-                <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 10, padding: 8 }}>
+
+                <div 
+                  onClick={() => { 
+                    setSelectedFilterStatus('INSUFFICIENT_EVIDENCE'); 
+                    setActiveReportTab('matrix');
+                    document.getElementById('feature-matrix-section')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  style={{ 
+                    background: selectedFilterStatus === 'INSUFFICIENT_EVIDENCE' ? 'rgba(99, 102, 241, 0.25)' : 'var(--bg-surface)', 
+                    border: `1px solid ${selectedFilterStatus === 'INSUFFICIENT_EVIDENCE' ? 'var(--accent-indigo)' : 'var(--border-color)'}`, 
+                    boxShadow: selectedFilterStatus === 'INSUFFICIENT_EVIDENCE' ? '0 0 12px rgba(99, 102, 241, 0.4)' : 'none',
+                    borderRadius: 10, 
+                    padding: 8, 
+                    cursor: 'pointer', 
+                    transition: 'all 0.2s ease' 
+                  }}
+                >
                   <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--text-main)', fontSize: '1.2rem' }}>{activeReport.insufficientEvidenceCount}</div>
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>Sparse</div>
+                  <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-dim)' }}>Insufficient Evidence</div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Statutory Subject-Matter Eligibility Filter (Section 3(k) / 101 Gatekeeper) */}
-          <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', borderLeft: `4px solid ${activeReport.statutoryEligibility?.status === 'PASS' ? 'var(--accent-emerald)' : 'var(--accent-amber)'}` }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Scale size={18} color={activeReport.statutoryEligibility?.status === 'PASS' ? 'var(--accent-emerald)' : 'var(--accent-amber)'} />
-                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>
-                  Statutory Subject-Matter Eligibility Gatekeeper ({activeReport.statutoryEligibility?.sectionRef || 'Section 3(k) / 35 U.S.C. § 101'})
-                </h4>
+          {/* Statutory Subject-Matter Eligibility Screening Component (India Sec 3(k) & US 35 U.S.C. §101) */}
+          {(() => {
+            const statDetails = activeReport.statutoryEligibilityDetails || generateStatutoryEligibilityAnalysis(activeReport, activeProject);
+            const isPass = statDetails.status === 'LIKELY_ELIGIBLE';
+            const isWarn = statDetails.status === 'REVIEW_REQUIRED';
+
+            return (
+              <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', borderLeft: `4px solid ${isPass ? 'var(--accent-emerald)' : isWarn ? 'var(--accent-amber)' : 'var(--accent-rose)'}` }}>
+                {/* Statutory Header Line */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Scale size={20} color={isPass ? 'var(--accent-emerald)' : isWarn ? 'var(--accent-amber)' : 'var(--accent-rose)'} />
+                    <div>
+                      <h4 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                        Statutory Subject-Matter Eligibility Screening Engine
+                      </h4>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+                        Evaluated under India Patent Law (Section 3(k)) & US Patent Law (35 U.S.C. § 101 / Alice Framework)
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span 
+                      style={{ 
+                        fontSize: '0.72rem', 
+                        fontWeight: 800, 
+                        padding: '4px 12px', 
+                        borderRadius: 6, 
+                        background: isPass ? 'rgba(16, 185, 129, 0.15)' : isWarn ? 'rgba(245, 158, 11, 0.15)' : 'rgba(244, 63, 94, 0.15)', 
+                        color: isPass ? 'var(--accent-emerald)' : isWarn ? 'var(--accent-amber)' : 'var(--accent-rose)',
+                        border: `1px solid ${isPass ? 'rgba(16, 185, 129, 0.4)' : isWarn ? 'rgba(245, 158, 11, 0.4)' : 'rgba(244, 63, 94, 0.4)'}`
+                      }}
+                    >
+                      {statDetails.status.replace(/_/g, ' ')}
+                    </span>
+                    <button
+                      onClick={() => setShowStatutoryWhyModal(true)}
+                      style={{ background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: 6, padding: '4px 10px', color: 'var(--accent-indigo)', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                    >
+                      <HelpCircle size={14} /> Why this result?
+                    </button>
+                  </div>
+                </div>
+
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-main)', margin: 0, lineHeight: 1.4 }}>
+                  {statDetails.overallSummary}
+                </p>
+
+                {/* Statutory Sub-Tabs Navigation */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                  <button
+                    onClick={() => setActiveStatutoryTab('india')}
+                    style={{
+                      background: activeStatutoryTab === 'india' ? 'var(--accent-indigo)' : 'transparent',
+                      color: activeStatutoryTab === 'india' ? '#FFFFFF' : 'var(--text-dim)',
+                      border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer'
+                    }}
+                  >
+                    🇮🇳 India — Section 3(k) Screening
+                  </button>
+                  <button
+                    onClick={() => setActiveStatutoryTab('us')}
+                    style={{
+                      background: activeStatutoryTab === 'us' ? 'var(--accent-indigo)' : 'transparent',
+                      color: activeStatutoryTab === 'us' ? '#FFFFFF' : 'var(--text-dim)',
+                      border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer'
+                    }}
+                  >
+                    🇺🇸 US — 35 U.S.C. §101 Screening
+                  </button>
+                  <button
+                    onClick={() => setActiveStatutoryTab('claim')}
+                    style={{
+                      background: activeStatutoryTab === 'claim' ? 'var(--accent-indigo)' : 'transparent',
+                      color: activeStatutoryTab === 'claim' ? '#FFFFFF' : 'var(--text-dim)',
+                      border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer'
+                    }}
+                  >
+                    🔍 Claim Highlighting Token Viewer
+                  </button>
+                </div>
+
+                {/* Sub-Tab 1: India Sec 3(k) */}
+                {activeStatutoryTab === 'india' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.8rem' }}>
+                    <div style={{ background: 'var(--bg-input)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                      <strong style={{ color: 'var(--accent-indigo)', display: 'block', marginBottom: 4 }}>Section 3(k) Legal Basis & Guideline Stance:</strong>
+                      <p style={{ margin: 0, color: 'var(--text-muted)' }}>{statDetails.indiaSection3k.plainEnglishExplanation}</p>
+                    </div>
+
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>
+                      Claim Element Statutory Breakdown:
+                    </span>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '8px' }}>
+                      {statDetails.indiaSection3k.claimElementBreakdown.map((elem: { elementName: string; elementType: string; statutoryRole: string }, idx: number) => (
+                        <div key={idx} style={{ background: 'var(--bg-surface)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                            <strong style={{ color: 'var(--text-main)', fontSize: '0.78rem' }}>{elem.elementName}</strong>
+                            <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: elem.elementType === 'PHYSICAL_HARDWARE' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(99, 102, 241, 0.15)', color: elem.elementType === 'PHYSICAL_HARDWARE' ? 'var(--accent-emerald)' : 'var(--accent-indigo)' }}>
+                              {elem.elementType.replace(/_/g, ' ')}
+                            </span>
+                          </div>
+                          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>{elem.statutoryRole}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sub-Tab 2: US Sec 101 */}
+                {activeStatutoryTab === 'us' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.8rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px' }}>
+                      <div style={{ background: 'var(--bg-input)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                        <span style={{ color: 'var(--text-dim)', display: 'block', fontSize: '0.7rem' }}>Statutory Category:</span>
+                        <strong style={{ color: 'var(--accent-indigo)' }}>{statDetails.usSection101.statutoryCategory}</strong>
+                      </div>
+                      <div style={{ background: 'var(--bg-input)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                        <span style={{ color: 'var(--text-dim)', display: 'block', fontSize: '0.7rem' }}>Step 2A Exception:</span>
+                        <strong style={{ color: statDetails.usSection101.step2aJudicialException === 'NO_EXCEPTION' ? 'var(--accent-emerald)' : 'var(--accent-amber)' }}>{statDetails.usSection101.step2aJudicialException.replace(/_/g, ' ')}</strong>
+                      </div>
+                    </div>
+
+                    <div style={{ background: 'var(--bg-input)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                      <strong style={{ color: 'var(--accent-indigo)', display: 'block', marginBottom: 4 }}>Step 2B Practical Application Rationale:</strong>
+                      <p style={{ margin: 0, color: 'var(--text-muted)' }}>{statDetails.usSection101.step2bPracticalApplication}</p>
+                    </div>
+
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {statDetails.usSection101.technicalImplementationIndicators.map((ind: string, i: number) => (
+                        <span key={i} style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 8px', borderRadius: 4, background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent-emerald)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                          {ind}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sub-Tab 3: Claim Token Highlighting */}
+                {activeStatutoryTab === 'claim' && statDetails.claimHighlighting && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.8rem' }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>
+                      Interactive Claim Limitation Token Inspector (Click Highlighted Tokens):
+                    </span>
+                    <div style={{ background: 'var(--bg-input)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-color)', fontFamily: 'var(--font-mono)', lineHeight: 1.8, fontSize: '0.85rem' }}>
+                      {statDetails.claimHighlighting.tokens.map((tok: { text: string; category: string; explanation: string }, i: number) => (
+                        <span
+                          key={i}
+                          onClick={() => setSelectedTokenForExplanation(tok)}
+                          style={{
+                            cursor: 'pointer',
+                            margin: '0 3px',
+                            padding: '2px 6px',
+                            borderRadius: 4,
+                            fontWeight: 700,
+                            background: tok.category === 'PHYSICAL' ? 'rgba(168, 85, 247, 0.2)' : tok.category === 'COMPUTING' ? 'rgba(99, 102, 241, 0.2)' : tok.category === 'ALGORITHM' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                            color: tok.category === 'PHYSICAL' ? '#C084FC' : tok.category === 'COMPUTING' ? '#818CF8' : tok.category === 'ALGORITHM' ? '#FBBF24' : '#34D399',
+                            border: '1px solid rgba(255,255,255,0.1)'
+                          }}
+                        >
+                          {tok.text}
+                        </span>
+                      ))}
+                    </div>
+
+                    {selectedTokenForExplanation && (
+                      <div style={{ background: 'rgba(99, 102, 241, 0.1)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--accent-indigo)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                          <strong style={{ color: 'var(--accent-indigo)', fontSize: '0.82rem' }}>Token: "{selectedTokenForExplanation.text}" ({selectedTokenForExplanation.category})</strong>
+                          <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted)' }}>{selectedTokenForExplanation.explanation}</p>
+                        </div>
+                        <button onClick={() => setSelectedTokenForExplanation(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
+                          <X size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Footer Recommendation & Legal Certainty Disclaimer */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '10px', fontSize: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: statDetails.humanReviewRecommendation === 'HIGH_CONFIDENCE' ? 'var(--accent-emerald)' : 'var(--accent-amber)', fontWeight: 700 }}>
+                    <Shield size={14} />
+                    <span>Human Review Stance: {statDetails.humanReviewRecommendation.replace(/_/g, ' ')}</span>
+                  </div>
+                  <span style={{ color: 'var(--text-dim)', fontStyle: 'italic', fontSize: '0.7rem' }}>
+                    {statDetails.nonLegalDisclaimer}
+                  </span>
+                </div>
               </div>
-              <span 
-                style={{ 
-                  fontSize: '0.72rem', 
-                  fontWeight: 800, 
-                  padding: '3px 10px', 
-                  borderRadius: 6, 
-                  background: activeReport.statutoryEligibility?.status === 'PASS' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)', 
-                  color: activeReport.statutoryEligibility?.status === 'PASS' ? 'var(--accent-emerald)' : 'var(--accent-amber)',
-                  border: `1px solid ${activeReport.statutoryEligibility?.status === 'PASS' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
-                }}
-              >
-                {activeReport.statutoryEligibility?.status === 'PASS' ? 'STATUTORY ELIGIBILITY PASS' : 'WARNING: ABSTRACT CLAIM RISK'}
-              </span>
-            </div>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
-              {activeReport.statutoryEligibility?.reason || 'Hardware binding verified. Appears statutory under patent subject-matter eligibility guidelines.'}
-            </p>
-          </div>
+            );
+          })()}
 
           {/* Action Bar */}
           <div className="glass-panel" style={{ padding: '12px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
@@ -1541,15 +1796,22 @@ const RESEARCH_PRESETS: RDPreset[] = [
             </div>
           )}
 
-          {/* TAB B: FEATURE OVERLAP MATRIX */}
+          {/* TAB B: FEATURE OVERLAP MATRIX & PRIOR-ART MATCH BREAKDOWN */}
           {activeReportTab === 'matrix' && (
-            <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Component Overlap Matrix</h3>
+            <div id="feature-matrix-section" className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                    Prior-Art Match Breakdown & Feature Provenance Matrix
+                  </h3>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
+                    Drill down into individual technical feature matches, grounded evidence passages, and type-aware document citations.
+                  </p>
+                </div>
 
-                {/* Filter */}
+                {/* Filter Controls */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  {['ALL', 'KNOWN_PRIOR_ART', 'PARTIAL_OVERLAP', 'POTENTIALLY_DISTINCTIVE'].map(status => (
+                  {['ALL', 'KNOWN_PRIOR_ART', 'PARTIAL_OVERLAP', 'POTENTIALLY_DISTINCTIVE', 'INSUFFICIENT_EVIDENCE'].map(status => (
                     <button
                       key={status}
                       onClick={() => setSelectedFilterStatus(status)}
@@ -1561,7 +1823,8 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         border: 'none',
                         cursor: 'pointer',
                         background: selectedFilterStatus === status ? 'var(--accent-indigo)' : 'var(--bg-surface)',
-                        color: selectedFilterStatus === status ? '#FFFFFF' : 'var(--text-dim)'
+                        color: selectedFilterStatus === status ? '#FFFFFF' : 'var(--text-dim)',
+                        transition: 'all 0.2s ease'
                       }}
                     >
                       {status.replace(/_/g, ' ')}
@@ -1570,54 +1833,245 @@ const RESEARCH_PRESETS: RDPreset[] = [
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {activeReport.extractedComponents
-                  .filter(c => selectedFilterStatus === 'ALL' || c.overlapStatus === selectedFilterStatus)
-                  .map((comp) => (
-                    <div key={comp.id} style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 700, padding: '4px 8px', borderRadius: 6, background: 'var(--bg-surface)', color: 'var(--accent-indigo)', border: '1px solid var(--border-color)' }}>
-                            {comp.featureCode}
-                          </span>
-                          <h4 style={{ fontWeight: 700, color: 'var(--text-main)', margin: 0, fontSize: '0.95rem' }}>{comp.term}</h4>
+              {/* Feature Match Matrix Cards */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {(() => {
+                  const filteredMatches = (activeReport.featureMatches || []).filter(fm => selectedFilterStatus === 'ALL' || fm.status === selectedFilterStatus);
+
+                  if (filteredMatches.length === 0) {
+                    return (
+                      <div style={{ background: 'var(--bg-input)', border: '1px dashed var(--border-color)', borderRadius: '16px', padding: '36px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: 50, height: 50, borderRadius: '50%', background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-indigo)' }}>
+                          <Search size={24} />
+                        </div>
+                        <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                          No Feature Records Found for Filter: "{selectedFilterStatus.replace(/_/g, ' ')}"
+                        </h4>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', maxWidth: '500px', margin: 0, lineHeight: 1.4 }}>
+                          The current proposal analysis extracted <strong>{activeReport.extractedComponents.length} total technical features</strong>. None of them are categorized strictly as <em>{selectedFilterStatus.replace(/_/g, ' ')}</em>.
+                        </p>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--bg-surface)', padding: '10px 16px', borderRadius: '10px', border: '1px solid var(--border-color)', fontSize: '0.78rem' }}>
+                          <span>Known Art: <strong style={{ color: 'var(--accent-rose)' }}>{activeReport.directOverlapCount}</strong></span>
+                          <span>Partial: <strong style={{ color: 'var(--accent-amber)' }}>{activeReport.partialOverlapCount}</strong></span>
+                          <span>Distinctive: <strong style={{ color: 'var(--accent-emerald)' }}>{activeReport.potentiallyDistinctiveCount}</strong></span>
+                          <span>Insufficient: <strong>{activeReport.insufficientEvidenceCount}</strong></span>
                         </div>
 
-                        <span 
-                          style={{ 
-                            fontSize: '0.7rem', 
-                            fontWeight: 800, 
-                            padding: '4px 10px', 
-                            borderRadius: 999, 
-                            textTransform: 'uppercase',
-                            background: comp.overlapStatus === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.12)' : comp.overlapStatus === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.12)' : 'rgba(16, 185, 129, 0.12)',
-                            color: comp.overlapStatus === 'KNOWN_PRIOR_ART' ? 'var(--accent-rose)' : comp.overlapStatus === 'PARTIAL_OVERLAP' ? 'var(--accent-amber)' : 'var(--accent-emerald)',
-                            border: `1px solid ${comp.overlapStatus === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.3)' : comp.overlapStatus === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`
-                          }}
+                        <button
+                          onClick={() => setSelectedFilterStatus('ALL')}
+                          className="btn-secondary"
+                          style={{ marginTop: 8, padding: '8px 16px', fontSize: '0.78rem' }}
                         >
-                          {comp.overlapStatus.replace(/_/g, ' ')}
-                        </span>
+                          View All {activeReport.extractedComponents.length} Analyzed Features
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  return filteredMatches.map((fm) => (
+                    <div 
+                      key={fm.id} 
+                      style={{ 
+                        background: 'var(--bg-input)', 
+                        border: `1px solid ${
+                          fm.status === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.4)' : 
+                          fm.status === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.4)' : 
+                          fm.status === 'POTENTIALLY_DISTINCTIVE' ? 'rgba(16, 185, 129, 0.4)' : 
+                          'var(--border-color)'
+                        }`, 
+                        borderRadius: '14px', 
+                        padding: '20px', 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        gap: '16px' 
+                      }}
+                    >
+                      {/* Header Line */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 800, padding: '4px 10px', borderRadius: 6, background: 'var(--bg-surface)', color: 'var(--accent-indigo)', border: '1px solid var(--border-color)' }}>
+                            Feature #{fm.featureNumber}
+                          </span>
+                          <h4 style={{ fontWeight: 800, color: 'var(--text-main)', margin: 0, fontSize: '1rem' }}>{fm.featureText}</h4>
+                        </div>
+
+                        {/* Badges & Side-by-side Modal Button */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '3px 8px', borderRadius: 4, background: 'var(--bg-surface)', border: '1px solid var(--border-color)', color: 'var(--text-dim)' }}>
+                            {fm.category}
+                          </span>
+                          <span 
+                            style={{ 
+                              fontSize: '0.72rem', 
+                              fontWeight: 800, 
+                              padding: '4px 12px', 
+                              borderRadius: 999, 
+                              textTransform: 'uppercase',
+                              background: fm.status === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.15)' : fm.status === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.15)' : fm.status === 'POTENTIALLY_DISTINCTIVE' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(148, 163, 184, 0.15)',
+                              color: fm.status === 'KNOWN_PRIOR_ART' ? 'var(--accent-rose)' : fm.status === 'PARTIAL_OVERLAP' ? 'var(--accent-amber)' : fm.status === 'POTENTIALLY_DISTINCTIVE' ? 'var(--accent-emerald)' : 'var(--text-dim)',
+                              border: `1px solid ${fm.status === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.4)' : fm.status === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.4)' : fm.status === 'POTENTIALLY_DISTINCTIVE' ? 'rgba(16, 185, 129, 0.4)' : 'var(--border-color)'}`
+                            }}
+                          >
+                            {fm.status.replace(/_/g, ' ')}
+                          </span>
+
+                          <button
+                            onClick={() => setSelectedFeatureForModal(fm)}
+                            style={{ background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.4)', borderRadius: 6, padding: '4px 10px', color: 'var(--accent-indigo)', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                          >
+                            <FileCode size={13} /> Compare Side-by-Side
+                          </button>
+                        </div>
                       </div>
 
-                      <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>{comp.description}</p>
+                      {/* Feature Provenance Bar */}
+                      <div style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '8px 12px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '16px', fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <FileText size={13} color="var(--accent-indigo)" />
+                          <span>Source: <strong style={{ color: 'var(--text-main)' }}>{fm.sourceDocumentName || 'R&D Technical Proposal Specification'}</strong></span>
+                        </div>
+                        <div>Page Ref: <strong style={{ color: 'var(--text-main)' }}>Page {fm.proposalPageNumber || 1}</strong></div>
+                        <div>Section: <strong style={{ color: 'var(--text-main)' }}>{fm.proposalSection || 'Detailed Description'}</strong></div>
+                        <div>Extraction Confidence: <strong style={{ color: 'var(--accent-emerald)' }}>{typeof fm.extractionConfidence === 'number' ? `${Math.round(fm.extractionConfidence * 100)}%` : (fm.extractionConfidence || '95%')}</strong></div>
+                      </div>
 
-                      {/* Accordion Matched Prior Art Excerpts */}
-                      {comp.matchedPriorArt.length > 0 && (
-                        <div style={{ paddingTop: '10px', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Why Was This Matched?</span>
-                          {comp.matchedPriorArt.map((m, idx) => (
-                            <div key={idx} style={{ background: 'var(--bg-surface)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.78rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 600, color: 'var(--text-main)' }}>
-                                <span>[{m.sourceType}] {m.title}</span>
-                                <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-indigo)' }}>{m.similarityScore}% Match</span>
+                      {/* Feature Scoring Metrics Bar */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', background: 'var(--bg-surface)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', fontSize: '0.75rem' }}>
+                        <div>
+                          <span style={{ color: 'var(--text-dim)', display: 'block', marginBottom: 2 }}>Retrieval Similarity:</span>
+                          <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-indigo)' }}>{fm.retrievalSimilarity}%</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: 'var(--text-dim)', display: 'block', marginBottom: 2 }}>Lexical Overlap:</span>
+                          <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-main)' }}>{fm.lexicalSimilarityScore ? Math.round(fm.lexicalSimilarityScore * 100) : fm.retrievalSimilarity}%</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: 'var(--text-dim)', display: 'block', marginBottom: 2 }}>Semantic Overlap:</span>
+                          <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-indigo)' }}>{fm.semanticSimilarityScore ? Math.round(fm.semanticSimilarityScore * 100) : fm.retrievalSimilarity}%</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: 'var(--text-dim)', display: 'block', marginBottom: 2 }}>Feature Coverage:</span>
+                          <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-main)' }}>{fm.featureCoverage}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: 'var(--text-dim)', display: 'block', marginBottom: 2 }}>Claim Overlap:</span>
+                          <strong style={{ color: fm.claimOverlap === 'High' ? 'var(--accent-rose)' : fm.claimOverlap === 'Moderate' ? 'var(--accent-amber)' : 'var(--accent-emerald)' }}>{fm.claimOverlap}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: 'var(--text-dim)', display: 'block', marginBottom: 2 }}>Evidence Strength:</span>
+                          <strong style={{ color: 'var(--text-main)' }}>{fm.evidenceStrength}</strong>
+                        </div>
+                      </div>
+
+                      {/* Why Classified Explanation */}
+                      <div style={{ background: 'rgba(99, 102, 241, 0.06)', borderLeft: '3px solid var(--accent-indigo)', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--text-main)' }}>
+                        <strong style={{ color: 'var(--accent-indigo)' }}>Why Classified: </strong>
+                        {fm.whyClassifiedExplanation}
+                      </div>
+
+                      {/* Side-by-Side Proposal vs Prior-Art Grounded Comparison */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        {/* Proposal Feature */}
+                        <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                          <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>Proposal Feature Limitation</span>
+                          <p style={{ fontSize: '0.8rem', color: 'var(--text-main)', margin: 0, fontWeight: 600 }}>{fm.proposalFeatureSnippet}</p>
+                          <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                            {fm.matchedConcepts.map((c, i) => (
+                              <span key={i} style={{ fontSize: '0.68rem', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-emerald)', padding: '2px 6px', borderRadius: 4, border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                                ✓ {c}
+                              </span>
+                            ))}
+                            {fm.unmatchedConcepts.map((c, i) => (
+                              <span key={i} style={{ fontSize: '0.68rem', background: 'rgba(244, 63, 94, 0.15)', color: 'var(--accent-rose)', padding: '2px 6px', borderRadius: 4, border: '1px solid rgba(244, 63, 94, 0.3)' }}>
+                                ✕ {c}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Prior-Art Disclosure */}
+                        <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                          <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>
+                            Prior-Art Disclosure ({fm.strongestMatchingDocId})
+                          </span>
+                          <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontStyle: 'italic', margin: 0 }}>"{fm.priorArtDisclosureSnippet}"</p>
+                        </div>
+                      </div>
+
+                      {/* Type-Aware Matched Document Cards */}
+                      {fm.matchedDocuments.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>
+                            Matched Source Documents ({fm.matchedDocuments.length} Sources Found)
+                          </span>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '10px' }}>
+                            {fm.matchedDocuments.map((doc) => (
+                              <div key={doc.id} style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                  <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '2px 6px', borderRadius: 4, background: doc.sourceType === 'PATENT' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(16, 185, 129, 0.15)', color: doc.sourceType === 'PATENT' ? 'var(--accent-indigo)' : 'var(--accent-emerald)' }}>
+                                    {doc.sourceType === 'PATENT' ? 'USPTO PATENT' : 'ACADEMIC PAPER'}
+                                  </span>
+                                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-indigo)' }}>
+                                    {doc.similarityScore}% Match
+                                  </span>
+                                </div>
+
+                                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.3 }}>
+                                  {doc.title}
+                                </div>
+
+                                <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+                                  {doc.sourceType === 'PATENT' ? `Assignee: ${doc.assigneeOrAuthors || 'USPTO Assignee'} | ${doc.canonicalId}` : `Authors: ${doc.assigneeOrAuthors} (${doc.publicationDateOrYear})`}
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: 4 }}>
+                                  <a 
+                                    href={doc.sourceUrl || '#'} 
+                                    target="_blank" 
+                                    rel="noreferrer" 
+                                    style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--accent-indigo)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                                  >
+                                    <ExternalLink size={12} /> View Source
+                                  </a>
+                                  <button
+                                    onClick={() => setSelectedFeatureForModal(fm)}
+                                    style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                                  >
+                                    Inspect Evidence
+                                  </button>
+                                </div>
                               </div>
-                              <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', margin: 0 }}>"{m.matchingExcerpt}"</p>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
                       )}
+
+                      {/* Evidence Passages Panel */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>
+                          Ground Truth Evidence Passages
+                        </span>
+                        {fm.evidences.length > 0 ? (
+                          fm.evidences.map((ev) => (
+                            <div key={ev.id} style={{ background: 'var(--bg-surface)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.78rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--accent-indigo)', fontWeight: 700, marginBottom: 2 }}>
+                                <span>[{ev.evidenceType}] {ev.sourceTitle}</span>
+                                <span>Location: {ev.evidenceLocation}</span>
+                              </div>
+                              <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', margin: 0 }}>"{ev.evidenceText}"</p>
+                            </div>
+                          ))
+                        ) : (
+                          <div style={{ background: 'var(--bg-surface)', padding: '8px 12px', borderRadius: '8px', border: '1px dashed var(--border-color)', fontSize: '0.75rem', color: 'var(--text-dim)', fontStyle: 'italic' }}>
+                            Evidence unavailable — manual verification required.
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  ))}
+                  ));
+                })()}
               </div>
             </div>
           )}
@@ -1631,6 +2085,48 @@ const RESEARCH_PRESETS: RDPreset[] = [
                   Analyzes whether combinations of individual components create a non-obvious synergistic technical effect.
                 </p>
               </div>
+
+              {/* Workflow Chain Analysis Card */}
+              {activeReport.combinationAnalysis && (
+                <div style={{ background: 'var(--bg-input)', border: '1px solid var(--accent-indigo)', borderRadius: '14px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--accent-indigo)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Sparkles size={18} /> Grounded Workflow Combination Breakdown
+                  </h4>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
+                        Shared Prior-Art Chain
+                      </span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {activeReport.combinationAnalysis.sharedWorkflowChain.map((item, idx) => (
+                          <span key={idx} style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: 6, background: 'rgba(244, 63, 94, 0.12)', color: 'var(--accent-rose)', border: '1px solid rgba(244, 63, 94, 0.3)', fontWeight: 600 }}>
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
+                        Proposal-Specific Limitations
+                      </span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {activeReport.combinationAnalysis.proposalSpecificElements.map((item, idx) => (
+                          <span key={idx} style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: 6, background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent-emerald)', border: '1px solid rgba(16, 185, 129, 0.3)', fontWeight: 600 }}>
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ background: 'rgba(99, 102, 241, 0.08)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.2)', fontSize: '0.8rem', color: 'var(--text-main)' }}>
+                    <strong>Synergistic Differentiator Recommendation: </strong>
+                    {activeReport.combinationAnalysis.potentialDifferentiator}
+                  </div>
+                </div>
+              )}
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {activeReport.componentRelationships.map((rel) => (
@@ -1993,6 +2489,272 @@ const RESEARCH_PRESETS: RDPreset[] = [
               <button onClick={handleDownloadFerReport} className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.8rem' }}>
                 <Download size={16} />
                 <span>Download Formal FER (.txt)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 1: SIDE-BY-SIDE PROPOSAL VS PRIOR-ART COMPARISON MODAL             */}
+      {/* ========================================================================= */}
+      {selectedFeatureForModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(11, 15, 25, 0.85)', backdropFilter: 'blur(8px)', zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--accent-indigo)', borderRadius: '24px', padding: '28px', maxWidth: '900px', width: '100%', maxHeight: '88vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 25px 50px rgba(0,0,0,0.8)' }}>
+            
+            {/* Modal Header */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+              <div>
+                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--accent-indigo)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Evidence Provenance & Comparison Engine</span>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FileCode size={22} color="var(--accent-indigo)" />
+                  <span>Feature #{selectedFeatureForModal.featureNumber}: Side-by-Side Comparison</span>
+                </h3>
+              </div>
+              <button onClick={() => setSelectedFeatureForModal(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Feature Status & Metadata Bar */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-input)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', fontSize: '0.8rem' }}>
+              <div>
+                <span style={{ color: 'var(--text-dim)', display: 'block', fontSize: '0.7rem' }}>Technical Feature Name:</span>
+                <strong style={{ color: 'var(--text-main)', fontSize: '0.92rem' }}>{selectedFeatureForModal.featureText}</strong>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.7rem', padding: '3px 8px', borderRadius: 4, background: 'var(--bg-surface)', border: '1px solid var(--border-color)', color: 'var(--text-dim)' }}>
+                  {selectedFeatureForModal.category}
+                </span>
+                <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '4px 12px', borderRadius: 999, textTransform: 'uppercase', background: selectedFeatureForModal.status === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.15)' : selectedFeatureForModal.status === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)', color: selectedFeatureForModal.status === 'KNOWN_PRIOR_ART' ? 'var(--accent-rose)' : selectedFeatureForModal.status === 'PARTIAL_OVERLAP' ? 'var(--accent-amber)' : 'var(--accent-emerald)', border: `1px solid ${selectedFeatureForModal.status === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.4)' : selectedFeatureForModal.status === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(16, 185, 129, 0.4)'}` }}>
+                  {selectedFeatureForModal.status.replace(/_/g, ' ')}
+                </span>
+              </div>
+            </div>
+
+            {/* Side-by-Side 2 Column Diff Panel */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              
+              {/* Left Column: Proposal Feature Specification */}
+              <div style={{ background: 'var(--bg-input)', padding: '16px', borderRadius: '14px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-indigo)', fontWeight: 800, fontSize: '0.85rem' }}>
+                  <FileText size={16} />
+                  <span>Proposal Technical Limitation</span>
+                </div>
+
+                <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.82rem', color: 'var(--text-main)', lineHeight: 1.5, fontWeight: 600 }}>
+                  "{selectedFeatureForModal.proposalFeatureSnippet}"
+                </div>
+
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div>Source Document: <strong style={{ color: 'var(--text-main)' }}>{selectedFeatureForModal.sourceDocumentName || 'R&D Proposal Specification'}</strong></div>
+                  <div>Page Reference: <strong style={{ color: 'var(--text-main)' }}>Page {selectedFeatureForModal.proposalPageNumber || 1}</strong></div>
+                  <div>Section: <strong style={{ color: 'var(--text-main)' }}>{selectedFeatureForModal.proposalSection || 'Detailed Description'}</strong></div>
+                </div>
+
+                {/* Concept Overlaps */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Matched Concepts:</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                    {selectedFeatureForModal.matchedConcepts.map((c, i) => (
+                      <span key={i} style={{ fontSize: '0.7rem', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-emerald)', padding: '3px 8px', borderRadius: 4, border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                        ✓ {c}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Proposal-Specific Aspects (Novel Elements):</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                    {selectedFeatureForModal.unmatchedConcepts.map((c, i) => (
+                      <span key={i} style={{ fontSize: '0.7rem', background: 'rgba(244, 63, 94, 0.15)', color: 'var(--accent-rose)', padding: '3px 8px', borderRadius: 4, border: '1px solid rgba(244, 63, 94, 0.3)' }}>
+                        ✕ {c}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Grounded Prior-Art Disclosure */}
+              <div style={{ background: 'var(--bg-input)', padding: '16px', borderRadius: '14px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-rose)', fontWeight: 800, fontSize: '0.85rem' }}>
+                    <Search size={16} />
+                    <span>Cited Prior-Art Disclosure</span>
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', fontWeight: 800, color: 'var(--accent-indigo)' }}>
+                    {selectedFeatureForModal.retrievalSimilarity}% Similarity
+                  </span>
+                </div>
+
+                <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.82rem', color: 'var(--text-muted)', fontStyle: 'italic', lineHeight: 1.5 }}>
+                  "{selectedFeatureForModal.priorArtDisclosureSnippet}"
+                </div>
+
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div>Cited Document ID: <strong style={{ color: 'var(--accent-indigo)' }}>{selectedFeatureForModal.strongestMatchingDocId}</strong></div>
+                  <div>Claim Overlap Level: <strong style={{ color: selectedFeatureForModal.claimOverlap === 'High' ? 'var(--accent-rose)' : 'var(--accent-amber)' }}>{selectedFeatureForModal.claimOverlap}</strong></div>
+                  <div>Evidence Strength: <strong style={{ color: 'var(--text-main)' }}>{selectedFeatureForModal.evidenceStrength}</strong></div>
+                </div>
+
+                {/* Ground Truth Evidence Passages */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Cited Ground Truth Passages:</span>
+                  {selectedFeatureForModal.evidences.map((ev) => (
+                    <div key={ev.id} style={{ background: 'var(--bg-surface)', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '0.75rem' }}>
+                      <div style={{ fontWeight: 700, color: 'var(--accent-indigo)', fontSize: '0.7rem' }}>[{ev.evidenceType}] {ev.sourceTitle} ({ev.evidenceLocation})</div>
+                      <p style={{ margin: '2px 0 0 0', color: 'var(--text-muted)', fontStyle: 'italic' }}>"{ev.evidenceText}"</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Why Classified Explanation Box */}
+            <div style={{ background: 'rgba(99, 102, 241, 0.08)', borderLeft: '4px solid var(--accent-indigo)', padding: '14px', borderRadius: '10px', fontSize: '0.82rem', color: 'var(--text-main)' }}>
+              <strong style={{ color: 'var(--accent-indigo)' }}>Patent Analysis Classification Verdict: </strong>
+              {selectedFeatureForModal.whyClassifiedExplanation}
+            </div>
+
+            {/* Footer Action */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+              <button onClick={() => setSelectedFeatureForModal(null)} className="btn-primary" style={{ padding: '8px 20px', fontSize: '0.8rem' }}>
+                Done Inspecting
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 2: STATUTORY SUBJECT-MATTER ELIGIBILITY EXPLANATION MODAL         */}
+      {/* ========================================================================= */}
+      {showStatutoryWhyModal && activeReport && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(11, 15, 25, 0.85)', backdropFilter: 'blur(8px)', zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--accent-indigo)', borderRadius: '24px', padding: '28px', maxWidth: '800px', width: '100%', maxHeight: '88vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 25px 50px rgba(0,0,0,0.8)' }}>
+            
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+              <div>
+                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--accent-indigo)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Legal Subject-Matter Audit</span>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Scale size={22} color="var(--accent-indigo)" />
+                  <span>Statutory Subject-Matter Screening Rationale</span>
+                </h3>
+              </div>
+              <button onClick={() => setShowStatutoryWhyModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Jurisdiction 1: India Sec 3(k) */}
+            <div style={{ background: 'var(--bg-input)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h4 style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--accent-indigo)', margin: 0 }}>
+                  🇮🇳 India — Section 3(k) Computer-Related Inventions (CRI) Guidelines
+                </h4>
+                <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4, background: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-emerald)' }}>
+                  TECHNICAL CONTRIBUTION SATISFIED
+                </span>
+              </div>
+
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
+                Under Section 3(k) of the Indian Patents Act, mathematical methods, business methods, or computer programs <em>per se</em> are non-statutory. However, inventions that bind software logic to physical hardware transceivers, microcontrollers, or produce a technical effect meet the statutory threshold.
+              </p>
+
+              <div style={{ background: 'var(--bg-surface)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.78rem' }}>
+                <strong>Hardware Binding Analysis: </strong> Physical telemetry sensors, microcontrollers, and wireless transceivers are explicitly recited in claim limitations.
+              </div>
+            </div>
+
+            {/* Jurisdiction 2: US 35 U.S.C. § 101 */}
+            <div style={{ background: 'var(--bg-input)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h4 style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--accent-indigo)', margin: 0 }}>
+                  🇺🇸 United States — 35 U.S.C. § 101 (Alice 2-Step Framework)
+                </h4>
+                <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4, background: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-emerald)' }}>
+                  STEP 2B PRACTICAL APPLICATION PASS
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.8rem' }}>
+                <div>
+                  <strong style={{ color: 'var(--text-main)' }}>Step 1 (Statutory Category):</strong> Belongs to eligible category (System / Machine / Process).
+                </div>
+                <div>
+                  <strong style={{ color: 'var(--text-main)' }}>Step 2A (Judicial Exception):</strong> Analyzes whether claims target an abstract idea.
+                </div>
+                <div>
+                  <strong style={{ color: 'var(--text-main)' }}>Step 2B (Inventive Concept / Significantly More):</strong> Hardware integration and specific telemetry transformations provide an inventive concept beyond generic computer operations.
+                </div>
+              </div>
+            </div>
+
+            {/* Close */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '14px' }}>
+              <button onClick={() => setShowStatutoryWhyModal(false)} className="btn-primary" style={{ padding: '8px 20px', fontSize: '0.8rem' }}>
+                Understand & Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 3: CONFIRM SUBMISSION TO PATENT TEAM MODAL                          */}
+      {/* ========================================================================= */}
+      {showSubmitConfirmModal && activeProject && activeReport && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(11, 15, 25, 0.85)', backdropFilter: 'blur(8px)', zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--accent-indigo)', borderRadius: '24px', padding: '28px', maxWidth: '600px', width: '100%', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 25px 50px rgba(0,0,0,0.8)' }}>
+            
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+              <div>
+                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--accent-indigo)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Patent Review Submission Handoff</span>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Send size={20} color="var(--accent-indigo)" />
+                  <span>Submit Invention for Patent Review</span>
+                </h3>
+              </div>
+              <button onClick={() => setShowSubmitConfirmModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
+              You are about to transfer project <strong>"{activeProject.title}"</strong> to the internal Patent Attorney & IP Strategy Review Queue.
+            </p>
+
+            {/* Submission Package Details */}
+            <div style={{ background: 'var(--bg-input)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.8rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-dim)' }}>Project Version:</span>
+                <strong style={{ color: 'var(--text-main)' }}>Version {activeProject.currentVersionNumber}.0</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-dim)' }}>Review Readiness Score:</span>
+                <strong style={{ color: 'var(--accent-indigo)' }}>{activeReport.reviewReadinessScore}%</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-dim)' }}>Prior-Art Concern Stance:</span>
+                <strong style={{ color: activeReport.priorArtConcern === 'HIGH' ? 'var(--accent-rose)' : activeReport.priorArtConcern === 'MODERATE' ? 'var(--accent-amber)' : 'var(--accent-emerald)' }}>{activeReport.priorArtConcern} CONCERN</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-dim)' }}>Direct Overlaps Extracted:</span>
+                <strong style={{ color: 'var(--text-main)' }}>{activeReport.directOverlapCount} Features</strong>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+              <button onClick={() => setShowSubmitConfirmModal(false)} className="btn-secondary">
+                Cancel
+              </button>
+              <button onClick={executeFinalSubmission} className="btn-primary" style={{ padding: '8px 20px', fontSize: '0.8rem' }}>
+                <Send size={15} />
+                <span>Confirm & Submit to Queue</span>
               </button>
             </div>
           </div>

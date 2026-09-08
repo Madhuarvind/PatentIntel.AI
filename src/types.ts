@@ -132,6 +132,144 @@ export interface DifferentiatorRecommendation {
   createdAt: string;
 }
 
+export type FeatureMatchRelationshipType = 
+  | 'DIRECT_FUNCTIONAL_OVERLAP'
+  | 'STRUCTURAL_OVERLAP'
+  | 'CLAIM_ELEMENT_OVERLAP'
+  | 'SEMANTIC_OVERLAP'
+  | 'PARTIAL_OVERLAP'
+  | 'COMBINATION_OVERLAP'
+  | 'SAME_TECHNICAL_EFFECT'
+  | 'SAME_PROBLEM_DIFFERENT_IMPLEMENTATION'
+  | 'DIFFERENT_IMPLEMENTATION'
+  | 'INSUFFICIENT_EVIDENCE';
+
+export interface NoveltyEvidence {
+  id: string;
+  featureMatchId: string;
+  sourceType: 'PATENT' | 'IEEE_JOURNAL' | 'IEEE_CONFERENCE' | 'RESEARCH_PAPER';
+  sourceId: string; // e.g. "US1234567B2" or DOI/Paper ID
+  canonicalId: string;
+  evidenceType: 'CLAIM' | 'ABSTRACT' | 'DESCRIPTION' | 'ACADEMIC_PASSAGE';
+  evidenceLocation: string; // e.g. "Claim 3", "Description para 0042"
+  evidenceText: string;
+  sourceUrl?: string;
+  sourceTitle?: string;
+  assigneeOrAuthors?: string;
+  publicationDateOrYear?: string;
+  retrievedAt: string;
+}
+
+export interface NoveltyComparison {
+  id: string;
+  featureMatchId: string;
+  proposalFeature: string;
+  priorArtFeature: string;
+  matchedConcepts: string[];
+  unmatchedConcepts: string[];
+  overlapSummary: string;
+  relationshipType: FeatureMatchRelationshipType;
+}
+
+export interface NoveltyFeatureMatch {
+  id: string;
+  runId: string;
+  featureId: string;
+  featureNumber: number;
+  featureText: string;
+  category: ExtractedIdeaComponent['category'];
+  status: 'KNOWN_PRIOR_ART' | 'PARTIAL_OVERLAP' | 'POTENTIALLY_DISTINCTIVE' | 'INSUFFICIENT_EVIDENCE';
+  matchedDocCount: number;
+  strongestMatchingDocId: string;
+  strongestMatchingDocTitle: string;
+  strongestSourceType: 'PATENT' | 'IEEE_JOURNAL' | 'IEEE_CONFERENCE' | 'RESEARCH_PAPER';
+  retrievalSimilarity: number; // 0 - 100%
+  featureCoverage: string; // e.g. "4 / 5"
+  claimOverlap: 'High' | 'Moderate' | 'Low' | 'None';
+  evidenceStrength: 'Strong' | 'Moderate' | 'Weak' | 'Insufficient';
+  relationshipType: FeatureMatchRelationshipType;
+  whyClassifiedExplanation: string;
+  proposalFeatureSnippet: string;
+  priorArtDisclosureSnippet: string;
+  matchedConcepts: string[];
+  unmatchedConcepts: string[];
+  evidences: NoveltyEvidence[];
+  comparisons: NoveltyComparison[];
+  matchedDocuments: {
+    id: string;
+    canonicalId: string;
+    title: string;
+    sourceType: 'PATENT' | 'IEEE_JOURNAL' | 'IEEE_CONFERENCE' | 'RESEARCH_PAPER';
+    publicationNumberOrDoi?: string;
+    assigneeOrAuthors?: string;
+    publicationDateOrYear?: string;
+    sourceUrl?: string;
+    similarityScore: number;
+    featureCoverageScore?: string;
+    evidenceStrength: 'Strong' | 'Moderate' | 'Weak' | 'Insufficient';
+    matchingExcerpt?: string;
+    claimsText?: string;
+  }[];
+  // Feature Provenance Details
+  sourceDocumentName?: string;
+  proposalPageNumber?: number;
+  proposalSection?: string;
+  extractionRunId?: string;
+  extractionConfidence?: number | 'High' | 'Medium' | 'Low';
+  originalTextExcerpt?: string;
+  lexicalOverlap?: number;
+  semanticOverlap?: number;
+  lexicalSimilarityScore?: number;
+  semanticSimilarityScore?: number;
+  combinationOverlap?: string;
+  createdAt?: string;
+}
+
+export interface CombinationAnalysisResult {
+  sharedWorkflowChain: string[];
+  proposalSpecificElements: string[];
+  potentialDifferentiator: string;
+  evidenceGrounded: boolean;
+}
+
+export interface StatutoryEligibilityAnalysis {
+  status: 'LIKELY_ELIGIBLE' | 'REVIEW_REQUIRED' | 'POTENTIAL_EXCLUSION';
+  overallSummary: string;
+  indiaSection3k: {
+    screeningResult: 'LIKELY_ELIGIBLE' | 'REVIEW_REQUIRED' | 'POTENTIAL_EXCLUSION';
+    plainEnglishExplanation: string;
+    claimElementBreakdown: {
+      elementName: string;
+      elementType: 'PHYSICAL_HARDWARE' | 'COMPUTING_HARDWARE' | 'SOFTWARE_ALGORITHM' | 'SECURITY_MECHANISM' | 'DATA_STRUCTURE';
+      statutoryRole: string;
+    }[];
+    whyThisResult: string;
+    relevantStatutoryFactors: string[];
+    evidencePassages: { claimOrSection: string; text: string }[];
+  };
+  usSection101: {
+    screeningResult: 'LIKELY_ELIGIBLE' | 'REVIEW_REQUIRED' | 'POTENTIAL_EXCLUSION';
+    statutoryCategory: 'APPARATUS' | 'SYSTEM' | 'PROCESS' | 'MANUFACTURE';
+    step2aJudicialException: 'NO_EXCEPTION' | 'ABSTRACT_IDEA' | 'NATURAL_PHENOMENON' | 'LAW_OF_NATURE';
+    step2bPracticalApplication: string;
+    technicalImplementationIndicators: string[];
+    plainEnglishExplanation: string;
+    whyThisResult: string;
+    reviewFlags: string[];
+  };
+  claimHighlighting?: {
+    claimText: string;
+    tokens: {
+      text: string;
+      category: 'PHYSICAL' | 'COMPUTING' | 'ALGORITHM' | 'TECHNICAL_EFFECT' | 'DATA_INPUT' | 'OUTPUT';
+      explanation: string;
+    }[];
+  };
+  humanReviewRecommendation: 'HIGH_CONFIDENCE' | 'MEDIUM_CONFIDENCE' | 'LOW_CONFIDENCE_HUMAN_REVIEW_REQUIRED';
+  humanReviewNote: string;
+  nonLegalDisclaimer: string;
+}
+
 export interface NoveltyBenchmarkReport {
   id: string;
   innovationProjectId: string;
@@ -149,6 +287,8 @@ export interface NoveltyBenchmarkReport {
   academicCandidatesReviewed: number;
   extractedComponents: ExtractedIdeaComponent[];
   componentRelationships: ComponentRelationship[];
+  featureMatches?: NoveltyFeatureMatch[];
+  combinationAnalysis?: CombinationAnalysisResult;
   topMatchedPatents: PatentDocument[];
   topMatchedPapers: RealtimeAcademicPaper[];
   recommendations: DifferentiatorRecommendation[];
@@ -159,6 +299,7 @@ export interface NoveltyBenchmarkReport {
     reason: string;
     recommendations: string[];
   };
+  statutoryEligibilityDetails?: StatutoryEligibilityAnalysis;
   multimodalSchematics?: {
     diagramCount: number;
     schematicMatches: {
@@ -212,18 +353,6 @@ export interface NoveltyCandidate {
   rank: number;
   retrievalScore: number;
   source: string;
-  createdAt: string;
-}
-
-export interface NoveltyEvidence {
-  id: string;
-  noveltyMatchId: string;
-  sourceDocumentId: string;
-  sourceType: string;
-  sourceIdentifier: string;
-  pageNumber?: number;
-  section?: string;
-  passage: string;
   createdAt: string;
 }
 

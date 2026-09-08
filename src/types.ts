@@ -26,6 +26,13 @@ export interface PriorArtMatch {
   ftoRisk?: 'HIGH_COLLISION' | 'SAFE_PUBLIC_DOMAIN' | 'UNCERTAIN';
   figNumber?: string;
   diagramSnippet?: string;
+  scoreBreakdown?: {
+    semantic: number;
+    lexical: number;
+    cpc: number;
+    claim: number;
+    formula: string;
+  };
 }
 
 export interface EvidenceReference {

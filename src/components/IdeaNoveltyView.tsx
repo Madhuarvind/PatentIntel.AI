@@ -23,7 +23,9 @@ import {
   HelpCircle,
   Search,
   FileCode,
-  Activity
+  Activity,
+  Edit3,
+  CheckCircle
 } from 'lucide-react';
 
 import type { 
@@ -134,6 +136,13 @@ export const IdeaNoveltyView: React.FC<IdeaNoveltyViewProps> = ({
   const [showFerModal, setShowFerModal] = useState<boolean>(false);
   const [decisionType, setDecisionType] = useState<'APPROVED_FOR_DRAFTING' | 'NEEDS_REVISION' | 'REJECTED'>('APPROVED_FOR_DRAFTING');
   const [decisionReason, setDecisionReason] = useState<string>('');
+
+  // Edit Proposal & Features Modal State
+  const [showEditProjectModal, setShowEditProjectModal] = useState<boolean>(false);
+  const [editTitle, setEditTitle] = useState<string>('');
+  const [editProblem, setEditProblem] = useState<string>('');
+  const [editSolution, setEditSolution] = useState<string>('');
+  const [isReAnalyzing, setIsReAnalyzing] = useState<boolean>(false);
 
   const handleDownloadFerReport = () => {
     if (!activeReport) return;
@@ -413,7 +422,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
     }, 800);
   };
 
-  // Accept Differentiator Recommendation -> Creates Version 2
+  // Accept Differentiator Recommendation -> Creates Version N
   const handleAcceptRecommendation = (rec: DifferentiatorRecommendation) => {
     if (!activeReport || !activeProject) return;
 
@@ -472,6 +481,89 @@ const RESEARCH_PRESETS: RDPreset[] = [
 
     dbStore.saveBenchmarkReport(updatedReport);
     setActiveReport(updatedReport);
+
+    // Sync Submission status if submission exists
+    const existingSub = dbStore.getReviewSubmissionByProjectId(activeProject.id);
+    if (existingSub) {
+      const updatedSub: PatentReviewSubmission = {
+        ...existingSub,
+        status: 'SUBMITTED',
+        versionNumber: newVersionNum,
+        updatedAt: new Date().toISOString()
+      };
+      dbStore.saveReviewSubmission(updatedSub);
+      setActiveSubmission(updatedSub);
+
+      dbStore.saveReviewComment({
+        id: `comm_${Date.now()}`,
+        submissionId: existingSub.id,
+        authorId: currentUser?.id || 'usr_student',
+        authorName: currentUser?.name || 'Student Researcher',
+        comment: `💡 Accepted Differentiator limitation: "${rec.title}". Created Version v${newVersionNum}.0 and re-submitted to Patent Review Queue.`,
+        createdAt: new Date().toISOString()
+      });
+      setReviewComments(dbStore.getReviewComments(existingSub.id));
+      loadData();
+    }
+  };
+
+  // Open Edit Proposal Modal
+  const handleOpenEditModal = () => {
+    if (!activeProject) return;
+    setEditTitle(activeProject.title || '');
+    setEditProblem(activeProject.technicalProblem || '');
+    setEditSolution(activeProject.proposedSolution || '');
+    setShowEditProjectModal(true);
+  };
+
+  // Save Project Edits & Re-Analyze Proposal
+  const handleSaveProjectEdits = async () => {
+    if (!activeProject || !activeReport) return;
+    setIsReAnalyzing(true);
+
+    const updatedProject: InnovationProject = {
+      ...activeProject,
+      title: editTitle,
+      technicalProblem: editProblem,
+      proposedSolution: editSolution,
+      updatedAt: new Date().toISOString()
+    };
+
+    dbStore.saveInnovationProject(updatedProject);
+    setActiveProject(updatedProject);
+
+    const combinedText = `${editTitle}\n${editProblem}\n${editSolution}`;
+
+    try {
+      const newReport = await analyzeIdeaProposal(
+        combinedText,
+        editTitle,
+        activeProject.id,
+        currentUser?.id
+      );
+
+      const fullReport = ensureFeatureMatches(newReport);
+      dbStore.saveBenchmarkReport(fullReport);
+      setActiveReport(fullReport);
+
+      if (activeSubmission) {
+        dbStore.saveReviewComment({
+          id: `comm_${Date.now()}`,
+          submissionId: activeSubmission.id,
+          authorId: currentUser?.id || 'usr_student',
+          authorName: currentUser?.name || 'Student Researcher',
+          comment: `📝 Updated technical proposal text and problem formulation. Re-benchmarked against prior art repository.`,
+          createdAt: new Date().toISOString()
+        });
+        setReviewComments(dbStore.getReviewComments(activeSubmission.id));
+      }
+    } catch (err) {
+      console.error('Failed to re-analyze edited proposal:', err);
+    } finally {
+      setIsReAnalyzing(false);
+      setShowEditProjectModal(false);
+      loadData();
+    }
   };
 
   // Download Markdown Audit Dossier
@@ -673,8 +765,11 @@ const RESEARCH_PRESETS: RDPreset[] = [
   const executeFinalSubmission = () => {
     if (!activeProject || !activeReport) return;
 
+    const existingSub = dbStore.getReviewSubmissionByProjectId(activeProject.id);
+    const subId = existingSub ? existingSub.id : `sub_${Date.now()}`;
+
     const submission: PatentReviewSubmission = {
-      id: `sub_${Date.now()}`,
+      id: subId,
       innovationProjectId: activeProject.id,
       submittedBy: currentUser?.id || 'usr_student',
       submittedByName: currentUser?.name || 'Student Researcher',
@@ -688,18 +783,23 @@ const RESEARCH_PRESETS: RDPreset[] = [
     dbStore.saveReviewSubmission(submission);
     setActiveSubmission(submission);
 
-    // Create Initial Reviewer Welcome Comment
+    const commentMsg = existingSub 
+      ? `🔄 Project Version v${activeProject.currentVersionNumber}.0 re-submitted to Patent Team Review Queue with revised features.`
+      : `Project submitted for patent team review. Review Readiness Score: ${activeReport.reviewReadinessScore}%. Prior-Art Concern: ${activeReport.priorArtConcern}. Direct Overlaps: ${activeReport.directOverlapCount}.`;
+
     dbStore.saveReviewComment({
       id: `comm_${Date.now()}`,
       submissionId: submission.id,
-      authorId: 'sys_bot',
-      authorName: 'PatentIntel Audit Engine',
-      comment: `Project submitted for patent team review. Review Readiness Score: ${activeReport.reviewReadinessScore}%. Prior-Art Concern: ${activeReport.priorArtConcern}. Direct Overlaps: ${activeReport.directOverlapCount}.`,
+      authorId: currentUser?.id || 'usr_student',
+      authorName: currentUser?.name || 'Student Researcher',
+      comment: commentMsg,
       createdAt: new Date().toISOString()
     });
 
+    setReviewComments(dbStore.getReviewComments(submission.id));
     setShowSubmitConfirmModal(false);
     setActiveTab('review_queue');
+    loadData();
   };
 
   // Post Review Comment
@@ -730,6 +830,21 @@ const RESEARCH_PRESETS: RDPreset[] = [
       reviewerName: currentUser?.name || 'Dr. Alex Vance',
       decision: decisionType,
       reason: decisionReason || 'Reviewed against prior-art evidence and component matrix.',
+      createdAt: new Date().toISOString()
+    });
+
+    const statusLabel = decisionType === 'APPROVED_FOR_DRAFTING' 
+      ? 'APPROVED FOR CLAIM DRAFTING' 
+      : decisionType === 'NEEDS_REVISION' 
+      ? 'REVISION REQUESTED (SENT BACK TO RESEARCHER)' 
+      : 'REJECTED';
+
+    dbStore.saveReviewComment({
+      id: `comm_${Date.now()}`,
+      submissionId: activeSubmission.id,
+      authorId: currentUser?.id || 'usr_examiner',
+      authorName: currentUser?.name || 'Dr. Alex Vance (Lead Examiner)',
+      comment: `⚖️ OFFICIAL REVIEW DECISION ISSUED: [${statusLabel}]. Examiner Rationale: "${decisionReason || 'Reviewed against prior-art evidence and component matrix.'}"`,
       createdAt: new Date().toISOString()
     });
 
@@ -1519,6 +1634,94 @@ const RESEARCH_PRESETS: RDPreset[] = [
       {/* ========================================================================= */}
       {activeTab === 'audit' && activeReport && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Dynamic Patent Team Review Lifecycle Action Banner */}
+          {activeSubmission && (() => {
+            const latestDec = dbStore.getReviewDecisions(activeSubmission.id)[0];
+            if (activeSubmission.status === 'NEEDS_REVISION') {
+              return (
+                <div style={{ background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: '16px', padding: '18px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', boxShadow: '0 8px 25px rgba(245, 158, 11, 0.15)' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', flex: 1, minWidth: '300px' }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(245, 158, 11, 0.2)', color: 'var(--accent-amber)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid rgba(245, 158, 11, 0.4)' }}>
+                      <AlertTriangle size={24} />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '0.96rem', color: 'var(--accent-amber)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>⚠️ Patent Team Examiner Requested Revision</span>
+                        <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: 999, background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', fontFamily: 'var(--font-mono)' }}>v{activeSubmission.versionNumber}.0</span>
+                      </div>
+                      <p style={{ fontSize: '0.82rem', color: 'var(--text-main)', margin: '4px 0 0 0', lineHeight: 1.4 }}>
+                        <strong>Examiner Feedback:</strong> "{latestDec?.reason || 'Please refine technical features or accept recommended differentiators to lower Section 103 obviousness risk.'}"
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <button onClick={handleOpenEditModal} className="btn-secondary" style={{ fontSize: '0.78rem', padding: '8px 14px', background: 'var(--bg-card)' }}>
+                      <Edit3 size={14} /> <span>Edit Technical Proposal</span>
+                    </button>
+                    <button onClick={() => setActiveReportTab('differentiators')} className="btn-secondary" style={{ fontSize: '0.78rem', padding: '8px 14px', background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+                      <Sparkles size={14} /> <span>Inspect Differentiators</span>
+                    </button>
+                    <button onClick={executeFinalSubmission} className="btn-primary" style={{ fontSize: '0.78rem', padding: '8px 16px', background: 'var(--gradient-accent)' }}>
+                      <Send size={14} /> <span>Re-Submit Version v{activeProject?.currentVersionNumber || 1}.0</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
+            if (activeSubmission.status === 'SUBMITTED') {
+              return (
+                <div style={{ background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.35)', borderRadius: '14px', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <FileCheck size={22} color="var(--accent-indigo)" />
+                    <div>
+                      <strong style={{ fontSize: '0.88rem', color: 'var(--text-main)', display: 'block' }}>
+                        Submitted to Patent Team Review Queue (Version v{activeSubmission.versionNumber}.0)
+                      </strong>
+                      <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                        Currently pending evaluation by Lead Patent Examiner (Dr. Alex Vance)
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <button onClick={handleOpenEditModal} className="btn-secondary" style={{ fontSize: '0.76rem', padding: '6px 12px' }}>
+                      <Edit3 size={14} /> <span>Modify Proposal</span>
+                    </button>
+                    <button onClick={() => setActiveTab('review_queue')} className="btn-primary" style={{ fontSize: '0.78rem', padding: '8px 14px' }}>
+                      <span>Open Reviewer Workspace</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
+            if (activeSubmission.status === 'APPROVED_FOR_DRAFTING') {
+              return (
+                <div style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '14px', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <CheckCircle size={22} color="var(--accent-emerald)" />
+                    <div>
+                      <strong style={{ fontSize: '0.88rem', color: 'var(--accent-emerald)', display: 'block' }}>
+                        Approved by Lead Patent Examiner — Ready for Statutory Claim Drafting
+                      </strong>
+                      <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                        Pre-examination audit passed. You may proceed to AI-Assisted Patent Claim Synthesizer.
+                      </span>
+                    </div>
+                  </div>
+
+                  <button onClick={handleHandoffToClaimSynthesizer} className="btn-primary" style={{ fontSize: '0.78rem', padding: '8px 16px', background: 'var(--gradient-emerald)' }}>
+                    <Sparkles size={14} /> <span>Launch AI Claim Synthesizer</span>
+                  </button>
+                </div>
+              );
+            }
+
+            return null;
+          })()}
+
           {/* Legal Disclaimer Banner */}
           <div 
             style={{ 
@@ -3342,6 +3545,82 @@ const RESEARCH_PRESETS: RDPreset[] = [
               <button onClick={executeFinalSubmission} className="btn-primary" style={{ padding: '8px 20px', fontSize: '0.8rem' }}>
                 <Send size={15} />
                 <span>Confirm & Submit to Queue</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* EDIT PROPOSAL & FEATURES MODAL                                            */}
+      {/* ========================================================================= */}
+      {showEditProjectModal && activeProject && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--accent-indigo)', borderRadius: '24px', padding: '28px', maxWidth: '650px', width: '100%', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 25px 50px rgba(0,0,0,0.8)' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+              <div>
+                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--accent-indigo)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Proposal Revision & Re-Benchmarking</span>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Edit3 size={20} color="var(--accent-indigo)" />
+                  <span>Edit R&D Proposal Details</span>
+                </h3>
+              </div>
+              <button onClick={() => setShowEditProjectModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Proposal Title</label>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Technical Problem Statement</label>
+                <textarea
+                  className="input-field"
+                  rows={3}
+                  value={editProblem}
+                  onChange={(e) => setEditProblem(e.target.value)}
+                  style={{ width: '100%', resize: 'vertical' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Proposed Technical Solution & Hardware/Algorithm Architecture</label>
+                <textarea
+                  className="input-field"
+                  rows={4}
+                  value={editSolution}
+                  onChange={(e) => setEditSolution(e.target.value)}
+                  style={{ width: '100%', resize: 'vertical' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+              <button onClick={() => setShowEditProjectModal(false)} className="btn-secondary" disabled={isReAnalyzing}>
+                Cancel
+              </button>
+              <button onClick={handleSaveProjectEdits} className="btn-primary" disabled={isReAnalyzing} style={{ padding: '8px 20px', fontSize: '0.8rem' }}>
+                {isReAnalyzing ? (
+                  <>
+                    <RefreshCw size={15} style={{ animation: 'spin 1.5s linear infinite' }} />
+                    <span>Re-Benchmarking...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={15} />
+                    <span>Save & Re-Benchmark Proposal</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

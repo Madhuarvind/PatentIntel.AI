@@ -142,7 +142,20 @@ export const IdeaNoveltyView: React.FC<IdeaNoveltyViewProps> = ({
   const [editTitle, setEditTitle] = useState<string>('');
   const [editProblem, setEditProblem] = useState<string>('');
   const [editSolution, setEditSolution] = useState<string>('');
+  const [editError, setEditError] = useState<string | null>(null);
   const [isReAnalyzing, setIsReAnalyzing] = useState<boolean>(false);
+  const [showNoRevisionWarningModal, setShowNoRevisionWarningModal] = useState<boolean>(false);
+
+  const handleInspectDifferentiators = () => {
+    setActiveTab('audit');
+    setActiveReportTab('differentiators');
+    setTimeout(() => {
+      const elem = document.getElementById('differentiator-advisor-section');
+      if (elem) {
+        elem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 120);
+  };
 
   const handleDownloadFerReport = () => {
     if (!activeReport) return;
@@ -513,19 +526,34 @@ const RESEARCH_PRESETS: RDPreset[] = [
     setEditTitle(activeProject.title || '');
     setEditProblem(activeProject.technicalProblem || '');
     setEditSolution(activeProject.proposedSolution || '');
+    setEditError(null);
     setShowEditProjectModal(true);
   };
 
   // Save Project Edits & Re-Analyze Proposal
   const handleSaveProjectEdits = async () => {
     if (!activeProject || !activeReport) return;
+
+    const isTitleUnchanged = editTitle.trim() === (activeProject.title || '').trim();
+    const isProblemUnchanged = editProblem.trim() === (activeProject.technicalProblem || '').trim();
+    const isSolutionUnchanged = editSolution.trim() === (activeProject.proposedSolution || '').trim();
+
+    if (isTitleUnchanged && isProblemUnchanged && isSolutionUnchanged) {
+      setEditError("⚠️ No technical changes detected! You have not modified the proposal title, problem statement, or solution architecture. Please make technical revisions before saving and re-benchmarking.");
+      return;
+    }
+
+    setEditError(null);
     setIsReAnalyzing(true);
+
+    const newVersionNum = (activeProject.currentVersionNumber || 1) + 1;
 
     const updatedProject: InnovationProject = {
       ...activeProject,
       title: editTitle,
       technicalProblem: editProblem,
       proposedSolution: editSolution,
+      currentVersionNumber: newVersionNum,
       updatedAt: new Date().toISOString()
     };
 
@@ -546,16 +574,42 @@ const RESEARCH_PRESETS: RDPreset[] = [
       dbStore.saveBenchmarkReport(fullReport);
       setActiveReport(fullReport);
 
-      if (activeSubmission) {
+      // Record new InnovationVersion
+      const newVersion: InnovationVersion = {
+        id: `ver_${activeProject.id}_${newVersionNum}`,
+        innovationProjectId: activeProject.id,
+        versionNumber: newVersionNum,
+        title: editTitle,
+        description: `[Proposal Revision]: ${editProblem.substring(0, 100)}...`,
+        features: fullReport.extractedComponents,
+        relationships: fullReport.componentRelationships,
+        recommendations: fullReport.recommendations,
+        author: currentUser?.name || 'Researcher',
+        createdAt: new Date().toISOString()
+      };
+      dbStore.saveInnovationVersion(newVersion);
+
+      // Sync submission to SUBMITTED status with new version number
+      const existingSub = dbStore.getReviewSubmissionByProjectId(activeProject.id);
+      if (existingSub) {
+        const updatedSub: PatentReviewSubmission = {
+          ...existingSub,
+          status: 'SUBMITTED',
+          versionNumber: newVersionNum,
+          updatedAt: new Date().toISOString()
+        };
+        dbStore.saveReviewSubmission(updatedSub);
+        setActiveSubmission(updatedSub);
+
         dbStore.saveReviewComment({
           id: `comm_${Date.now()}`,
-          submissionId: activeSubmission.id,
+          submissionId: existingSub.id,
           authorId: currentUser?.id || 'usr_student',
           authorName: currentUser?.name || 'Student Researcher',
-          comment: `📝 Updated technical proposal text and problem formulation. Re-benchmarked against prior art repository.`,
+          comment: `📝 Revised proposal text & problem formulation. Re-benchmarked prior-art and created Version v${newVersionNum}.0 (Re-submitted to Patent Review Queue).`,
           createdAt: new Date().toISOString()
         });
-        setReviewComments(dbStore.getReviewComments(activeSubmission.id));
+        setReviewComments(dbStore.getReviewComments(existingSub.id));
       }
     } catch (err) {
       console.error('Failed to re-analyze edited proposal:', err);
@@ -766,6 +820,16 @@ const RESEARCH_PRESETS: RDPreset[] = [
     if (!activeProject || !activeReport) return;
 
     const existingSub = dbStore.getReviewSubmissionByProjectId(activeProject.id);
+
+    // If examiner requested revision, check if user made any edits or accepted differentiators
+    if (existingSub && existingSub.status === 'NEEDS_REVISION') {
+      if (existingSub.versionNumber >= activeProject.currentVersionNumber) {
+        setShowSubmitConfirmModal(false);
+        setShowNoRevisionWarningModal(true);
+        return;
+      }
+    }
+
     const subId = existingSub ? existingSub.id : `sub_${Date.now()}`;
 
     const submission: PatentReviewSubmission = {
@@ -798,6 +862,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
 
     setReviewComments(dbStore.getReviewComments(submission.id));
     setShowSubmitConfirmModal(false);
+    setShowNoRevisionWarningModal(false);
     setActiveTab('review_queue');
     loadData();
   };
@@ -1659,7 +1724,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     <button onClick={handleOpenEditModal} className="btn-secondary" style={{ fontSize: '0.78rem', padding: '8px 14px', background: 'var(--bg-card)' }}>
                       <Edit3 size={14} /> <span>Edit Technical Proposal</span>
                     </button>
-                    <button onClick={() => setActiveReportTab('differentiators')} className="btn-secondary" style={{ fontSize: '0.78rem', padding: '8px 14px', background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+                    <button onClick={handleInspectDifferentiators} className="btn-secondary" style={{ fontSize: '0.78rem', padding: '8px 14px', background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
                       <Sparkles size={14} /> <span>Inspect Differentiators</span>
                     </button>
                     <button onClick={executeFinalSubmission} className="btn-primary" style={{ fontSize: '0.78rem', padding: '8px 16px', background: 'var(--gradient-accent)' }}>
@@ -2876,7 +2941,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
 
           {/* TAB D: DIFFERENTIATOR ADVISOR */}
           {activeReportTab === 'differentiators' && (
-            <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div id="differentiator-advisor-section" className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
                   <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -3639,8 +3704,22 @@ const RESEARCH_PRESETS: RDPreset[] = [
           <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--accent-indigo)', borderRadius: '24px', padding: '28px', maxWidth: '650px', width: '100%', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 25px 50px rgba(0,0,0,0.8)' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
               <div>
-                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--accent-indigo)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Proposal Revision & Re-Benchmarking</span>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 4 }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--accent-indigo)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Proposal Revision & Re-Benchmarking</span>
+                  {(() => {
+                    const isTitleUnchanged = editTitle.trim() === (activeProject.title || '').trim();
+                    const isProblemUnchanged = editProblem.trim() === (activeProject.technicalProblem || '').trim();
+                    const isSolutionUnchanged = editSolution.trim() === (activeProject.proposedSolution || '').trim();
+                    const isUnchanged = isTitleUnchanged && isProblemUnchanged && isSolutionUnchanged;
+
+                    return (
+                      <span style={{ fontSize: '0.7rem', fontWeight: 800, color: isUnchanged ? 'var(--accent-amber)' : 'var(--accent-emerald)', background: isUnchanged ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)', padding: '2px 8px', borderRadius: 999, border: `1px solid ${isUnchanged ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)'}` }}>
+                        {isUnchanged ? '⚠️ Unchanged Text' : `🟢 Technical Edits Detected (Creates Version v${(activeProject.currentVersionNumber || 1) + 1}.0)`}
+                      </span>
+                    );
+                  })()}
+                </div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Edit3 size={20} color="var(--accent-indigo)" />
                   <span>Edit R&D Proposal Details</span>
                 </h3>
@@ -3650,6 +3729,14 @@ const RESEARCH_PRESETS: RDPreset[] = [
               </button>
             </div>
 
+            {/* Error Warning Banner if User Didn't Edit Anything */}
+            {editError && (
+              <div style={{ background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.4)', padding: '12px 16px', borderRadius: '12px', fontSize: '0.82rem', color: 'var(--accent-amber)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <AlertTriangle size={18} style={{ flexShrink: 0 }} />
+                <span>{editError}</span>
+              </div>
+            )}
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
                 <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Proposal Title</label>
@@ -3657,7 +3744,10 @@ const RESEARCH_PRESETS: RDPreset[] = [
                   type="text"
                   className="input-field"
                   value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
+                  onChange={(e) => {
+                    setEditTitle(e.target.value);
+                    if (editError) setEditError(null);
+                  }}
                   style={{ width: '100%' }}
                 />
               </div>
@@ -3668,7 +3758,10 @@ const RESEARCH_PRESETS: RDPreset[] = [
                   className="input-field"
                   rows={3}
                   value={editProblem}
-                  onChange={(e) => setEditProblem(e.target.value)}
+                  onChange={(e) => {
+                    setEditProblem(e.target.value);
+                    if (editError) setEditError(null);
+                  }}
                   style={{ width: '100%', resize: 'vertical' }}
                 />
               </div>
@@ -3679,7 +3772,10 @@ const RESEARCH_PRESETS: RDPreset[] = [
                   className="input-field"
                   rows={4}
                   value={editSolution}
-                  onChange={(e) => setEditSolution(e.target.value)}
+                  onChange={(e) => {
+                    setEditSolution(e.target.value);
+                    if (editError) setEditError(null);
+                  }}
                   style={{ width: '100%', resize: 'vertical' }}
                 />
               </div>
@@ -3701,6 +3797,61 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     <span>Save & Re-Benchmark Proposal</span>
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: EXAMINER REVISION REQUIRED WARNING MODAL                           */}
+      {/* ========================================================================= */}
+      {showNoRevisionWarningModal && activeProject && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--accent-amber)', borderRadius: '24px', padding: '28px', maxWidth: '540px', width: '100%', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 25px 50px rgba(0,0,0,0.8)' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(245, 158, 11, 0.2)', color: 'var(--accent-amber)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid rgba(245, 158, 11, 0.4)' }}>
+                <AlertTriangle size={24} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--accent-amber)', margin: 0 }}>Technical Revision Required Before Re-Submitting</h3>
+                <p style={{ fontSize: '0.84rem', color: 'var(--text-main)', margin: '6px 0 0 0', lineHeight: 1.4 }}>
+                  The Patent Team Examiner requested revisions for Version <strong>v{activeSubmission?.versionNumber}.0</strong>. You cannot re-submit the identical version without making technical changes or accepting a differentiator.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ background: 'var(--bg-input)', padding: '16px', borderRadius: '14px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Select Revision Action to Proceed:</span>
+
+              <button
+                onClick={() => {
+                  setShowNoRevisionWarningModal(false);
+                  handleOpenEditModal();
+                }}
+                className="btn-primary"
+                style={{ justifyContent: 'center', padding: '10px', fontSize: '0.85rem' }}
+              >
+                <Edit3 size={16} />
+                <span>1. Edit Proposal Text & Architecture</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowNoRevisionWarningModal(false);
+                  handleInspectDifferentiators();
+                }}
+                className="btn-secondary"
+                style={{ justifyContent: 'center', padding: '10px', fontSize: '0.85rem', background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.3)' }}
+              >
+                <Sparkles size={16} />
+                <span>2. Inspect Differentiators & Add Limitation</span>
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '14px' }}>
+              <button onClick={() => setShowNoRevisionWarningModal(false)} className="btn-secondary" style={{ fontSize: '0.78rem' }}>
+                Cancel & Close
               </button>
             </div>
           </div>

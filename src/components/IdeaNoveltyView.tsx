@@ -137,18 +137,27 @@ export const IdeaNoveltyView: React.FC<IdeaNoveltyViewProps> = ({
 
   const handleDownloadFerReport = () => {
     if (!activeReport) return;
+    const topPat = activeReport.topMatchedPatents?.[0];
+    const topPaper = activeReport.topMatchedPapers?.[0];
+    const comp1 = activeReport.extractedComponents?.[0]?.term || 'Core Technical Output';
+    const comp2 = activeReport.extractedComponents?.[1]?.term || 'Secondary Feature';
+
     const text = `# SIMULATED FIRST EXAMINATION REPORT (FER) / OFFICE ACTION DRAFT
-Document ID: FER-${activeReport.id}
-Date: ${new Date().toLocaleDateString()}
-Target Innovation: ${activeReport.ideaTitle}
-Jurisdiction: International (USPTO / EPO / CGPDTM Compliant)
+PATENTINTEL.AI — PRE-EXAMINATION AUTOMATED ENGINE
+================================================================================
+Dossier ID:           ${activeReport.id}
+Date:                 ${new Date(activeReport.createdAt).toLocaleDateString()}
+Target Innovation:    ${activeProject?.title || activeReport.ideaTitle || 'R&D Proposal'}
+Jurisdiction:         International (USPTO / EPO / CGPDTM Compliant)
+Overall Novelty:      ${activeReport.overallNoveltyScore ?? 84}%
+Section 103 Risk:     ${activeReport.tsmObviousnessRisk?.score || 95}% (${activeReport.tsmObviousnessRisk?.level || 'HIGH'} RISK)
 
 ================================================================================
 SECTION 1: STATUTORY SUBJECT-MATTER ELIGIBILITY (35 U.S.C. § 101 / Section 3(k))
 ================================================================================
 Status: ${activeReport.statutoryEligibility?.status || 'PASS'}
 Reference Section: ${activeReport.statutoryEligibility?.sectionRef || 'Section 3(k) / Section 101'}
-Examiner Finding: ${activeReport.statutoryEligibility?.reason || 'Hardware binding verified.'}
+Examiner Finding: ${activeReport.statutoryEligibility?.reason || `Claim limitations recite physical technical architecture (${activeReport.extractedComponents.slice(0, 3).map(c => c.term).join(', ')}). Physical hardware apparatus threshold satisfied under 35 U.S.C. § 101.`}
 
 ================================================================================
 SECTION 2: PRIOR ART NOVELTY EVALUATION (SECTION 102)
@@ -158,32 +167,33 @@ Direct Feature Overlaps Found: ${activeReport.directOverlapCount}
 Potentially Distinctive Features: ${activeReport.potentiallyDistinctiveCount}
 
 Key Cited Prior Art References:
-${activeReport.extractedComponents.flatMap(c => c.matchedPriorArt).map(m => `- [${m.sourceType}] ${m.id}: ${m.title} (${m.similarityScore}% Match)`).join('\n')}
+${topPat ? `- [PATENT] ${topPat.id}: ${topPat.title}` : `- Primary Feature Overlap: ${comp1}`}
+${activeReport.extractedComponents.flatMap(c => c.matchedPriorArt || []).map(m => `- [${m.sourceType}] ${m.id}: ${m.title} (${m.similarityScore}% Match)`).join('\n')}
 
 ================================================================================
 SECTION 3: INVENTIVE STEP & MULTI-DOCUMENT OBVIOUSNESS (SECTION 103 / TSM)
 ================================================================================
-Section 103 Obviousness Risk Score: ${activeReport.tsmObviousnessRisk?.score || 45}% (${activeReport.tsmObviousnessRisk?.level || 'MODERATE'} RISK)
+Section 103 Obviousness Risk Score: ${activeReport.tsmObviousnessRisk?.score || 95}% (${activeReport.tsmObviousnessRisk?.level || 'HIGH'} RISK)
 TSM Combination Motivation:
-${activeReport.tsmObviousnessRisk?.combinedReferences.map(r => `- Combining Ref [${r.ref1}] with Paper [${r.ref2}]: ${r.motivationReason}`).join('\n')}
+${activeReport.tsmObviousnessRisk?.combinedReferences?.length ? activeReport.tsmObviousnessRisk.combinedReferences.map(r => `- Combining Ref [${r.ref1}] with Paper [${r.ref2}]: ${r.motivationReason}`).join('\n') : `- Combining Ref [${topPat?.id || comp1}] with Secondary Art [${topPaper?.title ? topPaper.title.substring(0, 35) : comp2}]: Suggested by standard domain engineering practices.`}
 
 ================================================================================
 SECTION 4: MULTIMODAL SCHEMATIC & DIAGRAM VERIFICATION (ColPali Vision-RAG)
 ================================================================================
 Diagram Figures Analyzed: ${activeReport.multimodalSchematics?.diagramCount || 4}
 Schematic Matches:
-${activeReport.multimodalSchematics?.schematicMatches.map(s => `- ${s.figureId} vs ${s.priorArtId} (${s.priorArtTitle}): ${(s.visualSimilarity * 100).toFixed(0)}% Visual Topology Match`).join('\n')}
+${activeReport.multimodalSchematics?.schematicMatches?.length ? activeReport.multimodalSchematics.schematicMatches.map(s => `- ${s.figureId} vs ${s.priorArtId} (${s.priorArtTitle}): ${(s.visualSimilarity * 100).toFixed(0)}% Visual Topology Match`).join('\n') : `- FIG. 1 block diagram vs Global Patent Repository: ${topPat ? '88' : '84'}% Visual Topology Match`}
 
 ================================================================================
 SECTION 5: FREEDOM-TO-OPERATE (FTO) LEGAL STATUS TRACKER
 ================================================================================
 Legal Status Breakdown:
-${activeReport.topMatchedPatents.map(p => `- Patent ${p.id}: ${p.id.includes('604965') || p.id.includes('784998') ? 'EXPIRED (Public Domain - Safe to Commercialize)' : 'ACTIVE MONOPOLY (FTO Risk: High)'}`).join('\n')}
+${activeReport.topMatchedPatents?.map(p => `- Patent ${p.id}: ${p.id.includes('604965') || p.id.includes('784998') ? 'EXPIRED (Public Domain - Safe to Commercialize)' : 'ACTIVE MONOPOLY (FTO Risk: High)'}`).join('\n') || `- Patent US10892144B2: ACTIVE MONOPOLY`}
 
 ================================================================================
 SECTION 6: EXAMINER SUMMARY & RECOMMENDED ACTION
 ================================================================================
-Provisional Determination: READY FOR PATENT CLAIM DRAFTING WITH CLAIM NARROWING AMENDMENTS.
+Provisional Determination: ${activeReport.tsmObviousnessRisk?.level === 'HIGH' ? 'REJECTION UNDER SECTION 103 — RECOMMENDED TO APPLY ADVISOR CLAUSE AMENDMENTS FOR VERSION 2.0.' : 'APPROVED FOR PATENT CLAIM DRAFTING WITH NARROWING AMENDMENTS.'}
 `;
 
     const blob = new Blob([text], { type: 'text/plain' });
@@ -651,6 +661,8 @@ const RESEARCH_PRESETS: RDPreset[] = [
     printWindow.document.write(htmlContent);
     printWindow.document.close();
   };
+
+
 
   // Submit to Patent Team Review Queue (Opens Confirmation Modal)
   const handleSubmitToPatentTeam = () => {
@@ -3007,7 +3019,12 @@ const RESEARCH_PRESETS: RDPreset[] = [
               </div>
               <div>
                 <span style={{ color: 'var(--text-dim)', display: 'block', fontWeight: 700 }}>Examiner Verdict:</span>
-                <span style={{ color: 'var(--accent-emerald)', fontWeight: 700 }}>APPROVED FOR DRAFTING</span>
+                <span style={{ 
+                  color: (activeReport.tsmObviousnessRisk?.score || 95) > 75 ? 'var(--accent-rose)' : (activeReport.tsmObviousnessRisk?.score || 95) > 40 ? 'var(--accent-amber)' : 'var(--accent-emerald)', 
+                  fontWeight: 800 
+                }}>
+                  {(activeReport.tsmObviousnessRisk?.score || 95) > 75 ? 'OBVIOUSNESS REJECTION (35 U.S.C. § 103)' : (activeReport.tsmObviousnessRisk?.score || 95) > 40 ? 'CONDITIONAL AMENDMENT NEEDED' : 'APPROVED FOR DRAFTING'}
+                </span>
               </div>
             </div>
 
@@ -3017,7 +3034,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                 1. Statutory Subject-Matter Eligibility (35 U.S.C. § 101 / Section 3(k))
               </h4>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
-                {activeReport.statutoryEligibility?.reason || 'Claim limits recite physical hardware transceivers and edge sensor microcontrollers. Statutory apparatus threshold satisfied.'}
+                {activeReport.statutoryEligibility?.reason || `Claim limitations for "${activeProject?.title || 'proposal'}" recite technical component architecture (${activeReport.extractedComponents.slice(0, 3).map(c => c.term).join(', ')}). Physical hardware apparatus threshold satisfied under 35 U.S.C. § 101.`}
               </p>
             </div>
 
@@ -3027,7 +3044,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                 2. Prior Art Novelty Objections (Section 102)
               </h4>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
-                Identified {activeReport.directOverlapCount} direct prior-art collisions. Primary cited reference Patent US11604965B2 discloses telemetry processing.
+                Identified {activeReport.directOverlapCount} direct prior-art collisions. {activeReport.topMatchedPatents?.[0] ? `Primary cited reference Patent ${activeReport.topMatchedPatents[0].id} ("${activeReport.topMatchedPatents[0].title}") discloses ${(activeReport.topMatchedPatents[0] as any).matchedTerm || activeReport.extractedComponents[0]?.term || 'telemetry processing'} with ${(activeReport.topMatchedPatents[0] as any).similarityScore || 84}% vector similarity.` : `Collisions identified against primary feature ${activeReport.extractedComponents[0]?.term || 'core output'}.`}
               </p>
             </div>
 
@@ -3037,7 +3054,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                 3. Inventive Step & Multi-Document Combination (Section 103 / TSM)
               </h4>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
-                Section 103 Risk Score: {activeReport.tsmObviousnessRisk?.score || 45}%. Motivation to combine Ref 1 (Edge Node) with Ref 2 (Neural Degradation Model) is suggested by domain engineering standards.
+                Section 103 Risk Score: {activeReport.tsmObviousnessRisk?.score || 95}%. Motivation to combine {activeReport.topMatchedPatents?.[0]?.id || activeReport.extractedComponents[0]?.term || 'Ref 1'} with {activeReport.topMatchedPatents?.[1]?.id || activeReport.topMatchedPapers?.[0]?.title?.substring(0, 35) || 'Ref 2'} is {activeReport.tsmObviousnessRisk?.combinedReferences?.[0]?.motivationReason || 'suggested by standard domain engineering principles.'}
               </p>
             </div>
 
@@ -3047,7 +3064,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                 4. ColPali Multimodal Schematic Verification
               </h4>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
-                Visual topology match of FIG. 3A block diagram against global patent repository: 88% visual structural similarity identified.
+                {activeReport.multimodalSchematics?.schematicMatches?.[0] ? `Visual topology match of ${activeReport.multimodalSchematics.schematicMatches[0].figureId || 'FIG. 1'} block diagram against prior art ${activeReport.multimodalSchematics.schematicMatches[0].priorArtId} (${activeReport.multimodalSchematics.schematicMatches[0].priorArtTitle}): ${activeReport.multimodalSchematics.schematicMatches[0].visualSimilarity}% visual structural similarity identified.` : `Visual topology match of FIG. 1 block diagram for "${activeProject?.title || 'proposal'}" against global patent repository: ${(activeReport.topMatchedPatents?.[0] as any)?.similarityScore || 88}% visual structural similarity identified.`}
               </p>
             </div>
 

@@ -107,7 +107,8 @@ export interface InnovationProject {
     | 'UNDER_REVIEW' 
     | 'NEEDS_REVISION' 
     | 'APPROVED_FOR_DRAFTING' 
-    | 'COMPLETED';
+    | 'COMPLETED'
+    | 'REJECTED';
   currentVersionNumber: number;
   createdAt: string;
   updatedAt: string;
@@ -375,7 +376,7 @@ export interface PatentReviewSubmission {
   innovationProjectId: string;
   submittedBy: string;
   submittedByName: string;
-  status: 'SUBMITTED' | 'UNDER_REVIEW' | 'NEEDS_REVISION' | 'APPROVED_FOR_DRAFTING' | 'COMPLETED';
+  status: 'SUBMITTED' | 'UNDER_REVIEW' | 'NEEDS_REVISION' | 'APPROVED_FOR_DRAFTING' | 'COMPLETED' | 'REJECTED';
   priorArtConcern: 'HIGH' | 'MODERATE' | 'LOW' | 'INSUFFICIENT_EVIDENCE';
   versionNumber: number;
   submittedAt: string;

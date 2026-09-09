@@ -3060,19 +3060,59 @@ const RESEARCH_PRESETS: RDPreset[] = [
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {activeSubmission && activeProject ? (
                 <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+                  {/* Header with Title, Version Badge, Status Badge & Examiner Quick Actions */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
                     <div>
-                      <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>{activeProject.title}</h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 6 }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+                          Version v{activeSubmission.versionNumber}.0
+                        </span>
+                        <span style={{
+                          fontSize: '0.72rem',
+                          padding: '2px 8px',
+                          borderRadius: 6,
+                          fontWeight: 800,
+                          textTransform: 'uppercase',
+                          background: activeSubmission.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16, 185, 129, 0.15)' : activeSubmission.status === 'NEEDS_REVISION' ? 'rgba(245, 158, 11, 0.15)' : activeSubmission.status === 'REJECTED' ? 'rgba(244, 63, 94, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+                          color: activeSubmission.status === 'APPROVED_FOR_DRAFTING' ? 'var(--accent-emerald)' : activeSubmission.status === 'NEEDS_REVISION' ? 'var(--accent-amber)' : activeSubmission.status === 'REJECTED' ? 'var(--accent-rose)' : 'var(--accent-indigo)'
+                        }}>
+                          {activeSubmission.status.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                      <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>{activeProject.title}</h3>
                       <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4, margin: 0 }}>Submitted by {activeSubmission.submittedByName} on {new Date(activeSubmission.submittedAt).toLocaleString()}</p>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => {
+                          if (activeReport) {
+                            setActiveTab('audit');
+                          }
+                        }}
+                        className="btn-secondary"
+                        style={{ padding: '8px 14px', fontSize: '0.78rem' }}
+                      >
+                        <Search size={14} />
+                        <span>Inspect Prior-Art Audit</span>
+                      </button>
+
+                      <button
+                        onClick={handleDownloadFerReport}
+                        className="btn-secondary"
+                        style={{ padding: '8px 14px', fontSize: '0.78rem', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent-indigo)' }}
+                      >
+                        <FileText size={14} />
+                        <span>Export FER PDF</span>
+                      </button>
+
                       <button
                         onClick={() => setShowDecisionModal(true)}
                         className="btn-primary"
                         style={{ padding: '8px 14px', fontSize: '0.78rem' }}
                       >
-                        Issue Review Decision
+                        <Scale size={14} />
+                        <span>Issue Review Decision</span>
                       </button>
 
                       {activeSubmission.status === 'APPROVED_FOR_DRAFTING' && (
@@ -3088,15 +3128,55 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     </div>
                   </div>
 
+                  {/* Integrated Audit Summary Cards for Examiner Review */}
+                  {activeReport && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', background: 'var(--bg-input)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                      <div>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Overall Novelty</span>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-emerald)', fontFamily: 'var(--font-mono)' }}>{activeReport.overallNoveltyScore}%</div>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Review Readiness</span>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-indigo)', fontFamily: 'var(--font-mono)' }}>{activeReport.reviewReadinessScore}%</div>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Obviousness Risk</span>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: activeReport.tsmObviousnessRisk?.level === 'HIGH' ? 'var(--accent-rose)' : 'var(--accent-amber)', fontFamily: 'var(--font-mono)' }}>
+                          {activeReport.tsmObviousnessRisk?.score || 95}% ({activeReport.tsmObviousnessRisk?.level || 'HIGH'})
+                        </div>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Prior-Art Concern</span>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 800, color: activeReport.priorArtConcern === 'HIGH' ? 'var(--accent-rose)' : activeReport.priorArtConcern === 'MODERATE' ? 'var(--accent-amber)' : 'var(--accent-emerald)', marginTop: 4 }}>
+                          {activeReport.priorArtConcern} CONCERN
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Version History Comparison Timeline */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Version Audit Trail ({dbStore.getInnovationVersions(activeProject.id).length} Versions Recorded):</span>
+                    <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: 4 }}>
+                      {dbStore.getInnovationVersions(activeProject.id).map(v => (
+                        <div key={v.id} style={{ background: v.versionNumber === activeSubmission.versionNumber ? 'rgba(99, 102, 241, 0.15)' : 'var(--bg-input)', border: `1px solid ${v.versionNumber === activeSubmission.versionNumber ? 'var(--accent-indigo)' : 'var(--border-color)'}`, borderRadius: 8, padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                          <span style={{ fontWeight: 800, color: 'var(--accent-indigo)' }}>v{v.versionNumber}.0</span>
+                          <span style={{ color: 'var(--text-muted)' }}>{v.features.length} Features</span>
+                          <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>({new Date(v.createdAt).toLocaleDateString()})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* Submission Summary */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '0.8rem' }}>
                     <div style={{ background: 'var(--bg-input)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
                       <span style={{ color: 'var(--text-dim)', display: 'block', marginBottom: 4, fontWeight: 700 }}>Technical Problem:</span>
-                      <p style={{ color: 'var(--text-main)', margin: 0 }}>{activeProject.technicalProblem}</p>
+                      <p style={{ color: 'var(--text-main)', margin: 0, lineHeight: 1.4 }}>{activeProject.technicalProblem}</p>
                     </div>
                     <div style={{ background: 'var(--bg-input)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                      <span style={{ color: 'var(--text-dim)', display: 'block', marginBottom: 4, fontWeight: 700 }}>Proposed Solution:</span>
-                      <p style={{ color: 'var(--text-main)', margin: 0 }}>{activeProject.proposedSolution}</p>
+                      <span style={{ color: 'var(--text-dim)', display: 'block', marginBottom: 4, fontWeight: 700 }}>Proposed Solution & Architecture:</span>
+                      <p style={{ color: 'var(--text-main)', margin: 0, lineHeight: 1.4 }}>{activeProject.proposedSolution}</p>
                     </div>
                   </div>
 
@@ -3106,12 +3186,12 @@ const RESEARCH_PRESETS: RDPreset[] = [
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '220px', overflowY: 'auto', paddingRight: 4 }}>
                       {reviewComments.map((comm) => (
-                        <div key={comm.id} style={{ background: 'var(--bg-input)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div key={comm.id} style={{ background: comm.comment.includes('DECISION') ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-input)', padding: '12px', borderRadius: '10px', border: `1px solid ${comm.comment.includes('DECISION') ? 'rgba(99, 102, 241, 0.3)' : 'var(--border-color)'}`, fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 700, color: 'var(--text-main)' }}>
                             <span>{comm.authorName}</span>
                             <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>{new Date(comm.createdAt).toLocaleTimeString()}</span>
                           </div>
-                          <p style={{ color: 'var(--text-muted)', margin: 0 }}>{comm.comment}</p>
+                          <p style={{ color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>{comm.comment}</p>
                         </div>
                       ))}
                     </div>

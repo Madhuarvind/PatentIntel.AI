@@ -278,6 +278,11 @@ export interface StatutoryEligibilityAnalysis {
       text: string;
       category: 'PHYSICAL' | 'COMPUTING' | 'ALGORITHM' | 'TECHNICAL_EFFECT' | 'DATA_INPUT' | 'OUTPUT';
       explanation: string;
+      statutoryImpact?: string;
+      legalRisk?: 'HIGH_RISK_EXCLUSION' | 'MODERATE_EXCLUSION_RISK' | 'STATUTORY_STRENGTH' | 'TECHNICAL_CONTRIBUTION';
+      officeActionGuideline?: string;
+      draftingRemediation?: string;
+      recommendedClaimType?: string;
     }[];
   };
   humanReviewRecommendation: 'HIGH_CONFIDENCE' | 'MEDIUM_CONFIDENCE' | 'LOW_CONFIDENCE_HUMAN_REVIEW_REQUIRED';

@@ -1310,12 +1310,87 @@ export function generateStatutoryEligibilityAnalysis(
     },
     claimHighlighting: {
       claimText,
-      tokens: [
-        { text: 'automated system', category: 'COMPUTING', explanation: 'Recites computing infrastructure' },
-        { text: 'hardware processor', category: 'PHYSICAL', explanation: 'Statutory physical apparatus element' },
-        { text: 'sensor telemetry', category: 'DATA_INPUT', explanation: 'Tangible physical data input' },
-        { text: 'spectral decay calculation', category: 'ALGORITHM', explanation: 'Algorithmic processing module' },
-        { text: 'technical hardware coupling', category: 'TECHNICAL_EFFECT', explanation: 'Provides statutory technical effect' }
+      tokens: comps.length > 0 ? comps.map(c => {
+        const isComp = c.category === 'COMPONENT';
+        const isFunc = c.category === 'FUNCTION';
+        const isData = c.category === 'DATA';
+
+        const category: 'PHYSICAL' | 'COMPUTING' | 'ALGORITHM' | 'TECHNICAL_EFFECT' | 'DATA_INPUT' = 
+          isComp ? 'PHYSICAL' : isFunc ? 'ALGORITHM' : isData ? 'DATA_INPUT' : 'TECHNICAL_EFFECT';
+
+        return {
+          text: c.term,
+          category,
+          explanation: `${c.description} — Recited as a ${c.category.toLowerCase()} limitation in proposal claims.`,
+          statutoryImpact: isComp
+            ? `Recites physical hardware apparatus binding required under Indian Patent Act Section 3(k) & US 35 U.S.C. §101 (Apparatus Class). Overcomes computer program per se rejection.`
+            : isFunc
+            ? `Recites software/algorithmic processing logic. High rejection risk under Section 3(k) (computer program per se) and 35 U.S.C. §101 Step 2A (Abstract Idea) unless coupled with physical hardware.`
+            : `Recites concrete data input/technical transformation establishing statutory technical contribution under CRI Guidelines.`,
+          legalRisk: isComp ? ('STATUTORY_STRENGTH' as const) : isFunc ? ('HIGH_RISK_EXCLUSION' as const) : ('TECHNICAL_CONTRIBUTION' as const),
+          officeActionGuideline: isComp
+            ? 'USPTO MPEP 2106.04(a) (Prong 2: Integrated into Practical Application) & CGPDTM CRI Guidelines 2017 Section 4.5.'
+            : isFunc
+            ? 'USPTO 2019 Revised Eligibility Guidance (Step 2A Prong 1: Mathematical Concepts) & CGPDTM CRI Guidelines Section 4.4.'
+            : 'EPO Guidelines G-II 3.6 (Technical Effect) & USPTO MPEP 2106.05(a).',
+          draftingRemediation: isComp
+            ? 'Recite this hardware element in the preamble and Independent Claim 1 to establish physical structural novelty.'
+            : isFunc
+            ? 'Bind this algorithmic feature to physical memory buffers, hardware sensors, or specific GPU processing pipelines.'
+            : 'Specify exact quantitative parameters (e.g. telemetry sampling rate or latency threshold) in dependent claims.',
+          recommendedClaimType: isComp ? 'Independent Apparatus Claim 1' : isFunc ? 'System Process Limitation' : 'Dependent Technical Feature Claim'
+        };
+      }) : [
+        {
+          text: 'automated system',
+          category: 'COMPUTING',
+          explanation: 'Recites general computing infrastructure and network communication nodes.',
+          statutoryImpact: 'Recites general-purpose computing environment. Under 35 U.S.C. § 101 (Alice Step 2B), generic computer recitation alone is insufficient to confer patent eligibility.',
+          legalRisk: 'MODERATE_EXCLUSION_RISK',
+          officeActionGuideline: 'USPTO MPEP 2106.05(f) (Generic Computer Component Recital)',
+          draftingRemediation: 'Specify specialized hardware processors (e.g., FPGA, edge microcontroller, or HSM chip) rather than generic computer systems.',
+          recommendedClaimType: 'System Preamble Limitation'
+        },
+        {
+          text: 'hardware processor',
+          category: 'PHYSICAL',
+          explanation: 'Statutory physical apparatus element providing hardware structural grounding.',
+          statutoryImpact: 'Establishes physical apparatus classification under 35 U.S.C. § 101 and satisfies Indian Patent Office CRI guidelines (Sec 3(k)) for technical apparatus binding.',
+          legalRisk: 'STATUTORY_STRENGTH',
+          officeActionGuideline: 'CGPDTM CRI Guidelines 2017 Section 4.5 & USPTO MPEP 2106.04(a)',
+          draftingRemediation: 'Retain in Independent Claim 1 preamble and recite specific memory register interconnections.',
+          recommendedClaimType: 'Independent Apparatus Claim 1'
+        },
+        {
+          text: 'sensor telemetry',
+          category: 'DATA_INPUT',
+          explanation: 'Tangible physical data input collected from external environment sensors.',
+          statutoryImpact: 'Demonstrates real-world physical signal input, moving the claim beyond pure mathematical calculations or disembodied data processing.',
+          legalRisk: 'TECHNICAL_CONTRIBUTION',
+          officeActionGuideline: 'EPO Guidelines G-II 3.6 (Technical Signal Processing)',
+          draftingRemediation: 'Recite physical sensor sampling frequency and analog-to-digital converter signal pathways.',
+          recommendedClaimType: 'Dependent Claim 2'
+        },
+        {
+          text: 'spectral decay calculation',
+          category: 'ALGORITHM',
+          explanation: 'Algorithmic processing module executing mathematical transform calculations.',
+          statutoryImpact: 'Subject to high Section 3(k) exclusion risk as "computer program per se" and 35 U.S.C. § 101 Step 2A Abstract Idea (Mathematical Concept).',
+          legalRisk: 'HIGH_RISK_EXCLUSION',
+          officeActionGuideline: 'USPTO 2019 Revised Guidance Step 2A Prong 1 & India Section 3(k) Bar',
+          draftingRemediation: 'Must be explicitly bound to hardware sensor sampling clock and physical actuator output control.',
+          recommendedClaimType: 'Method Claim Limitation'
+        },
+        {
+          text: 'technical hardware coupling',
+          category: 'TECHNICAL_EFFECT',
+          explanation: 'Provides statutory technical contribution and tangible hardware effect.',
+          statutoryImpact: 'Establishes the "technical effect" or "technical contribution" required by Indian Patent Office & EPO to overcome CRI exclusions.',
+          legalRisk: 'TECHNICAL_CONTRIBUTION',
+          officeActionGuideline: 'CGPDTM CRI Guidelines Section 4.4 & USPTO MPEP 2106.05(a)',
+          draftingRemediation: 'Highlight the specific technical improvement (e.g. 35% latency reduction or energy duty-cycle optimization) in the specification.',
+          recommendedClaimType: 'Independent Claim Limitation'
+        }
       ]
     },
     humanReviewRecommendation: hasHardware ? 'HIGH_CONFIDENCE' : 'LOW_CONFIDENCE_HUMAN_REVIEW_REQUIRED',

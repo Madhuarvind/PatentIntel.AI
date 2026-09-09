@@ -127,7 +127,16 @@ export const IdeaNoveltyView: React.FC<IdeaNoveltyViewProps> = ({
   const [showStatutoryWhyModal, setShowStatutoryWhyModal] = useState<boolean>(false);
   const [showSubmitConfirmModal, setShowSubmitConfirmModal] = useState<boolean>(false);
   const [activeStatutoryTab, setActiveStatutoryTab] = useState<'india' | 'us' | 'claim'>('india');
-  const [selectedTokenForExplanation, setSelectedTokenForExplanation] = useState<{ text: string; category: string; explanation: string } | null>(null);
+  const [selectedTokenForExplanation, setSelectedTokenForExplanation] = useState<{
+    text: string;
+    category: string;
+    explanation: string;
+    statutoryImpact?: string;
+    legalRisk?: 'HIGH_RISK_EXCLUSION' | 'MODERATE_EXCLUSION_RISK' | 'STATUTORY_STRENGTH' | 'TECHNICAL_CONTRIBUTION';
+    officeActionGuideline?: string;
+    draftingRemediation?: string;
+    recommendedClaimType?: string;
+  } | null>(null);
 
   // Review Workspace State
   const [reviewComments, setReviewComments] = useState<ReviewComment[]>([]);
@@ -2096,17 +2105,66 @@ const RESEARCH_PRESETS: RDPreset[] = [
                       ))}
                     </div>
 
-                    {selectedTokenForExplanation && (
-                      <div style={{ background: 'rgba(99, 102, 241, 0.1)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--accent-indigo)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div>
-                          <strong style={{ color: 'var(--accent-indigo)', fontSize: '0.82rem' }}>Token: "{selectedTokenForExplanation.text}" ({selectedTokenForExplanation.category})</strong>
-                          <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted)' }}>{selectedTokenForExplanation.explanation}</p>
+                    {selectedTokenForExplanation && (() => {
+                      const tok = selectedTokenForExplanation;
+                      const isHighRisk = tok.legalRisk === 'HIGH_RISK_EXCLUSION';
+                      const isStrength = tok.legalRisk === 'STATUTORY_STRENGTH';
+                      const borderCol = isHighRisk ? 'var(--accent-amber)' : isStrength ? 'var(--accent-emerald)' : 'var(--accent-indigo)';
+                      const bgCol = isHighRisk ? 'rgba(245, 158, 11, 0.08)' : isStrength ? 'rgba(16, 185, 129, 0.08)' : 'rgba(99, 102, 241, 0.08)';
+
+                      return (
+                        <div style={{ background: bgCol, border: `1px solid ${borderCol}`, padding: '16px 20px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                                Token Inspector: <code style={{ color: borderCol, background: 'var(--bg-input)', padding: '2px 8px', borderRadius: 4, fontFamily: 'var(--font-mono)' }}>"{tok.text}"</code>
+                              </span>
+                              <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '3px 8px', borderRadius: 999, background: borderCol, color: '#FFFFFF', textTransform: 'uppercase' }}>
+                                {tok.category}
+                              </span>
+                              {tok.recommendedClaimType && (
+                                <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '3px 8px', borderRadius: 4, background: 'var(--bg-card)', color: 'var(--text-dim)', border: '1px solid var(--border-color)' }}>
+                                  📌 {tok.recommendedClaimType}
+                                </span>
+                              )}
+                            </div>
+                            <button onClick={() => setSelectedTokenForExplanation(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', padding: 4 }}>
+                              <X size={18} />
+                            </button>
+                          </div>
+
+                          <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-main)', lineHeight: 1.4 }}>
+                            <strong>Functional Description:</strong> {tok.explanation}
+                          </p>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', fontSize: '0.78rem' }}>
+                            <div style={{ background: 'var(--bg-input)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                              <span style={{ color: 'var(--accent-indigo)', fontWeight: 700, display: 'block', marginBottom: 4 }}>⚖️ Statutory Eligibility Impact (Sec 3(k) / §101):</span>
+                              <span style={{ color: 'var(--text-muted)', lineHeight: 1.4, display: 'block' }}>
+                                {tok.statutoryImpact || 'Evaluated for statutory exclusion under software per se and abstract idea guidelines.'}
+                              </span>
+                            </div>
+
+                            <div style={{ background: 'var(--bg-input)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                              <span style={{ color: 'var(--accent-emerald)', fontWeight: 700, display: 'block', marginBottom: 4 }}>📜 Patent Office Examination Guideline Citation:</span>
+                              <span style={{ color: 'var(--text-muted)', lineHeight: 1.4, display: 'block' }}>
+                                {tok.officeActionGuideline || 'CGPDTM CRI Guidelines 2017 & USPTO MPEP 2106 eligibility rules.'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {tok.draftingRemediation && (
+                            <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.3)', fontSize: '0.78rem', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                              <Sparkles size={16} color="var(--accent-emerald)" style={{ flexShrink: 0, marginTop: 2 }} />
+                              <div>
+                                <strong style={{ color: 'var(--accent-emerald)', display: 'block', marginBottom: 2 }}>Strategic Claim Drafting Remediation:</strong>
+                                <span style={{ color: 'var(--text-main)', lineHeight: 1.4 }}>{tok.draftingRemediation}</span>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        <button onClick={() => setSelectedTokenForExplanation(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
-                          <X size={16} />
-                        </button>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 )}
 
@@ -3566,16 +3624,16 @@ const RESEARCH_PRESETS: RDPreset[] = [
       {/* MODAL 2: STATUTORY SUBJECT-MATTER ELIGIBILITY EXPLANATION MODAL         */}
       {/* ========================================================================= */}
       {showStatutoryWhyModal && activeReport && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(11, 15, 25, 0.85)', backdropFilter: 'blur(8px)', zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--accent-indigo)', borderRadius: '24px', padding: '28px', maxWidth: '800px', width: '100%', maxHeight: '88vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 25px 50px rgba(0,0,0,0.8)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(11, 15, 25, 0.88)', backdropFilter: 'blur(10px)', zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--accent-indigo)', borderRadius: '24px', padding: '28px', maxWidth: '850px', width: '100%', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 25px 50px rgba(0,0,0,0.8)' }}>
             
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
               <div>
-                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--accent-indigo)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Legal Subject-Matter Audit</span>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--accent-indigo)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Legal Subject-Matter Audit & Eligibility Intelligence</span>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Scale size={22} color="var(--accent-indigo)" />
-                  <span>Statutory Subject-Matter Screening Rationale</span>
+                  <span>Statutory Subject-Matter Screening Engine Architecture</span>
                 </h3>
               </div>
               <button onClick={() => setShowStatutoryWhyModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
@@ -3583,54 +3641,122 @@ const RESEARCH_PRESETS: RDPreset[] = [
               </button>
             </div>
 
-            {/* Jurisdiction 1: India Sec 3(k) */}
-            <div style={{ background: 'var(--bg-input)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <h4 style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--accent-indigo)', margin: 0 }}>
-                  🇮🇳 India — Section 3(k) Computer-Related Inventions (CRI) Guidelines
-                </h4>
-                <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4, background: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-emerald)' }}>
-                  TECHNICAL CONTRIBUTION SATISFIED
-                </span>
+            {/* Feature Purpose & Operational Functions */}
+            <div style={{ background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: '14px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-indigo)', fontWeight: 800, fontSize: '0.92rem' }}>
+                <HelpCircle size={18} />
+                <span>Why Was This Feature Built & What Functions Does It Perform?</span>
               </div>
-
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
-                Under Section 3(k) of the Indian Patents Act, mathematical methods, business methods, or computer programs <em>per se</em> are non-statutory. However, inventions that bind software logic to physical hardware transceivers, microcontrollers, or produce a technical effect meet the statutory threshold.
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-main)', margin: 0, lineHeight: 1.5 }}>
+                In patent law, software and AI algorithms are heavily scrutinized. Under <strong>India Section 3(k)</strong> and <strong>US 35 U.S.C. §101 (Alice Framework)</strong>, pure software or mathematical formulas claimed in the abstract face immediate rejection as non-statutory subject matter ("computer program per se").
               </p>
-
-              <div style={{ background: 'var(--bg-surface)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.78rem' }}>
-                <strong>Hardware Binding Analysis: </strong> Physical telemetry sensors, microcontrollers, and wireless transceivers are explicitly recited in claim limitations.
-              </div>
-            </div>
-
-            {/* Jurisdiction 2: US 35 U.S.C. § 101 */}
-            <div style={{ background: 'var(--bg-input)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <h4 style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--accent-indigo)', margin: 0 }}>
-                  🇺🇸 United States — 35 U.S.C. § 101 (Alice 2-Step Framework)
-                </h4>
-                <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4, background: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-emerald)' }}>
-                  STEP 2B PRACTICAL APPLICATION PASS
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.8rem' }}>
-                <div>
-                  <strong style={{ color: 'var(--text-main)' }}>Step 1 (Statutory Category):</strong> Belongs to eligible category (System / Machine / Process).
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px', marginTop: 4 }}>
+                <div style={{ background: 'var(--bg-input)', padding: '10px', borderRadius: '8px', fontSize: '0.76rem' }}>
+                  <strong style={{ color: 'var(--accent-indigo)', display: 'block', marginBottom: 2 }}>1. Automated Token Extraction</strong>
+                  Parses claim limitations into Physical, Computing, Algorithm, Data, and Technical Effect elements.
                 </div>
-                <div>
-                  <strong style={{ color: 'var(--text-main)' }}>Step 2A (Judicial Exception):</strong> Analyzes whether claims target an abstract idea.
+                <div style={{ background: 'var(--bg-input)', padding: '10px', borderRadius: '8px', fontSize: '0.76rem' }}>
+                  <strong style={{ color: 'var(--accent-emerald)', display: 'block', marginBottom: 2 }}>2. Hardware Binding Pre-Screen</strong>
+                  Verifies if software functions bind to physical microcontrollers, sensors, or GPU memory pipelines.
                 </div>
-                <div>
-                  <strong style={{ color: 'var(--text-main)' }}>Step 2B (Inventive Concept / Significantly More):</strong> Hardware integration and specific telemetry transformations provide an inventive concept beyond generic computer operations.
+                <div style={{ background: 'var(--bg-input)', padding: '10px', borderRadius: '8px', fontSize: '0.76rem' }}>
+                  <strong style={{ color: 'var(--accent-amber)', display: 'block', marginBottom: 2 }}>3. Pre-Filing Prosecution Guard</strong>
+                  Pre-empts costly Patent Office Action rejections before formal filing with USPTO, EPO, or Indian Patent Office.
                 </div>
               </div>
             </div>
+
+            {/* Jurisdiction 1: India Sec 3(k) */}
+            {(() => {
+              const statDetails = activeReport.statutoryEligibilityDetails || generateStatutoryEligibilityAnalysis(activeReport, activeProject);
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ background: 'var(--bg-input)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <h4 style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--accent-indigo)', margin: 0 }}>
+                        🇮🇳 India — Section 3(k) Computer-Related Inventions (CRI) Guidelines
+                      </h4>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4, background: statDetails.indiaSection3k.screeningResult === 'LIKELY_ELIGIBLE' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)', color: statDetails.indiaSection3k.screeningResult === 'LIKELY_ELIGIBLE' ? 'var(--accent-emerald)' : 'var(--accent-amber)' }}>
+                        {statDetails.indiaSection3k.screeningResult.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
+                      {statDetails.indiaSection3k.plainEnglishExplanation}
+                    </p>
+
+                    <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.78rem' }}>
+                      <strong style={{ color: 'var(--accent-indigo)' }}>Hardware Binding Verdict: </strong>
+                      {statDetails.indiaSection3k.whyThisResult}
+                    </div>
+                  </div>
+
+                  {/* Jurisdiction 2: US 35 U.S.C. § 101 */}
+                  <div style={{ background: 'var(--bg-input)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <h4 style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--accent-indigo)', margin: 0 }}>
+                        🇺🇸 United States — 35 U.S.C. § 101 (Alice 2-Step Framework)
+                      </h4>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4, background: statDetails.usSection101.screeningResult === 'LIKELY_ELIGIBLE' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)', color: statDetails.usSection101.screeningResult === 'LIKELY_ELIGIBLE' ? 'var(--accent-emerald)' : 'var(--accent-amber)' }}>
+                        {statDetails.usSection101.screeningResult.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.8rem' }}>
+                      <div>
+                        <strong style={{ color: 'var(--text-main)' }}>Step 1 (Statutory Category):</strong> {statDetails.usSection101.statutoryCategory} (Apparatus / System / Process)
+                      </div>
+                      <div>
+                        <strong style={{ color: 'var(--text-main)' }}>Step 2A (Judicial Exception):</strong> {statDetails.usSection101.step2aJudicialException.replace(/_/g, ' ')}
+                      </div>
+                      <div>
+                        <strong style={{ color: 'var(--text-main)' }}>Step 2B (Practical Application Rationale):</strong> {statDetails.usSection101.step2bPracticalApplication}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Token & Component Breakdown Matrix */}
+                  {statDetails.claimHighlighting && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        📊 Extracted Claim Limitations & Statutory Risk Matrix:
+                      </span>
+                      <div style={{ background: 'var(--bg-input)', borderRadius: '12px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.76rem', textAlign: 'left' }}>
+                          <thead>
+                            <tr style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-dim)' }}>
+                              <th style={{ padding: '10px 12px' }}>Token / Feature</th>
+                              <th style={{ padding: '10px 12px' }}>Category</th>
+                              <th style={{ padding: '10px 12px' }}>Statutory Stance</th>
+                              <th style={{ padding: '10px 12px' }}>Drafting Guidance</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {statDetails.claimHighlighting.tokens.map((tok, idx) => (
+                              <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                <td style={{ padding: '10px 12px', fontWeight: 700, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>"{tok.text}"</td>
+                                <td style={{ padding: '10px 12px' }}>
+                                  <span style={{ fontSize: '0.65rem', fontWeight: 800, padding: '2px 6px', borderRadius: 4, background: tok.category === 'PHYSICAL' ? 'rgba(168, 85, 247, 0.2)' : tok.category === 'COMPUTING' ? 'rgba(99, 102, 241, 0.2)' : tok.category === 'ALGORITHM' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)', color: tok.category === 'PHYSICAL' ? '#C084FC' : tok.category === 'COMPUTING' ? '#818CF8' : tok.category === 'ALGORITHM' ? '#FBBF24' : '#34D399' }}>
+                                    {tok.category}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>{tok.statutoryImpact || tok.explanation}</td>
+                                <td style={{ padding: '10px 12px', color: 'var(--accent-indigo)' }}>{tok.draftingRemediation || 'Standard claim recitation.'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Close */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '14px' }}>
               <button onClick={() => setShowStatutoryWhyModal(false)} className="btn-primary" style={{ padding: '8px 20px', fontSize: '0.8rem' }}>
-                Understand & Close
+                Understand & Close Rationale
               </button>
             </div>
           </div>

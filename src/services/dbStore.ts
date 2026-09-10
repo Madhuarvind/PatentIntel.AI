@@ -10,6 +10,12 @@ import type {
   ReviewComment,
   ReviewDecision
 } from '../types';
+import {
+  DEFAULT_PRESET_PROJECTS,
+  DEFAULT_PRESET_REPORTS,
+  DEFAULT_PRESET_SUBMISSIONS,
+  DEFAULT_PRESET_COMMENTS
+} from './presetSeedData';
 
 export interface UserAccount {
   id: string;
@@ -68,6 +74,74 @@ class CloudDatabaseService {
         lastLogin: new Date().toISOString(),
       };
       localStorage.setItem(DB_KEYS.USERS, JSON.stringify([defaultUser]));
+    }
+    this.seedDefaultInnovationData();
+  }
+
+  public seedDefaultInnovationData() {
+    try {
+      // 1. Projects: ensure all 6 preset projects exist and restore any stuck projects
+      const existingProjects = this.getInnovationProjects();
+      const updatedProjects = [...existingProjects];
+
+      for (const preset of DEFAULT_PRESET_PROJECTS) {
+        const existingIdx = updatedProjects.findIndex(
+          p => p.id === preset.id || p.title.toLowerCase().trim() === preset.title.toLowerCase().trim()
+        );
+        if (existingIdx === -1) {
+          updatedProjects.push(preset);
+        } else {
+          // If existing project was stuck in ANALYZING, recover it to preset's status
+          if (updatedProjects[existingIdx].status === 'ANALYZING') {
+            updatedProjects[existingIdx] = {
+              ...updatedProjects[existingIdx],
+              status: preset.status
+            };
+          }
+        }
+      }
+      localStorage.setItem(DB_KEYS.INNOVATION_PROJECTS, JSON.stringify(updatedProjects));
+
+      // 2. Benchmark Reports: ensure preset reports exist
+      const existingReports = this.getBenchmarkReports();
+      const updatedReports = [...existingReports];
+      for (const presetRep of DEFAULT_PRESET_REPORTS) {
+        const exists = updatedReports.some(
+          r => r.id === presetRep.id || 
+               r.innovationProjectId === presetRep.innovationProjectId || 
+               r.ideaTitle.toLowerCase().trim() === presetRep.ideaTitle.toLowerCase().trim()
+        );
+        if (!exists) {
+          updatedReports.push(presetRep);
+        }
+      }
+      localStorage.setItem(DB_KEYS.BENCHMARK_REPORTS, JSON.stringify(updatedReports));
+
+      // 3. Review Submissions: ensure preset review submissions exist
+      const existingSubmissions = this.getReviewSubmissions();
+      const updatedSubmissions = [...existingSubmissions];
+      for (const presetSub of DEFAULT_PRESET_SUBMISSIONS) {
+        const exists = updatedSubmissions.some(
+          s => s.id === presetSub.id || s.innovationProjectId === presetSub.innovationProjectId
+        );
+        if (!exists) {
+          updatedSubmissions.push(presetSub);
+        }
+      }
+      localStorage.setItem(DB_KEYS.REVIEW_SUBMISSIONS, JSON.stringify(updatedSubmissions));
+
+      // 4. Review Comments: ensure preset comments exist
+      const existingComments = JSON.parse(localStorage.getItem(DB_KEYS.REVIEW_COMMENTS) || '[]');
+      const updatedComments = [...existingComments];
+      for (const presetComm of DEFAULT_PRESET_COMMENTS) {
+        const exists = updatedComments.some((c: any) => c.id === presetComm.id);
+        if (!exists) {
+          updatedComments.push(presetComm);
+        }
+      }
+      localStorage.setItem(DB_KEYS.REVIEW_COMMENTS, JSON.stringify(updatedComments));
+    } catch (e) {
+      console.warn('[DB STORE] Error initializing preset seed data:', e);
     }
   }
 
@@ -331,8 +405,21 @@ class CloudDatabaseService {
 
   public getLatestBenchmarkReport(projectId: string): NoveltyBenchmarkReport | null {
     const reports = this.getBenchmarkReports(projectId);
-    if (reports.length === 0) return null;
-    return reports.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+    if (reports.length > 0) {
+      return reports.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+    }
+    // Fallback: match by project title or preset title
+    const all = this.getBenchmarkReports();
+    const proj = this.getInnovationProjectById(projectId);
+    if (proj) {
+      const match = all.find(r => 
+        r.innovationProjectId === proj.id || 
+        r.ideaTitle.toLowerCase().trim() === proj.title.toLowerCase().trim() ||
+        (proj.title.includes('UAV') && r.ideaTitle.includes('UAV'))
+      );
+      if (match) return match;
+    }
+    return null;
   }
 
   public saveBenchmarkReport(report: NoveltyBenchmarkReport): NoveltyBenchmarkReport {

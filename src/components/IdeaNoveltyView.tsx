@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Lightbulb, 
   Upload, 
@@ -163,6 +163,7 @@ export const IdeaNoveltyView: React.FC<IdeaNoveltyViewProps> = ({
   const [isGeneratingAudit, setIsGeneratingAudit] = useState<boolean>(false);
   const [generatingStage, setGeneratingStage] = useState<string>('Initializing Prior-Art Analysis Engine...');
   const [generatingProgress, setGeneratingProgress] = useState<number>(15);
+  const hasAttemptedAuditRef = useRef<Record<string, boolean>>({});
 
   const handleInspectOrRunProject = async (proj: InnovationProject) => {
     setActiveProject(proj);
@@ -181,36 +182,56 @@ export const IdeaNoveltyView: React.FC<IdeaNoveltyViewProps> = ({
 
     const combinedText = `${proj.title}\n${proj.technicalProblem || ''}\n${proj.proposedSolution || ''}\n${proj.expectedTechnicalEffect || ''}\n${proj.description || ''}`;
 
-    setTimeout(async () => {
-      setGeneratingProgress(55);
-      setGeneratingStage('Searching USPTO Master Registry & Local Workspace...');
+    await new Promise(r => setTimeout(r, 350));
+    setGeneratingProgress(55);
+    setGeneratingStage('Searching USPTO Master Registry & Local Workspace...');
 
-      setTimeout(async () => {
-        setGeneratingProgress(80);
-        setGeneratingStage('Cross-referencing Academic Prior-Art & Evaluating Statutory Eligibility...');
+    await new Promise(r => setTimeout(r, 350));
+    setGeneratingProgress(80);
+    setGeneratingStage('Cross-referencing Academic Prior-Art & Evaluating Statutory Eligibility...');
 
-        try {
-          const newRep = await analyzeIdeaProposal(
-            combinedText,
-            proj.title,
-            proj.id,
-            proj.ownerId
-          );
-          const fullRep = ensureFeatureMatches(newRep);
-          dbStore.saveBenchmarkReport(fullRep);
-          setActiveReport(fullRep);
+    try {
+      const newRep = await analyzeIdeaProposal(
+        combinedText,
+        proj.title,
+        proj.id,
+        proj.ownerId
+      );
 
-          const updatedProj = dbStore.getInnovationProjectById(proj.id);
-          if (updatedProj) {
-            setActiveProject(updatedProj);
-          }
-        } catch (err) {
-          console.error('[NOVELTY ENGINE] Benchmark generation error:', err);
-        } finally {
-          setIsGeneratingAudit(false);
-        }
-      }, 500);
-    }, 500);
+      setGeneratingProgress(95);
+      setGeneratingStage('Synthesizing Statutory Eligibility & Differentiator Recommendations...');
+      await new Promise(r => setTimeout(r, 250));
+
+      setGeneratingProgress(100);
+      setGeneratingStage('Novelty Dossier Generated Successfully.');
+      await new Promise(r => setTimeout(r, 200));
+
+      const fullRep = ensureFeatureMatches(newRep);
+      dbStore.saveBenchmarkReport(fullRep);
+      setActiveReport(fullRep);
+
+      const updatedProj = dbStore.getInnovationProjectById(proj.id);
+      if (updatedProj) {
+        setActiveProject(updatedProj);
+      }
+    } catch (err) {
+      console.error('[NOVELTY ENGINE] Benchmark generation error recovery:', err);
+      try {
+        const fallbackRep = await analyzeIdeaProposal(
+          combinedText,
+          proj.title,
+          proj.id,
+          proj.ownerId
+        );
+        const fullRep = ensureFeatureMatches(fallbackRep);
+        dbStore.saveBenchmarkReport(fullRep);
+        setActiveReport(fullRep);
+      } catch (innerErr) {
+        console.error('[NOVELTY ENGINE] Critical fallback error:', innerErr);
+      }
+    } finally {
+      setIsGeneratingAudit(false);
+    }
   };
 
   const handleInspectDifferentiators = () => {
@@ -334,10 +355,13 @@ Provisional Determination: ${activeReport.tsmObviousnessRisk?.level === 'HIGH' ?
     }
   }, [activeTab, reviewSubmissions, activeSubmission]);
 
-  // Auto-run analysis if user navigated to audit tab for a project without a completed report
+  // Auto-run analysis if user navigated to audit tab for a project without a completed report (guarded against re-trigger loops)
   useEffect(() => {
     if (activeTab === 'audit' && !activeReport && activeProject && !isGeneratingAudit) {
-      handleInspectOrRunProject(activeProject);
+      if (!hasAttemptedAuditRef.current[activeProject.id]) {
+        hasAttemptedAuditRef.current[activeProject.id] = true;
+        handleInspectOrRunProject(activeProject);
+      }
     }
   }, [activeTab, activeReport, activeProject, isGeneratingAudit]);
 
@@ -482,44 +506,51 @@ const RESEARCH_PRESETS: RDPreset[] = [
 
     const combinedText = `${proposalTitle}\n${technicalProblem}\n${proposedSolution}\n${expectedTechnicalEffect}\n${proposalText}`;
 
-    setTimeout(async () => {
-      setAnalysisProgress(35);
-      setAnalysisStage('Searching Master USPTO Patent Records & Local Workspace...');
+    await new Promise(r => setTimeout(r, 400));
+    setAnalysisProgress(40);
+    setAnalysisStage('Searching Master USPTO Patent Records & Local Workspace...');
 
-      setTimeout(async () => {
-        setAnalysisProgress(65);
-        setAnalysisStage('Cross-referencing OpenAlex & Semantic Scholar Research Graphs...');
+    await new Promise(r => setTimeout(r, 400));
+    setAnalysisProgress(70);
+    setAnalysisStage('Cross-referencing OpenAlex & Semantic Scholar Research Graphs...');
 
-        setTimeout(async () => {
-          setAnalysisProgress(85);
-          setAnalysisStage('Evaluating Evidence Provenance & Combination Overlap...');
+    await new Promise(r => setTimeout(r, 400));
+    setAnalysisProgress(85);
+    setAnalysisStage('Evaluating Evidence Provenance & Combination Overlap...');
 
-          try {
-            const report = await analyzeIdeaProposal(
-              combinedText,
-              proposalTitle || 'Untitled R&D Project',
-              undefined,
-              currentUser?.id
-            );
+    try {
+      const report = await analyzeIdeaProposal(
+        combinedText,
+        proposalTitle || 'Untitled R&D Project',
+        undefined,
+        currentUser?.id
+      );
 
-            // Override components with validated components if user edited them
-            if (validatedComponents.length > 0) {
-              report.extractedComponents = validatedComponents;
-            }
+      // Override components with validated components if user edited them
+      if (validatedComponents.length > 0) {
+        report.extractedComponents = validatedComponents;
+      }
 
-            const fullReport = ensureFeatureMatches(report);
-            setActiveReport(fullReport);
-            const proj = dbStore.getInnovationProjectById(fullReport.innovationProjectId);
-            setActiveProject(proj);
-            setIsAnalyzing(false);
-            setActiveTab('audit');
-          } catch (err) {
-            console.error('Benchmark execution error:', err);
-            setIsAnalyzing(false);
-          }
-        }, 800);
-      }, 800);
-    }, 800);
+      setAnalysisProgress(95);
+      setAnalysisStage('Synthesizing Statutory Eligibility & Differentiator Recommendations...');
+      await new Promise(r => setTimeout(r, 250));
+
+      setAnalysisProgress(100);
+      setAnalysisStage('Benchmark Dossier Generated Successfully.');
+      await new Promise(r => setTimeout(r, 200));
+
+      const fullReport = ensureFeatureMatches(report);
+      setActiveReport(fullReport);
+      const proj = dbStore.getInnovationProjectById(fullReport.innovationProjectId);
+      if (proj) {
+        setActiveProject(proj);
+      }
+      setIsAnalyzing(false);
+      setActiveTab('audit');
+    } catch (err) {
+      console.error('Benchmark execution error:', err);
+      setIsAnalyzing(false);
+    }
   };
 
   // Accept Differentiator Recommendation -> Creates Version N
@@ -3387,7 +3418,11 @@ const RESEARCH_PRESETS: RDPreset[] = [
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
             <button
-              onClick={() => setActiveTab('dashboard')}
+              onClick={() => {
+                setIsGeneratingAudit(false);
+                setGeneratingProgress(15);
+                setActiveTab('dashboard');
+              }}
               className="btn-secondary"
               style={{ padding: '8px 20px', fontSize: '0.82rem' }}
             >

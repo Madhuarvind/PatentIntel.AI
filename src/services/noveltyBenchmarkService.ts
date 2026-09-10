@@ -627,12 +627,12 @@ export async function analyzeIdeaProposal(
           comp.term,
           comp.description,
           patent.title,
-          patent.abstract,
+          patent.abstract || '',
           pClaims,
           true
         );
         const simScore = scoreRes.overallScore;
-        const excerpt = `Discloses "${comp.term}" in patent ${patent.id} (${patent.title}): "${patent.abstract.substring(0, 140)}..."`;
+        const excerpt = `Discloses "${comp.term}" in patent ${patent.id} (${patent.title}): "${patent.abstract ? patent.abstract.substring(0, 140) : 'Technical specification and claim disclosure'}..."`;
         
         const isExpired = patent.id.includes('604965') || patent.id.includes('784998');
         const legalStatus = isExpired ? 'EXPIRED_PUBLIC_DOMAIN' : 'ACTIVE_MONOPOLY';
@@ -798,9 +798,9 @@ export async function analyzeIdeaProposal(
     noveltyRunId,
     ideaTitle: title,
     priorArtConcern,
-    overallNoveltyScore: 100 - (directOverlapCount * 25 + partialOverlapCount * 10), // legacy back-compat
+    overallNoveltyScore: Math.max(15, Math.min(98, 100 - (directOverlapCount * 18 + partialOverlapCount * 8))), // bounded between 15% and 98%
     priorArtOverlapRisk: priorArtConcern === 'HIGH' ? 'HIGH' : priorArtConcern === 'MODERATE' ? 'MODERATE' : 'LOW', // legacy back-compat
-    reviewReadinessScore,
+    reviewReadinessScore: Math.max(25, Math.min(98, reviewReadinessScore)),
     directOverlapCount,
     partialOverlapCount,
     potentiallyDistinctiveCount,
@@ -915,7 +915,12 @@ export async function analyzeIdeaProposal(
       fallbackRunId
     );
 
-    const recommendations = await generateLLMDifferentiatorRecommendations(proposalText, fallbackComponents, pId);
+    let recommendations: DifferentiatorRecommendation[] = [];
+    try {
+      recommendations = await generateLLMDifferentiatorRecommendations(proposalText, fallbackComponents, pId);
+    } catch {
+      recommendations = [];
+    }
 
     const fallbackReport: NoveltyBenchmarkReport = {
       id: fallbackReportId,

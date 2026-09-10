@@ -25,7 +25,11 @@ import {
   FileCode,
   Activity,
   Edit3,
-  CheckCircle
+  CheckCircle,
+  User,
+  Calendar,
+  Clock,
+  Tag
 } from 'lucide-react';
 
 import type { 
@@ -262,6 +266,19 @@ Provisional Determination: ${activeReport.tsmObviousnessRisk?.level === 'HIGH' ?
     const unsubscribe = dbStore.subscribe(loadData);
     return () => unsubscribe();
   }, [currentUser?.id, selectedProjectId]);
+
+  // Auto-select first submission when opening review queue if none selected
+  useEffect(() => {
+    if (activeTab === 'review_queue' && !activeSubmission && reviewSubmissions.length > 0) {
+      const firstSub = reviewSubmissions[0];
+      setActiveSubmission(firstSub);
+      const proj = dbStore.getInnovationProjectById(firstSub.innovationProjectId);
+      if (proj) setActiveProject(proj);
+      const rep = dbStore.getLatestBenchmarkReport(firstSub.innovationProjectId);
+      if (rep) setActiveReport(ensureFeatureMatches(rep));
+      setReviewComments(dbStore.getReviewComments(firstSub.id));
+    }
+  }, [activeTab, reviewSubmissions, activeSubmission]);
 
 interface RDPreset {
   id: number;
@@ -3127,86 +3144,271 @@ const RESEARCH_PRESETS: RDPreset[] = [
       {/* SUB-VIEW 4: PATENT TEAM REVIEW QUEUE & REVIEWER WORKSPACE                 */}
       {/* ========================================================================= */}
       {activeTab === 'review_queue' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Patent Team Review Queue</h2>
-            <span style={{ fontSize: '0.75rem', padding: '4px 10px', borderRadius: 999, background: 'var(--bg-surface)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', fontFamily: 'var(--font-mono)' }}>
-              {reviewSubmissions.length} Total Submissions
-            </span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
+          {/* Top Header Bar */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <h2 style={{ fontSize: '1.28rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.01em' }}>
+                Patent Team Review Queue
+              </h2>
+              <span className="badge badge-indigo" style={{ fontSize: '0.72rem', padding: '3px 10px', textTransform: 'uppercase' }}>
+                {reviewSubmissions.length} Submissions Total
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.76rem', color: 'var(--text-dim)' }}>
+              <Activity size={14} color="var(--accent-cyan)" />
+              <span>Two-Pane Synchronized Review Workspace</span>
+            </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' }}>
-            {/* Submissions List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {reviewSubmissions.map((sub) => {
-                const proj = dbStore.getInnovationProjectById(sub.innovationProjectId);
-                return (
-                  <div
-                    key={sub.id}
-                    onClick={() => {
-                      setActiveSubmission(sub);
-                      if (proj) setActiveProject(proj);
-                      const rep = dbStore.getLatestBenchmarkReport(sub.innovationProjectId);
-                      if (rep) setActiveReport(rep);
-                      setReviewComments(dbStore.getReviewComments(sub.id));
-                    }}
-                    style={{
-                      padding: '16px',
-                      borderRadius: '12px',
-                      border: `1px solid ${activeSubmission?.id === sub.id ? 'var(--accent-indigo)' : 'var(--border-color)'}`,
-                      background: activeSubmission?.id === sub.id ? 'rgba(99, 102, 241, 0.12)' : 'var(--bg-card)',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)' }}>{sub.submittedByName}</span>
-                      <span style={{ fontSize: '0.68rem', padding: '2px 6px', borderRadius: 4, fontWeight: 700, textTransform: 'uppercase', background: 'var(--bg-surface)', color: 'var(--accent-indigo)' }}>
-                        {sub.status.replace(/_/g, ' ')}
-                      </span>
-                    </div>
+          {/* Balanced Two-Pane Responsive Workspace */}
+          <div className="review-workspace-grid">
+            {/* LEFT PANE: Full Review Queue (~40% width) */}
+            <div className="review-queue-pane">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2px 2px 2px' }}>
+                <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Incoming Proposals ({reviewSubmissions.length})
+                </span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                  Click to inspect details
+                </span>
+              </div>
 
-                    <h4 style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-main)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{proj?.title || 'Innovation Submission'}</h4>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-                      <span>v{sub.versionNumber}.0</span>
-                      <span>{new Date(sub.submittedAt).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+              {reviewSubmissions.length === 0 ? (
+                <div className="glass-panel" style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--text-muted)', borderRadius: '16px' }}>
+                  <FileCheck size={32} color="var(--accent-indigo)" style={{ margin: '0 auto 10px', display: 'block' }} />
+                  <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-main)' }}>Queue is Clean</div>
+                  <p style={{ fontSize: '0.78rem', margin: '6px 0 0 0', lineHeight: 1.4 }}>No pending patent proposals for evaluation.</p>
+                </div>
+              ) : (
+                reviewSubmissions.map((sub) => {
+                  const proj = dbStore.getInnovationProjectById(sub.innovationProjectId);
+                  const rep = dbStore.getLatestBenchmarkReport(sub.innovationProjectId);
+                  const isSelected = activeSubmission?.id === sub.id;
+                  
+                  const statusColor = 
+                    sub.status === 'APPROVED_FOR_DRAFTING' ? 'var(--accent-emerald)' :
+                    sub.status === 'NEEDS_REVISION' ? 'var(--accent-amber)' :
+                    sub.status === 'REJECTED' ? 'var(--accent-rose)' : 'var(--accent-indigo)';
+                  const statusBg = 
+                    sub.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16, 185, 129, 0.14)' :
+                    sub.status === 'NEEDS_REVISION' ? 'rgba(245, 158, 11, 0.14)' :
+                    sub.status === 'REJECTED' ? 'rgba(244, 63, 94, 0.14)' : 'rgba(99, 102, 241, 0.14)';
+                  const statusBorder = 
+                    sub.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16, 185, 129, 0.35)' :
+                    sub.status === 'NEEDS_REVISION' ? 'rgba(245, 158, 11, 0.35)' :
+                    sub.status === 'REJECTED' ? 'rgba(244, 63, 94, 0.35)' : 'rgba(99, 102, 241, 0.35)';
 
-            {/* Reviewer Workspace Panel */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {activeSubmission && activeProject ? (
-                <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  {/* Header with Title, Version Badge, Status Badge & Examiner Quick Actions */}
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 6 }}>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
-                          Version v{activeSubmission.versionNumber}.0
-                        </span>
+                  return (
+                    <div
+                      key={sub.id}
+                      onClick={() => {
+                        setActiveSubmission(sub);
+                        if (proj) setActiveProject(proj);
+                        if (rep) setActiveReport(ensureFeatureMatches(rep));
+                        setReviewComments(dbStore.getReviewComments(sub.id));
+                      }}
+                      className="glass-panel glass-panel-hover"
+                      style={{
+                        padding: '16px 18px',
+                        borderRadius: '14px',
+                        border: isSelected ? '1.5px solid var(--accent-indigo)' : '1px solid var(--border-color)',
+                        borderLeft: isSelected ? '5px solid var(--accent-indigo)' : '4px solid transparent',
+                        background: isSelected 
+                          ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.16) 0%, rgba(99, 102, 241, 0.05) 100%)' 
+                          : 'var(--bg-card)',
+                        boxShadow: isSelected ? '0 6px 24px rgba(99, 102, 241, 0.22)' : 'var(--shadow-sm)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '10px',
+                        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                      }}
+                    >
+                      {/* Submitter & Status Row */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
+                          <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <User size={12} color="var(--accent-indigo)" />
+                          </div>
+                          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {sub.submittedByName}
+                          </span>
+                        </div>
+
                         <span style={{
-                          fontSize: '0.72rem',
-                          padding: '2px 8px',
+                          fontSize: '0.66rem',
+                          padding: '3px 8px',
                           borderRadius: 6,
                           fontWeight: 800,
                           textTransform: 'uppercase',
-                          background: activeSubmission.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16, 185, 129, 0.15)' : activeSubmission.status === 'NEEDS_REVISION' ? 'rgba(245, 158, 11, 0.15)' : activeSubmission.status === 'REJECTED' ? 'rgba(244, 63, 94, 0.15)' : 'rgba(99, 102, 241, 0.15)',
-                          color: activeSubmission.status === 'APPROVED_FOR_DRAFTING' ? 'var(--accent-emerald)' : activeSubmission.status === 'NEEDS_REVISION' ? 'var(--accent-amber)' : activeSubmission.status === 'REJECTED' ? 'var(--accent-rose)' : 'var(--accent-indigo)'
+                          letterSpacing: '0.04em',
+                          background: statusBg,
+                          color: statusColor,
+                          border: `1px solid ${statusBorder}`,
+                          flexShrink: 0
                         }}>
-                          {activeSubmission.status.replace(/_/g, ' ')}
+                          {sub.status.replace(/_/g, ' ')}
                         </span>
                       </div>
-                      <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>{activeProject.title}</h3>
-                      <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4, margin: 0 }}>Submitted by {activeSubmission.submittedByName} on {new Date(activeSubmission.submittedAt).toLocaleString()}</p>
+
+                      {/* Project Title */}
+                      <h4 style={{
+                        fontWeight: 800,
+                        fontSize: '0.94rem',
+                        color: 'var(--text-main)',
+                        margin: 0,
+                        lineHeight: 1.35,
+                        letterSpacing: '-0.01em'
+                      }}>
+                        {proj?.title || 'Innovation Submission'}
+                      </h4>
+
+                      {/* Domain / Feature Snippet */}
+                      {proj?.domain && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: 'var(--accent-cyan)' }}>
+                          <Tag size={12} />
+                          <span>{proj.domain}</span>
+                        </div>
+                      )}
+
+                      {proj?.technicalProblem && (
+                        <p style={{
+                          fontSize: '0.75rem',
+                          color: 'var(--text-muted)',
+                          margin: 0,
+                          lineHeight: 1.35,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden'
+                        }}>
+                          {proj.technicalProblem}
+                        </p>
+                      )}
+
+                      {/* Meta Footer Row */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        fontSize: '0.72rem',
+                        color: 'var(--text-dim)',
+                        borderTop: '1px solid rgba(255,255,255,0.05)',
+                        paddingTop: '8px',
+                        marginTop: '2px',
+                        flexWrap: 'wrap',
+                        gap: '6px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontWeight: 700,
+                            padding: '2px 6px',
+                            borderRadius: 4,
+                            background: 'var(--bg-surface)',
+                            color: 'var(--accent-indigo)',
+                            border: '1px solid var(--border-color)'
+                          }}>
+                            v{sub.versionNumber}.0
+                          </span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Calendar size={11} />
+                            {new Date(sub.submittedAt).toLocaleDateString()}
+                          </span>
+                        </div>
+
+                        {rep && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{
+                              fontWeight: 800,
+                              color: 'var(--accent-emerald)',
+                              fontFamily: 'var(--font-mono)',
+                              background: 'rgba(16, 185, 129, 0.1)',
+                              padding: '1px 6px',
+                              borderRadius: 4,
+                              border: '1px solid rgba(16, 185, 129, 0.25)'
+                            }}>
+                              {rep.overallNoveltyScore}% Novelty
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* RIGHT PANE: Review Detail Panel (~60% width) */}
+            <div className="review-detail-pane">
+              {activeSubmission && activeProject ? (
+                <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '22px' }}>
+                  {/* Header Section */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.74rem',
+                        fontWeight: 800,
+                        padding: '3px 10px',
+                        borderRadius: 6,
+                        background: 'rgba(99, 102, 241, 0.15)',
+                        color: 'var(--accent-indigo)',
+                        border: '1px solid rgba(99, 102, 241, 0.3)'
+                      }}>
+                        Version v{activeSubmission.versionNumber}.0
+                      </span>
+                      <span style={{
+                        fontSize: '0.74rem',
+                        padding: '3px 10px',
+                        borderRadius: 6,
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                        background: activeSubmission.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16, 185, 129, 0.15)' : activeSubmission.status === 'NEEDS_REVISION' ? 'rgba(245, 158, 11, 0.15)' : activeSubmission.status === 'REJECTED' ? 'rgba(244, 63, 94, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+                        color: activeSubmission.status === 'APPROVED_FOR_DRAFTING' ? 'var(--accent-emerald)' : activeSubmission.status === 'NEEDS_REVISION' ? 'var(--accent-amber)' : activeSubmission.status === 'REJECTED' ? 'var(--accent-rose)' : 'var(--accent-indigo)',
+                        border: `1px solid ${activeSubmission.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16, 185, 129, 0.3)' : activeSubmission.status === 'NEEDS_REVISION' ? 'rgba(245, 158, 11, 0.3)' : activeSubmission.status === 'REJECTED' ? 'rgba(244, 63, 94, 0.3)' : 'rgba(99, 102, 241, 0.3)'}`
+                      }}>
+                        {activeSubmission.status.replace(/_/g, ' ')}
+                      </span>
+                      {activeProject.domain && (
+                        <span className="badge badge-cyan" style={{ fontSize: '0.7rem' }}>
+                          <Tag size={11} /> {activeProject.domain}
+                        </span>
+                      )}
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)', margin: '4px 0 0 0', lineHeight: 1.3, letterSpacing: '-0.01em' }}>
+                      {activeProject.title}
+                    </h3>
+
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <User size={13} color="var(--accent-cyan)" />
+                        Submitted by <strong style={{ color: 'var(--text-main)' }}>{activeSubmission.submittedByName}</strong>
+                      </span>
+                      <span>•</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Clock size={13} color="var(--text-dim)" />
+                        {new Date(activeSubmission.submittedAt).toLocaleString()}
+                      </span>
+                    </p>
+                  </div>
+
+                  {/* Logically Grouped Action Row */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    borderTop: '1px solid var(--border-color)',
+                    borderBottom: '1px solid var(--border-color)',
+                    padding: '14px 0',
+                    flexWrap: 'wrap',
+                    gap: '12px'
+                  }}>
+                    {/* Secondary Actions */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                       <button
                         onClick={() => {
                           if (activeReport) {
@@ -3214,7 +3416,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           }
                         }}
                         className="btn-secondary"
-                        style={{ padding: '8px 14px', fontSize: '0.78rem' }}
+                        style={{ padding: '8px 16px', fontSize: '0.8rem' }}
                       >
                         <Search size={14} />
                         <span>Inspect Prior-Art Audit</span>
@@ -3223,16 +3425,19 @@ const RESEARCH_PRESETS: RDPreset[] = [
                       <button
                         onClick={handleDownloadFerReport}
                         className="btn-secondary"
-                        style={{ padding: '8px 14px', fontSize: '0.78rem', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent-indigo)' }}
+                        style={{ padding: '8px 16px', fontSize: '0.8rem', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent-indigo)', borderColor: 'rgba(99, 102, 241, 0.3)' }}
                       >
                         <FileText size={14} />
                         <span>Export FER PDF</span>
                       </button>
+                    </div>
 
+                    {/* Primary Actions */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                       <button
                         onClick={() => setShowDecisionModal(true)}
                         className="btn-primary"
-                        style={{ padding: '8px 14px', fontSize: '0.78rem' }}
+                        style={{ padding: '8px 18px', fontSize: '0.8rem' }}
                       >
                         <Scale size={14} />
                         <span>Issue Review Decision</span>
@@ -3242,7 +3447,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         <button
                           onClick={handleHandoffToClaimSynthesizer}
                           className="btn-primary"
-                          style={{ padding: '8px 14px', fontSize: '0.78rem', background: 'var(--gradient-emerald)' }}
+                          style={{ padding: '8px 18px', fontSize: '0.8rem', background: 'var(--gradient-emerald)' }}
                         >
                           <Sparkles size={14} />
                           <span>Generate Claim Draft</span>
@@ -3251,96 +3456,202 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     </div>
                   </div>
 
-                  {/* Integrated Audit Summary Cards for Examiner Review */}
+                  {/* Responsive Review Metrics (4-column desktop, 2x2 tablet, 1-col mobile) */}
                   {activeReport && (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', background: 'var(--bg-input)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                      <div>
-                        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Overall Novelty</span>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-emerald)', fontFamily: 'var(--font-mono)' }}>{activeReport.overallNoveltyScore}%</div>
+                    <div className="review-metrics-grid" style={{
+                      background: 'var(--bg-input)',
+                      padding: '16px 18px',
+                      borderRadius: '14px',
+                      border: '1px solid var(--border-color)'
+                    }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+                          Overall Novelty
+                        </span>
+                        <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--accent-emerald)', fontFamily: 'var(--font-mono)' }}>
+                          {activeReport.overallNoveltyScore}%
+                        </div>
                       </div>
-                      <div>
-                        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Review Readiness</span>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-indigo)', fontFamily: 'var(--font-mono)' }}>{activeReport.reviewReadinessScore}%</div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+                          Review Readiness
+                        </span>
+                        <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--accent-indigo)', fontFamily: 'var(--font-mono)' }}>
+                          {activeReport.reviewReadinessScore}%
+                        </div>
                       </div>
-                      <div>
-                        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Obviousness Risk</span>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: activeReport.tsmObviousnessRisk?.level === 'HIGH' ? 'var(--accent-rose)' : 'var(--accent-amber)', fontFamily: 'var(--font-mono)' }}>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+                          Obviousness Risk
+                        </span>
+                        <div style={{
+                          fontSize: '1.2rem',
+                          fontWeight: 800,
+                          color: activeReport.tsmObviousnessRisk?.level === 'HIGH' ? 'var(--accent-rose)' : 'var(--accent-amber)',
+                          fontFamily: 'var(--font-mono)',
+                          whiteSpace: 'nowrap'
+                        }}>
                           {activeReport.tsmObviousnessRisk?.score || 95}% ({activeReport.tsmObviousnessRisk?.level || 'HIGH'})
                         </div>
                       </div>
-                      <div>
-                        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Prior-Art Concern</span>
-                        <div style={{ fontSize: '0.85rem', fontWeight: 800, color: activeReport.priorArtConcern === 'HIGH' ? 'var(--accent-rose)' : activeReport.priorArtConcern === 'MODERATE' ? 'var(--accent-amber)' : 'var(--accent-emerald)', marginTop: 4 }}>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+                          Prior-Art Concern
+                        </span>
+                        <div style={{
+                          fontSize: '0.88rem',
+                          fontWeight: 800,
+                          color: activeReport.priorArtConcern === 'HIGH' ? 'var(--accent-rose)' : activeReport.priorArtConcern === 'MODERATE' ? 'var(--accent-amber)' : 'var(--accent-emerald)',
+                          marginTop: 4,
+                          whiteSpace: 'nowrap'
+                        }}>
                           {activeReport.priorArtConcern} CONCERN
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Version History Comparison Timeline */}
+                  {/* Version History Audit Trail */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Version Audit Trail ({dbStore.getInnovationVersions(activeProject.id).length} Versions Recorded):</span>
-                    <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: 4 }}>
-                      {dbStore.getInnovationVersions(activeProject.id).map(v => (
-                        <div key={v.id} style={{ background: v.versionNumber === activeSubmission.versionNumber ? 'rgba(99, 102, 241, 0.15)' : 'var(--bg-input)', border: `1px solid ${v.versionNumber === activeSubmission.versionNumber ? 'var(--accent-indigo)' : 'var(--border-color)'}`, borderRadius: 8, padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                          <span style={{ fontWeight: 800, color: 'var(--accent-indigo)' }}>v{v.versionNumber}.0</span>
-                          <span style={{ color: 'var(--text-muted)' }}>{v.features.length} Features</span>
-                          <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>({new Date(v.createdAt).toLocaleDateString()})</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Submission Summary */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '0.8rem' }}>
-                    <div style={{ background: 'var(--bg-input)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                      <span style={{ color: 'var(--text-dim)', display: 'block', marginBottom: 4, fontWeight: 700 }}>Technical Problem:</span>
-                      <p style={{ color: 'var(--text-main)', margin: 0, lineHeight: 1.4 }}>{activeProject.technicalProblem}</p>
-                    </div>
-                    <div style={{ background: 'var(--bg-input)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                      <span style={{ color: 'var(--text-dim)', display: 'block', marginBottom: 4, fontWeight: 700 }}>Proposed Solution & Architecture:</span>
-                      <p style={{ color: 'var(--text-main)', margin: 0, lineHeight: 1.4 }}>{activeProject.proposedSolution}</p>
-                    </div>
-                  </div>
-
-                  {/* Review Thread */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
-                    <h4 style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-dim)' }}>Review Thread & Comments</h4>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '220px', overflowY: 'auto', paddingRight: 4 }}>
-                      {reviewComments.map((comm) => (
-                        <div key={comm.id} style={{ background: comm.comment.includes('DECISION') ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-input)', padding: '12px', borderRadius: '10px', border: `1px solid ${comm.comment.includes('DECISION') ? 'rgba(99, 102, 241, 0.3)' : 'var(--border-color)'}`, fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 700, color: 'var(--text-main)' }}>
-                            <span>{comm.authorName}</span>
-                            <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>{new Date(comm.createdAt).toLocaleTimeString()}</span>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      Version Audit Trail ({dbStore.getInnovationVersions(activeProject.id).length} Versions Recorded):
+                    </span>
+                    <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '6px' }}>
+                      {dbStore.getInnovationVersions(activeProject.id).map((v) => {
+                        const isCurrentVersion = v.versionNumber === activeSubmission.versionNumber;
+                        return (
+                          <div
+                            key={v.id}
+                            style={{
+                              background: isCurrentVersion ? 'rgba(99, 102, 241, 0.18)' : 'var(--bg-input)',
+                              border: `1px solid ${isCurrentVersion ? 'var(--accent-indigo)' : 'var(--border-color)'}`,
+                              borderRadius: 10,
+                              padding: '8px 14px',
+                              fontSize: '0.75rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              flexShrink: 0,
+                              boxShadow: isCurrentVersion ? '0 2px 10px rgba(99, 102, 241, 0.2)' : 'none'
+                            }}
+                          >
+                            <span style={{ fontWeight: 800, color: 'var(--accent-indigo)' }}>v{v.versionNumber}.0</span>
+                            <span style={{ color: 'var(--text-muted)' }}>{v.features.length} Features</span>
+                            <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>({new Date(v.createdAt).toLocaleDateString()})</span>
                           </div>
-                          <p style={{ color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>{comm.comment}</p>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Technical Problem & Proposed Solution (2-column desktop, 1-col mobile) */}
+                  <div className="review-tech-specs-grid" style={{ fontSize: '0.84rem' }}>
+                    <div style={{
+                      background: 'var(--bg-input)',
+                      padding: '16px 18px',
+                      borderRadius: '14px',
+                      border: '1px solid var(--border-color)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px'
+                    }}>
+                      <span style={{ color: 'var(--accent-cyan)', fontWeight: 800, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Technical Problem:
+                      </span>
+                      <p style={{ color: 'var(--text-main)', margin: 0, lineHeight: 1.5 }}>
+                        {activeProject.technicalProblem}
+                      </p>
+                    </div>
+
+                    <div style={{
+                      background: 'var(--bg-input)',
+                      padding: '16px 18px',
+                      borderRadius: '14px',
+                      border: '1px solid var(--border-color)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px'
+                    }}>
+                      <span style={{ color: 'var(--accent-indigo)', fontWeight: 800, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Proposed Solution & Architecture:
+                      </span>
+                      <p style={{ color: 'var(--text-main)', margin: 0, lineHeight: 1.5 }}>
+                        {activeProject.proposedSolution}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Review Thread & Comments */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <h4 style={{ fontSize: '0.76rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-dim)', letterSpacing: '0.04em', margin: 0 }}>
+                        Review Thread & Examiner Feedback ({reviewComments.length})
+                      </h4>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                        All comments logged permanently in audit dossier
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '220px', overflowY: 'auto', paddingRight: '4px' }}>
+                      {reviewComments.map((comm) => (
+                        <div
+                          key={comm.id}
+                          style={{
+                            background: comm.comment.includes('DECISION') ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-input)',
+                            padding: '12px 14px',
+                            borderRadius: '12px',
+                            border: `1px solid ${comm.comment.includes('DECISION') ? 'rgba(99, 102, 241, 0.3)' : 'var(--border-color)'}`,
+                            fontSize: '0.82rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '4px'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 700, color: 'var(--text-main)' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <User size={13} color="var(--accent-cyan)" />
+                              {comm.authorName}
+                            </span>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
+                              {new Date(comm.createdAt).toLocaleTimeString()}
+                            </span>
+                          </div>
+                          <p style={{ color: 'var(--text-muted)', margin: 0, lineHeight: 1.45 }}>{comm.comment}</p>
                         </div>
                       ))}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '10px' }}>
                       <input
                         type="text"
                         value={newCommentText}
                         onChange={(e) => setNewCommentText(e.target.value)}
-                        placeholder="Add review feedback or question..."
+                        placeholder="Add review feedback, guidance, or question for R&D submitter..."
                         className="input-field"
                         style={{ flex: 1 }}
                       />
                       <button
                         onClick={handleAddReviewComment}
                         className="btn-secondary"
-                        style={{ padding: '8px 16px', fontSize: '0.78rem' }}
+                        style={{ padding: '8px 18px', fontSize: '0.8rem' }}
                       >
-                        Post
+                        Post Feedback
                       </button>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div style={{ background: 'var(--bg-card)', border: '1px dashed var(--border-color)', borderRadius: '20px', padding: '48px', textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.88rem' }}>
-                  Select a submission from the left panel to inspect full details.
+                <div className="glass-panel" style={{ padding: '56px 32px', textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.9rem', borderRadius: '18px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(99, 102, 241, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
+                    <Lightbulb size={28} />
+                  </div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>Select a Submission to Inspect</h3>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', maxWidth: '440px', margin: 0, lineHeight: 1.45 }}>
+                    Click on any proposal in the Patent Team Review Queue on the left to evaluate novelty metrics, inspect prior-art citations, review the audit trail, and issue official examination decisions.
+                  </p>
                 </div>
               )}
             </div>

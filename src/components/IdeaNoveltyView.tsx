@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Lightbulb, 
   Upload, 
@@ -29,7 +29,8 @@ import {
   User,
   Calendar,
   Clock,
-  Tag
+  Tag,
+  ArrowLeft
 } from 'lucide-react';
 
 import type { 
@@ -57,7 +58,7 @@ import { extractPdfTextPageByPage } from '../services/pdfParser';
 
 interface IdeaNoveltyViewProps {
   onNavigate?: (view: ModuleView, metadata?: any) => void;
-  initialTab?: 'dashboard' | 'wizard' | 'audit' | 'review_queue';
+  initialTab?: 'dashboard' | 'wizard' | 'audit' | 'review_queue' | 'not_found';
   selectedProjectId?: string;
 }
 
@@ -69,7 +70,11 @@ export const IdeaNoveltyView: React.FC<IdeaNoveltyViewProps> = ({
   const currentUser = dbStore.getCurrentUser();
 
   // Sub-view Tab State
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'wizard' | 'audit' | 'review_queue'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'wizard' | 'audit' | 'review_queue' | 'not_found'>(initialTab);
+
+  // Async Loading & Error State
+  const [isLoadingProject, setIsLoadingProject] = useState<boolean>(false);
+  const [projectLoadError, setProjectLoadError] = useState<string | null>(null);
 
   // Data Stores
   const [projects, setProjects] = useState<InnovationProject[]>([]);
@@ -163,7 +168,6 @@ export const IdeaNoveltyView: React.FC<IdeaNoveltyViewProps> = ({
   const [isGeneratingAudit, setIsGeneratingAudit] = useState<boolean>(false);
   const [generatingStage, setGeneratingStage] = useState<string>('Initializing Prior-Art Analysis Engine...');
   const [generatingProgress, setGeneratingProgress] = useState<number>(15);
-  const hasAttemptedAuditRef = useRef<Record<string, boolean>>({});
 
   const handleInspectOrRunProject = async (proj: InnovationProject) => {
     setActiveProject(proj);
@@ -322,25 +326,120 @@ Provisional Determination: ${activeReport.tsmObviousnessRisk?.level === 'HIGH' ?
 
     const subs = dbStore.getReviewSubmissions();
     setReviewSubmissions(subs);
+  };
 
-    if (selectedProjectId) {
-      const foundP = dbStore.getInnovationProjectById(selectedProjectId);
-      if (foundP) {
-        setActiveProject(foundP);
-        const rep = dbStore.getLatestBenchmarkReport(foundP.id);
-        if (rep) {
-          const fullRep = ensureFeatureMatches(rep);
-          setActiveReport(fullRep);
-        }
-      }
+  const openProjectById = (projectId: string) => {
+    setIsLoadingProject(true);
+    setProjectLoadError(null);
+
+    // Update URL hash for bookmarking / browser refresh
+    if (window.location.hash !== `#/innovation/${projectId}`) {
+      window.location.hash = `/innovation/${projectId}`;
     }
+
+    try {
+      const proj = dbStore.getInnovationProjectById(projectId);
+      if (!proj) {
+        if (import.meta.env?.DEV) {
+          console.warn(`[InnovationProject] Project ID not found in store: ${projectId}`);
+        }
+        setActiveProject(null);
+        setActiveReport(null);
+        setActiveSubmission(null);
+        setActiveTab('not_found');
+        setIsLoadingProject(false);
+        return;
+      }
+
+      // Development-time validation check
+      if (import.meta.env?.DEV) {
+        console.log('[InnovationProject] Successfully loaded persisted project:', {
+          id: proj.id,
+          title: proj.title,
+          version: proj.currentVersionNumber,
+          status: proj.status,
+          createdAt: proj.createdAt
+        });
+      }
+
+      setActiveProject(proj);
+
+      // Load associated benchmark results (READ-ONLY: do not auto-regenerate)
+      const rep = dbStore.getLatestBenchmarkReport(proj.id);
+      if (rep) {
+        const fullRep = ensureFeatureMatches(rep);
+        setActiveReport(fullRep);
+      } else {
+        setActiveReport(null);
+      }
+
+      // Load associated review submission & comments
+      const sub = dbStore.getReviewSubmissionByProjectId(proj.id);
+      setActiveSubmission(sub);
+      if (sub) {
+        setReviewComments(dbStore.getReviewComments(sub.id));
+      } else {
+        setReviewComments([]);
+      }
+
+      setActiveTab('audit');
+    } catch (err: any) {
+      console.error('[InnovationProject] Failed to load project:', err);
+      setProjectLoadError(err?.message || 'Failed to load project record');
+    } finally {
+      setIsLoadingProject(false);
+    }
+  };
+
+  const handleBackToDashboard = () => {
+    window.location.hash = '/innovation';
+    setActiveProject(null);
+    setActiveReport(null);
+    setActiveSubmission(null);
+    setActiveTab('dashboard');
   };
 
   useEffect(() => {
     loadData();
     const unsubscribe = dbStore.subscribe(loadData);
     return () => unsubscribe();
-  }, [currentUser?.id, selectedProjectId]);
+  }, [currentUser?.id]);
+
+  // Synchronize on mount or prop update
+  useEffect(() => {
+    const hash = window.location.hash;
+    const match = hash.match(/^#\/innovation\/([a-zA-Z0-9_-]+)$/);
+    const targetId = selectedProjectId || (match ? match[1] : null);
+
+    if (targetId && targetId !== 'create' && targetId !== 'new') {
+      openProjectById(targetId);
+    } else if (initialTab && initialTab !== 'dashboard') {
+      setActiveTab(initialTab);
+    }
+  }, [selectedProjectId, initialTab]);
+
+  // Synchronize on browser Back/Forward navigation
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash;
+      const match = hash.match(/^#\/innovation\/([a-zA-Z0-9_-]+)$/);
+      if (match) {
+        const pId = match[1];
+        if (pId !== 'create' && pId !== 'new') {
+          openProjectById(pId);
+        }
+      } else if (hash === '#/innovation' || hash === '#/idea-novelty') {
+        setActiveTab('dashboard');
+        setActiveProject(null);
+        setActiveReport(null);
+        setActiveSubmission(null);
+      } else if (hash === '#/review-queue') {
+        setActiveTab('review_queue');
+      }
+    };
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
 
   // Auto-select first submission when opening review queue if none selected
   useEffect(() => {
@@ -354,16 +453,6 @@ Provisional Determination: ${activeReport.tsmObviousnessRisk?.level === 'HIGH' ?
       setReviewComments(dbStore.getReviewComments(firstSub.id));
     }
   }, [activeTab, reviewSubmissions, activeSubmission]);
-
-  // Auto-run analysis if user navigated to audit tab for a project without a completed report (guarded against re-trigger loops)
-  useEffect(() => {
-    if (activeTab === 'audit' && !activeReport && activeProject && !isGeneratingAudit) {
-      if (!hasAttemptedAuditRef.current[activeProject.id]) {
-        hasAttemptedAuditRef.current[activeProject.id] = true;
-        handleInspectOrRunProject(activeProject);
-      }
-    }
-  }, [activeTab, activeReport, activeProject, isGeneratingAudit]);
 
 interface RDPreset {
   id: number;
@@ -1052,176 +1141,77 @@ const RESEARCH_PRESETS: RDPreset[] = [
       {/* ========================================================================= */}
       {/* TOP HEADER & SUB-NAVIGATION                                              */}
       {/* ========================================================================= */}
-      <div 
-        className="glass-panel"
-        style={{ 
-          display: 'flex', 
-          flexDirection: 'row', 
-          alignItems: 'center', 
-          justifyContent: 'space-between', 
-          gap: '16px', 
-          padding: '24px', 
-          borderRadius: '16px',
-          flexWrap: 'wrap'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div 
-            style={{ 
-              width: 52, 
-              height: 52, 
-              borderRadius: 14, 
-              background: 'var(--gradient-accent)', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)'
-            }}
-          >
-            <Lightbulb size={26} color="#FFFFFF" />
-          </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <h1 style={{ fontSize: '1.45rem', fontWeight: 800, fontFamily: 'var(--font-heading)', color: 'var(--text-main)', margin: 0 }}>
-                R&D Idea Novelty & Prior-Art Benchmarking Engine
-              </h1>
-              <span 
-                style={{ 
-                  fontSize: '0.72rem', 
-                  fontWeight: 700, 
-                  fontFamily: 'var(--font-mono)', 
-                  background: 'rgba(99, 102, 241, 0.15)', 
-                  color: 'var(--accent-indigo)', 
-                  border: '1px solid rgba(99, 102, 241, 0.3)', 
-                  borderRadius: 999, 
-                  padding: '3px 10px' 
-                }}
-              >
-                v2.5 Enterprise
-              </span>
-            </div>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4, margin: 0 }}>
-              Multi-corpus prior-art cross-referencing, feature provenance audit, & patent team workflow integration.
-            </p>
-          </div>
-        </div>
-
-        {/* Sub-Navigation Buttons */}
+      {/* ========================================================================= */}
+      {/* DASHBOARD HEADER (Shown on Dashboard only; Detail view starts with Project Header) */}
+      {/* ========================================================================= */}
+      {activeTab === 'dashboard' && (
         <div 
+          className="glass-panel"
           style={{ 
             display: 'flex', 
+            flexDirection: 'row', 
             alignItems: 'center', 
-            gap: '8px', 
-            background: 'var(--bg-input)', 
-            padding: '6px', 
-            borderRadius: '12px', 
-            border: '1px solid var(--border-color)' 
+            justifyContent: 'space-between', 
+            gap: '16px', 
+            padding: '24px', 
+            borderRadius: '16px',
+            flexWrap: 'wrap'
           }}
         >
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 16px',
-              borderRadius: '8px',
-              fontSize: '0.82rem',
-              fontWeight: 600,
-              border: 'none',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              background: activeTab === 'dashboard' ? 'var(--accent-indigo)' : 'transparent',
-              color: activeTab === 'dashboard' ? '#FFFFFF' : 'var(--text-muted)'
-            }}
-          >
-            <Layers size={15} />
-            <span>Dashboard & Projects</span>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div 
+              style={{ 
+                width: 52, 
+                height: 52, 
+                borderRadius: 14, 
+                background: 'var(--gradient-accent)', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)'
+              }}
+            >
+              <Lightbulb size={26} color="#FFFFFF" />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <h1 style={{ fontSize: '1.45rem', fontWeight: 800, fontFamily: 'var(--font-heading)', color: 'var(--text-main)', margin: 0 }}>
+                  R&D Idea Novelty & Prior-Art Benchmarking Engine
+                </h1>
+                <span 
+                  style={{ 
+                    fontSize: '0.72rem', 
+                    fontWeight: 700, 
+                    fontFamily: 'var(--font-mono)', 
+                    background: 'rgba(99, 102, 241, 0.15)', 
+                    color: 'var(--accent-indigo)', 
+                    border: '1px solid rgba(99, 102, 241, 0.3)', 
+                    borderRadius: 999, 
+                    padding: '3px 10px' 
+                  }}
+                >
+                  v2.5 Enterprise
+                </span>
+              </div>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4, margin: 0 }}>
+                Multi-corpus prior-art cross-referencing, feature provenance audit, & patent team workflow integration.
+              </p>
+            </div>
+          </div>
 
           <button
             onClick={() => {
               setWizardStep(1);
               setActiveTab('wizard');
             }}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 16px',
-              borderRadius: '8px',
-              fontSize: '0.82rem',
-              fontWeight: 600,
-              border: 'none',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              background: activeTab === 'wizard' ? 'var(--accent-indigo)' : 'transparent',
-              color: activeTab === 'wizard' ? '#FFFFFF' : 'var(--text-muted)'
-            }}
+            className="btn-primary"
+            style={{ padding: '10px 20px', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
           >
-            <Sparkles size={15} />
+            <Sparkles size={16} />
             <span>+ New Innovation</span>
           </button>
-
-          {(activeReport || activeProject || activeTab === 'audit') && (
-            <button
-              onClick={() => setActiveTab('audit')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 16px',
-                borderRadius: '8px',
-                fontSize: '0.82rem',
-                fontWeight: 600,
-                border: 'none',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                background: activeTab === 'audit' ? 'var(--accent-indigo)' : 'transparent',
-                color: activeTab === 'audit' ? '#FFFFFF' : 'var(--text-muted)'
-              }}
-            >
-              <FileText size={15} />
-              <span>Audit Dossier</span>
-            </button>
-          )}
-
-          <button
-            onClick={() => setActiveTab('review_queue')}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 16px',
-              borderRadius: '8px',
-              fontSize: '0.82rem',
-              fontWeight: 600,
-              border: 'none',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              position: 'relative',
-              background: activeTab === 'review_queue' ? 'var(--accent-indigo)' : 'transparent',
-              color: activeTab === 'review_queue' ? '#FFFFFF' : 'var(--text-muted)'
-            }}
-          >
-            <FileCheck size={15} />
-            <span>Patent Review Queue</span>
-            {reviewSubmissions.filter(s => s.status === 'SUBMITTED').length > 0 && (
-              <span 
-                style={{ 
-                  width: 8, 
-                  height: 8, 
-                  borderRadius: '50%', 
-                  background: 'var(--accent-amber)', 
-                  position: 'absolute', 
-                  top: 6, 
-                  right: 6 
-                }} 
-              />
-            )}
-          </button>
         </div>
-      </div>
+      )}
 
       {/* ========================================================================= */}
       {/* SUB-VIEW 1: DASHBOARD & INNOVATION MANAGER                                */}
@@ -1358,7 +1348,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                       cursor: 'pointer' 
                     }}
                     onClick={() => {
-                      handleInspectOrRunProject(proj);
+                      openProjectById(proj.id);
                     }}
                   >
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1944,26 +1934,256 @@ const RESEARCH_PRESETS: RDPreset[] = [
       {/* ========================================================================= */}
       {/* SUB-VIEW 3: NOVELTY AUDIT REPORT & EVIDENCE EXPLORER                     */}
       {/* ========================================================================= */}
-      {activeTab === 'audit' && activeReport && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Top Breadcrumb Navigation */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '14px', borderBottom: '1px solid var(--border-color)', flexWrap: 'wrap', gap: '12px' }}>
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className="btn-secondary"
-              style={{ padding: '6px 14px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-            >
-              <ChevronRight size={14} style={{ transform: 'rotate(180deg)' }} />
-              <span>Back to Projects Dashboard</span>
-            </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>Auditing Innovation:</span>
-              <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-main)' }}>{activeProject?.title || activeReport.ideaTitle}</span>
-              <span style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', padding: '2px 8px', borderRadius: 6, background: 'var(--bg-surface)', border: '1px solid var(--border-color)', color: 'var(--accent-cyan)' }}>
-                v{activeProject?.currentVersionNumber || 1}.0
-              </span>
+      {/* ========================================================================= */}
+      {/* SUB-VIEW 3: INNOVATION PROJECT DETAIL & BENCHMARK AUDIT                   */}
+      {/* ========================================================================= */}
+      {activeTab === 'audit' && activeProject && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', width: '100%' }}>
+          {/* ----------------------------------------------------------------- */}
+          {/* 1. PROJECT HEADER                                                 */}
+          {/* ----------------------------------------------------------------- */}
+          <div className="glass-panel" style={{ padding: '24px 28px', borderRadius: '18px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            {/* Top Navigation Row: Back Button & Metadata Badges */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+              <button
+                onClick={handleBackToDashboard}
+                className="btn-secondary"
+                style={{ padding: '8px 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+              >
+                <ArrowLeft size={16} />
+                <span>Back to Projects</span>
+              </button>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <span 
+                  style={{ 
+                    fontSize: '0.72rem', 
+                    fontFamily: 'var(--font-mono)', 
+                    padding: '4px 10px', 
+                    borderRadius: 6, 
+                    background: 'var(--bg-surface)', 
+                    color: 'var(--text-muted)', 
+                    border: '1px solid var(--border-color)',
+                    fontWeight: 700
+                  }}
+                >
+                  v{activeProject.currentVersionNumber}.0
+                </span>
+
+                <span 
+                  style={{ 
+                    fontSize: '0.72rem', 
+                    fontWeight: 800, 
+                    padding: '4px 12px', 
+                    borderRadius: 999, 
+                    textTransform: 'uppercase',
+                    background: activeProject.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16,185,129,0.14)' : activeProject.status === 'SUBMITTED' ? 'rgba(245,158,11,0.14)' : activeProject.status === 'NEEDS_REVISION' ? 'rgba(244,63,94,0.14)' : 'rgba(99,102,241,0.14)',
+                    color: activeProject.status === 'APPROVED_FOR_DRAFTING' ? 'var(--accent-emerald)' : activeProject.status === 'SUBMITTED' ? 'var(--accent-amber)' : activeProject.status === 'NEEDS_REVISION' ? 'var(--accent-rose)' : 'var(--accent-indigo)',
+                    border: `1px solid ${activeProject.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16,185,129,0.4)' : activeProject.status === 'SUBMITTED' ? 'rgba(245,158,11,0.4)' : activeProject.status === 'NEEDS_REVISION' ? 'rgba(244,63,94,0.4)' : 'rgba(99,102,241,0.4)'}`,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}
+                >
+                  {isGeneratingAudit ? (
+                    <>
+                      <RefreshCw size={12} style={{ animation: 'spin 1.5s linear infinite' }} />
+                      <span>ANALYZING...</span>
+                    </>
+                  ) : (
+                    <span>{activeProject.status.replace(/_/g, ' ')}</span>
+                  )}
+                </span>
+
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--text-dim)', background: 'var(--bg-surface)', padding: '4px 10px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                  <Calendar size={13} />
+                  <span>Created {new Date(activeProject.createdAt).toLocaleDateString()}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Project Title & Domain */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--accent-cyan)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                {activeProject.domain || 'R&D Innovation Domain'}
+              </div>
+              <h1 style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, lineHeight: 1.25 }}>
+                {activeProject.title}
+              </h1>
+              {activeProject.description && (
+                <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: '4px 0 0 0', lineHeight: 1.5 }}>
+                  {activeProject.description}
+                </p>
+              )}
+            </div>
+
+            {/* Project Actions Row */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', paddingTop: '14px', borderTop: '1px solid var(--border-color)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => handleInspectOrRunProject(activeProject)}
+                  disabled={isGeneratingAudit}
+                  className="btn-primary"
+                  style={{ padding: '8px 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <RefreshCw size={14} style={{ animation: isGeneratingAudit ? 'spin 1.5s linear infinite' : 'none' }} />
+                  <span>{activeReport ? 'Re-run Benchmark' : 'Run Benchmark'}</span>
+                </button>
+
+                {activeReport && (
+                  <button
+                    onClick={handleDownloadFerReport}
+                    className="btn-secondary"
+                    style={{ padding: '8px 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <Download size={14} />
+                    <span>Export FER Dossier</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={handleOpenEditModal}
+                  className="btn-secondary"
+                  style={{ padding: '8px 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <Edit3 size={14} />
+                  <span>Edit Proposal</span>
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {activeProject.status === 'APPROVED_FOR_DRAFTING' ? (
+                  <button
+                    onClick={handleHandoffToClaimSynthesizer}
+                    className="btn-primary"
+                    style={{ padding: '8px 18px', fontSize: '0.82rem', background: 'var(--gradient-emerald)', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <Sparkles size={14} />
+                    <span>Launch AI Claim Synthesizer</span>
+                  </button>
+                ) : activeProject.status === 'SUBMITTED' ? (
+                  <button 
+                    onClick={() => setActiveTab('review_queue')}
+                    className="btn-secondary"
+                    style={{ fontSize: '0.78rem', padding: '8px 16px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <FileCheck size={15} color="var(--accent-amber)" />
+                    <span>View in Review Queue</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={executeFinalSubmission}
+                    disabled={!activeReport}
+                    className="btn-primary"
+                    style={{ padding: '8px 18px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <Send size={14} />
+                    <span>Submit to Patent Team</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
+
+          {/* ----------------------------------------------------------------- */}
+          {/* 2. PROJECT SUMMARY: TECHNICAL PROBLEM & PROPOSED SOLUTION         */}
+          {/* ----------------------------------------------------------------- */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '16px', width: '100%' }}>
+            {/* Card 1: Technical Problem */}
+            <div className="glass-panel" style={{ padding: '22px 24px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(244, 63, 94, 0.12)', color: 'var(--accent-rose)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(244, 63, 94, 0.25)' }}>
+                  <AlertTriangle size={18} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Technical Problem
+                  </h3>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>R&D Domain Bottleneck & Limitations</span>
+                </div>
+              </div>
+              <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.6, background: 'var(--bg-surface)', padding: '14px 16px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                {activeProject.technicalProblem || 'No specific technical problem statement recorded. Use Edit Proposal to define the engineering challenge.'}
+              </p>
+            </div>
+
+            {/* Card 2: Proposed Solution & Architecture */}
+            <div className="glass-panel" style={{ padding: '22px 24px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent-emerald)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                  <CheckCircle2 size={18} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Proposed Solution & Architecture
+                  </h3>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>Technical Mechanism & Expected Technical Effect</span>
+                </div>
+              </div>
+              <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.6, background: 'var(--bg-surface)', padding: '14px 16px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                {activeProject.proposedSolution || 'No proposed solution recorded.'}
+              </p>
+              {activeProject.expectedTechnicalEffect && (
+                <div style={{ fontSize: '0.8rem', color: 'var(--accent-cyan)', background: 'rgba(0, 242, 254, 0.08)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(0, 242, 254, 0.2)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Sparkles size={14} style={{ flexShrink: 0 }} />
+                  <span><strong>Expected Technical Effect:</strong> {activeProject.expectedTechnicalEffect}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ----------------------------------------------------------------- */}
+          {/* 3. BENCHMARK RESULTS / AUDIT PROGRESS / EMPTY STATE               */}
+          {/* ----------------------------------------------------------------- */}
+          {isGeneratingAudit && (
+            <div className="glass-panel" style={{ padding: '40px 32px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', borderRadius: '20px' }}>
+              <div style={{ width: 68, height: 68, borderRadius: '50%', background: 'rgba(99, 102, 241, 0.15)', border: '2px solid var(--accent-indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 30px rgba(99, 102, 241, 0.3)' }}>
+                <RefreshCw size={32} color="var(--accent-indigo)" style={{ animation: 'spin 1.4s linear infinite' }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                  Automated Prior-Art Benchmarking in Progress...
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: 'var(--accent-cyan)', fontFamily: 'var(--font-mono)', margin: '4px 0 0 0' }}>
+                  {generatingStage}
+                </p>
+              </div>
+              <div style={{ width: '100%', maxWidth: '420px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ width: '100%', background: 'var(--bg-input)', borderRadius: 999, height: 10, border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+                  <div style={{ width: `${generatingProgress}%`, background: 'var(--gradient-primary)', height: '100%', transition: 'width 0.4s ease' }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                  <span>Multi-Signal SBERT + Vector Distance</span>
+                  <span>{generatingProgress}%</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!isGeneratingAudit && !activeReport && (
+            <div className="glass-panel" style={{ padding: '48px 32px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', borderRadius: '20px' }}>
+              <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(99, 102, 241, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-indigo)' }}>
+                <Lightbulb size={32} />
+              </div>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                No Prior-Art Benchmark Report Generated Yet
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: 0, maxWidth: '500px' }}>
+                Run an automated benchmark to cross-reference this innovation against USPTO records, compute § 101/102/103 metrics, and generate novelty evidence.
+              </p>
+              <button
+                onClick={() => handleInspectOrRunProject(activeProject)}
+                className="btn-primary"
+                style={{ padding: '10px 24px', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}
+              >
+                <Sparkles size={16} />
+                <span>Run Automated Benchmark Now</span>
+              </button>
+            </div>
+          )}
+
+          {!isGeneratingAudit && activeReport && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
 
           {/* Dynamic Patent Team Review Lifecycle Action Banner */}
           {activeSubmission && (() => {
@@ -3102,7 +3322,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                       onClick={() => setShow103Formula(!show103Formula)}
                       style={{ 
                         background: 'var(--bg-input)', 
-                        border: `1px solid ${activeReport.tsmObviousnessRisk.level === 'HIGH' ? 'rgba(244, 63, 94, 0.4)' : 'var(--border-color)'}`, 
+                        border: `1px solid ${activeReport.tsmObviousnessRisk?.level === 'HIGH' ? 'rgba(244, 63, 94, 0.4)' : 'var(--border-color)'}`, 
                         padding: '8px 14px', 
                         borderRadius: '12px', 
                         display: 'flex', 
@@ -3117,8 +3337,8 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           <span>§ 103 Obviousness Risk:</span>
                           <HelpCircle size={12} />
                         </div>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 800, color: activeReport.tsmObviousnessRisk.level === 'HIGH' ? 'var(--accent-rose)' : activeReport.tsmObviousnessRisk.level === 'MODERATE' ? 'var(--accent-amber)' : 'var(--accent-emerald)' }}>
-                          {activeReport.tsmObviousnessRisk.score}% ({activeReport.tsmObviousnessRisk.level} RISK)
+                        <div style={{ fontSize: '1.1rem', fontWeight: 800, color: activeReport.tsmObviousnessRisk?.level === 'HIGH' ? 'var(--accent-rose)' : activeReport.tsmObviousnessRisk?.level === 'MODERATE' ? 'var(--accent-amber)' : 'var(--accent-emerald)' }}>
+                          {activeReport.tsmObviousnessRisk?.score || 0}% ({activeReport.tsmObviousnessRisk?.level || 'LOW'} RISK)
                         </div>
                       </div>
                     </div>
@@ -3127,14 +3347,14 @@ const RESEARCH_PRESETS: RDPreset[] = [
                       <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--accent-indigo)', padding: '12px', borderRadius: '10px', fontSize: '0.75rem', width: '320px', display: 'flex', flexDirection: 'column', gap: '6px', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
                         <div style={{ fontWeight: 800, color: 'var(--accent-indigo)', display: 'flex', alignItems: 'center', gap: 4 }}>
                           <Activity size={14} />
-                          <span>How 35 U.S.C. § 103 Score ({activeReport.tsmObviousnessRisk.score}%) is Calculated:</span>
+                          <span>How 35 U.S.C. § 103 Score ({activeReport.tsmObviousnessRisk?.score || 0}%) is Calculated:</span>
                         </div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--text-main)', display: 'flex', flexDirection: 'column', gap: 4 }}>
                           <div>• <strong>Direct Prior-Art Overlaps (N_direct):</strong> {activeReport.directOverlapCount} components (× 28%)</div>
                           <div>• <strong>Partial Overlaps (N_partial):</strong> {activeReport.partialOverlapCount} components (× 14%)</div>
                         </div>
                         <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', fontStyle: 'italic', borderTop: '1px dashed var(--border-color)', paddingTop: 4 }}>
-                          Formula: min(95%, {activeReport.directOverlapCount}×28 + {activeReport.partialOverlapCount}×14) = {activeReport.tsmObviousnessRisk.score}%
+                          Formula: min(95%, {activeReport.directOverlapCount}×28 + {activeReport.partialOverlapCount}×14) = {activeReport.tsmObviousnessRisk?.score || 0}%
                         </div>
                       </div>
                     )}
@@ -3143,7 +3363,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
               </div>
 
               {/* TSM Combined Prior-Art Warning Box */}
-              {activeReport.tsmObviousnessRisk && activeReport.tsmObviousnessRisk.combinedReferences.length > 0 && (
+              {activeReport.tsmObviousnessRisk && (activeReport.tsmObviousnessRisk.combinedReferences?.length || 0) > 0 && (
                 <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '14px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-amber)', fontWeight: 800, fontSize: '0.88rem' }}>
                     <AlertTriangle size={18} />
@@ -3153,7 +3373,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     Patent examiners under 35 U.S.C. § 103 / EPO Article 56 combine multiple references to construct an obviousness rejection. Below are the anticipated reference pairs an examiner will cite:
                   </p>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '10px', marginTop: 4 }}>
-                    {activeReport.tsmObviousnessRisk.combinedReferences.map((comb, idx) => (
+                    {activeReport.tsmObviousnessRisk.combinedReferences?.map((comb, idx) => (
                       <div key={idx} style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', fontSize: '0.78rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <div style={{ fontWeight: 800, color: 'var(--accent-indigo)' }}>
                           Combining Ref [{comb.ref1}] + Ref [{comb.ref2}]
@@ -3180,7 +3400,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         Shared Prior-Art Chain (Known in Literature)
                       </span>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                        {activeReport.combinationAnalysis.sharedWorkflowChain.map((item, idx) => (
+                        {activeReport.combinationAnalysis.sharedWorkflowChain?.map((item, idx) => (
                           <span key={idx} style={{ fontSize: '0.78rem', padding: '5px 10px', borderRadius: 6, background: 'rgba(244, 63, 94, 0.12)', color: 'var(--accent-rose)', border: '1px solid rgba(244, 63, 94, 0.3)', fontWeight: 700 }}>
                             {item}
                           </span>
@@ -3193,7 +3413,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         Proposal-Specific Novel Limitations
                       </span>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                        {activeReport.combinationAnalysis.proposalSpecificElements.map((item, idx) => (
+                        {activeReport.combinationAnalysis.proposalSpecificElements?.map((item, idx) => (
                           <span key={idx} style={{ fontSize: '0.78rem', padding: '5px 10px', borderRadius: 6, background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent-emerald)', border: '1px solid rgba(16, 185, 129, 0.3)', fontWeight: 700 }}>
                             {item}
                           </span>
@@ -3213,11 +3433,11 @@ const RESEARCH_PRESETS: RDPreset[] = [
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>
-                    Inter-Component Technical Flow Relationships ({activeReport.componentRelationships.length}):
+                    Inter-Component Technical Flow Relationships ({activeReport.componentRelationships?.length || 0}):
                   </span>
                 </div>
 
-                {activeReport.componentRelationships.map((rel) => (
+                {activeReport.componentRelationships?.map((rel) => (
                   <div key={rel.id} style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'all 0.2s ease' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--accent-indigo)', fontWeight: 700 }}>
@@ -3379,65 +3599,150 @@ const RESEARCH_PRESETS: RDPreset[] = [
           )}
         </div>
       )}
+    </div>
+  )}
 
-      {/* SUB-VIEW 3 FALLBACK: AUDIT BENCHMARKING PROGRESS / EMPTY RECOVERY */}
-      {activeTab === 'audit' && !activeReport && (
-        <div className="glass-panel" style={{ padding: '52px 32px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', maxWidth: '760px', margin: '40px auto', width: '100%', borderRadius: '24px' }}>
-          <div style={{ width: 84, height: 84, borderRadius: '50%', background: 'rgba(99, 102, 241, 0.15)', border: '2px solid var(--accent-indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 30px rgba(99, 102, 241, 0.3)' }}>
-            <RefreshCw size={38} color="var(--accent-indigo)" style={{ animation: 'spin 1.4s linear infinite' }} />
+      {/* ========================================================================= */}
+      {/* INNOVATION PROJECT NOT FOUND STATE                                        */}
+      {/* ========================================================================= */}
+      {activeTab === 'not_found' && (
+        <div 
+          className="glass-panel" 
+          style={{ 
+            padding: '52px 32px', 
+            textAlign: 'center', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            gap: '20px', 
+            maxWidth: '640px', 
+            margin: '60px auto', 
+            borderRadius: '24px' 
+          }}
+        >
+          <div 
+            style={{ 
+              width: 72, 
+              height: 72, 
+              borderRadius: '50%', 
+              background: 'rgba(244, 63, 94, 0.12)', 
+              color: 'var(--accent-rose)', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              border: '1px solid rgba(244, 63, 94, 0.3)'
+            }}
+          >
+            <AlertTriangle size={36} />
           </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-              Prior-Art Benchmarking in Progress
-            </h3>
-            <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: 0, maxWidth: '520px' }}>
-              {activeProject?.title || 'Selected R&D Innovation Proposal'}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+              Innovation Project Not Found
+            </h2>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: 0, maxWidth: '460px' }}>
+              The requested innovation project identifier could not be located in the persisted R&D workspace. It may have been deleted or the project link may be invalid.
             </p>
-            <p style={{ fontSize: '0.82rem', color: 'var(--accent-cyan)', fontFamily: 'var(--font-mono)', margin: '4px 0 0 0' }}>
-              {generatingStage}
+          </div>
+          <button
+            onClick={handleBackToDashboard}
+            className="btn-primary"
+            style={{ padding: '10px 24px', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+          >
+            <ArrowLeft size={16} />
+            <span>Return to Projects Dashboard</span>
+          </button>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* PROJECT LOAD ERROR STATE                                                  */}
+      {/* ========================================================================= */}
+      {projectLoadError && (
+        <div 
+          className="glass-panel" 
+          style={{ 
+            padding: '52px 32px', 
+            textAlign: 'center', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            gap: '20px', 
+            maxWidth: '640px', 
+            margin: '60px auto', 
+            borderRadius: '24px' 
+          }}
+        >
+          <div 
+            style={{ 
+              width: 72, 
+              height: 72, 
+              borderRadius: '50%', 
+              background: 'rgba(244, 63, 94, 0.12)', 
+              color: 'var(--accent-rose)', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              border: '1px solid rgba(244, 63, 94, 0.3)'
+            }}
+          >
+            <AlertTriangle size={36} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+              Failed to Load Innovation Project
+            </h2>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: 0, maxWidth: '460px' }}>
+              {projectLoadError}
             </p>
           </div>
-
-          <div style={{ width: '100%', maxWidth: '420px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ width: '100%', background: 'var(--bg-input)', borderRadius: 999, height: 10, border: '1px solid var(--border-color)', overflow: 'hidden' }}>
-              <div 
-                style={{ 
-                  width: `${generatingProgress}%`, 
-                  background: 'var(--gradient-primary)', 
-                  height: '100%', 
-                  transition: 'width 0.4s ease' 
-                }} 
-              />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
-              <span>Multi-Signal SBERT + Vector Distance</span>
-              <span>{generatingProgress}%</span>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
             <button
               onClick={() => {
-                setIsGeneratingAudit(false);
-                setGeneratingProgress(15);
-                setActiveTab('dashboard');
+                const match = window.location.hash.match(/^#\/innovation\/([a-zA-Z0-9_-]+)$/);
+                if (match) openProjectById(match[1]);
               }}
-              className="btn-secondary"
-              style={{ padding: '8px 20px', fontSize: '0.82rem' }}
+              className="btn-primary"
+              style={{ padding: '10px 20px', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
             >
-              Cancel & Return to Dashboard
+              <RefreshCw size={15} />
+              <span>Retry</span>
             </button>
-            {activeProject && !isGeneratingAudit && (
-              <button
-                onClick={() => handleInspectOrRunProject(activeProject)}
-                className="btn-primary"
-                style={{ padding: '8px 20px', fontSize: '0.82rem' }}
-              >
-                <Sparkles size={15} />
-                <span>Run Benchmarking Now</span>
-              </button>
-            )}
+            <button
+              onClick={handleBackToDashboard}
+              className="btn-secondary"
+              style={{ padding: '10px 20px', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+            >
+              <ArrowLeft size={16} />
+              <span>Return to Projects Dashboard</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* ASYNC LOADING STATE                                                       */}
+      {/* ========================================================================= */}
+      {isLoadingProject && (
+        <div 
+          className="glass-panel" 
+          style={{ 
+            padding: '60px 32px', 
+            textAlign: 'center', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            gap: '18px', 
+            maxWidth: '560px', 
+            margin: '60px auto', 
+            borderRadius: '24px' 
+          }}
+        >
+          <RefreshCw size={36} color="var(--accent-indigo)" style={{ animation: 'spin 1.4s linear infinite' }} />
+          <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>
+            Loading Innovation Project...
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            Retrieving persisted R&D documents, feature extractions, and prior-art benchmarks.
           </div>
         </div>
       )}

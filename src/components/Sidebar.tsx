@@ -14,7 +14,8 @@ import {
   Activity,
   Database,
   PenTool,
-  Lightbulb
+  Lightbulb,
+  FileCheck
 } from 'lucide-react';
 
 interface Props {
@@ -50,6 +51,7 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
       title: 'ANALYSIS & REASONING',
       items: [
         { id: 'idea-novelty', label: 'R&D Idea Benchmarker', icon: Lightbulb, badge: 'R&D' },
+        { id: 'review-queue', label: 'Patent Review Queue', icon: FileCheck, badge: 'Review' },
         { id: 'claims', label: 'Claim Decomposition', icon: Layers },
         { id: 'mapping', label: 'Claim-to-Claim Mapping', icon: GitCompare, badge: 'Core' },
         { id: 'timeline', label: 'Prior-Art Timeline', icon: Clock },

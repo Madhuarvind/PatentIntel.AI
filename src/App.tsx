@@ -32,13 +32,60 @@ export const App: React.FC = () => {
     };
   });
 
-  const [activeView, setActiveView] = useState<ModuleView>('dashboard');
+  const [activeView, setActiveView] = useState<ModuleView>(() => {
+    const hash = window.location.hash;
+    if (hash.startsWith('#/innovation') || hash.startsWith('#innovation')) return 'idea-novelty';
+    if (hash === '#/review-queue' || hash === '#review-queue') return 'review-queue';
+    if (hash.startsWith('#/')) {
+      const view = hash.replace(/^#\//, '') as ModuleView;
+      const valid: ModuleView[] = ['dashboard', 'workspace', 'search', 'claims', 'mapping', 'timeline', 'ai-evidence', 'analytics', 'settings', 'claim-synthesizer', 'idea-novelty', 'review-queue'];
+      if (valid.includes(view)) return view;
+    }
+    return 'dashboard';
+  });
+
+  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(() => {
+    const hash = window.location.hash;
+    const match = hash.match(/#\/?innovation\/([^/?#]+)/);
+    return match ? match[1] : undefined;
+  });
+
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [isLiteratureOpen, setIsLiteratureOpen] = useState<boolean>(false);
   const [literatureQuery, setLiteratureQuery] = useState<string>('patent claim similarity SBERT');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   const [synthesizerMetadata, setSynthesizerMetadata] = useState<any>(null);
+
+  // Sync with browser hash changes for back/forward and refresh support
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash.startsWith('#/innovation/') || hash.startsWith('#innovation/')) {
+        const id = hash.replace(/^#\/?innovation\//, '').split(/[?#]/)[0];
+        if (id) {
+          setSelectedProjectId(id);
+          setActiveView('idea-novelty');
+        }
+      } else if (hash === '#/innovation' || hash === '#innovation') {
+        setSelectedProjectId(undefined);
+        setActiveView('idea-novelty');
+      } else if (hash === '#/review-queue' || hash === '#review-queue') {
+        setSelectedProjectId(undefined);
+        setActiveView('review-queue');
+      } else if (hash.startsWith('#/')) {
+        const view = hash.replace(/^#\//, '') as ModuleView;
+        const valid: ModuleView[] = ['dashboard', 'workspace', 'search', 'claims', 'mapping', 'timeline', 'ai-evidence', 'analytics', 'settings', 'claim-synthesizer', 'idea-novelty', 'review-queue'];
+        if (valid.includes(view)) {
+          setSelectedProjectId(undefined);
+          setActiveView(view);
+        }
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   // WIPO Claim Translator Modal State
   const [isTranslatorOpen, setIsTranslatorOpen] = useState<boolean>(false);
@@ -51,11 +98,24 @@ export const App: React.FC = () => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
+  const handleSelectView = (view: ModuleView) => {
+    setActiveView(view);
+    if (view === 'review-queue') {
+      setSelectedProjectId(undefined);
+      window.location.hash = '/review-queue';
+    } else if (view === 'idea-novelty') {
+      window.location.hash = selectedProjectId ? `/innovation/${selectedProjectId}` : '/innovation';
+    } else {
+      setSelectedProjectId(undefined);
+      window.location.hash = `/${view}`;
+    }
+  };
+
   const handleNavigateWithMetadata = (view: ModuleView, metadata?: any) => {
     if (metadata) {
       setSynthesizerMetadata(metadata);
     }
-    setActiveView(view);
+    handleSelectView(view);
   };
 
   const openLiteratureWithQuery = (query?: string) => {
@@ -125,14 +185,14 @@ export const App: React.FC = () => {
         {/* Module Sidebar (Fixed Position Pinning) */}
         <Sidebar
           activeView={activeView}
-          onSelectView={setActiveView}
+          onSelectView={handleSelectView}
         />
 
         {/* Dynamic View Content Container (Individually Scrollable Main Area) */}
         <main style={{ flex: 1, height: '100%', padding: '32px', overflowY: 'auto' }}>
           {activeView === 'dashboard' && (
             <DashboardView 
-              onNavigate={setActiveView} 
+              onNavigate={handleSelectView} 
               onOpenLiterature={(q) => openLiteratureWithQuery(q)}
             />
           )}
@@ -145,7 +205,7 @@ export const App: React.FC = () => {
 
           {activeView === 'search' && (
             <SearchEngineView 
-              onNavigate={setActiveView} 
+              onNavigate={handleSelectView} 
               onOpenPaper={(q) => openLiteratureWithQuery(q)}
               initialQuery={translatorSearchQuery}
             />
@@ -153,14 +213,14 @@ export const App: React.FC = () => {
 
           {activeView === 'claims' && (
             <ClaimIntelligenceView 
-              onNavigate={setActiveView}
+              onNavigate={handleSelectView}
               onOpenClaimTranslator={openClaimTranslator}
             />
           )}
 
           {activeView === 'mapping' && (
             <ClaimMappingView 
-              onNavigate={setActiveView} 
+              onNavigate={handleSelectView} 
               onOpenPaper={(q) => openLiteratureWithQuery(q)}
             />
           )}
@@ -191,6 +251,14 @@ export const App: React.FC = () => {
 
           {activeView === 'idea-novelty' && (
             <IdeaNoveltyView 
+              selectedProjectId={selectedProjectId}
+              onNavigate={handleNavigateWithMetadata}
+            />
+          )}
+
+          {activeView === 'review-queue' && (
+            <IdeaNoveltyView 
+              initialTab="review_queue"
               onNavigate={handleNavigateWithMetadata}
             />
           )}

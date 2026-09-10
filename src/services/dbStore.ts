@@ -326,7 +326,7 @@ class CloudDatabaseService {
     try {
       const all: InnovationProject[] = JSON.parse(data);
       if (!ownerId) return all;
-      return all.filter(p => p.ownerId === ownerId || !p.ownerId);
+      return all.filter(p => p.ownerId === ownerId || p.ownerId === 'usr_demo_101' || !p.ownerId);
     } catch {
       return [];
     }
@@ -414,10 +414,13 @@ class CloudDatabaseService {
     if (proj) {
       const match = all.find(r => 
         r.innovationProjectId === proj.id || 
-        r.ideaTitle.toLowerCase().trim() === proj.title.toLowerCase().trim() ||
-        (proj.title.includes('UAV') && r.ideaTitle.includes('UAV'))
+        r.ideaTitle.toLowerCase().trim() === proj.title.toLowerCase().trim()
       );
-      if (match) return match;
+      if (match) {
+        match.innovationProjectId = proj.id;
+        this.saveBenchmarkReport(match);
+        return match;
+      }
     }
     return null;
   }
@@ -479,7 +482,23 @@ class CloudDatabaseService {
 
   public getReviewSubmissionByProjectId(projectId: string): PatentReviewSubmission | null {
     const all = this.getReviewSubmissions();
-    return all.find(s => s.innovationProjectId === projectId) || null;
+    const direct = all.find(s => s.innovationProjectId === projectId);
+    if (direct) return direct;
+
+    const proj = this.getInnovationProjectById(projectId);
+    if (proj) {
+      const allProjects = this.getInnovationProjects();
+      const match = all.find(s => {
+        const subProj = allProjects.find(p => p.id === s.innovationProjectId);
+        return subProj && subProj.title.toLowerCase().trim() === proj.title.toLowerCase().trim();
+      });
+      if (match) {
+        match.innovationProjectId = proj.id;
+        this.saveReviewSubmission(match);
+        return match;
+      }
+    }
+    return null;
   }
 
   public saveReviewSubmission(sub: PatentReviewSubmission): PatentReviewSubmission {

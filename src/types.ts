@@ -11,7 +11,8 @@ export type ModuleView =
   | 'analytics'
   | 'settings'
   | 'claim-synthesizer'
-  | 'idea-novelty';
+  | 'idea-novelty'
+  | 'review-queue';
 
 export interface PriorArtMatch {
   sourceType: 'PATENT' | 'PAPER';

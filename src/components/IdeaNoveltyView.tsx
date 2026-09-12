@@ -4541,12 +4541,12 @@ const RESEARCH_PRESETS: RDPreset[] = [
                       </button>
 
                       <button
-                        onClick={handleDownloadFerReport}
+                        onClick={() => setShowFerModal(true)}
                         className="btn-secondary"
                         style={{ padding: '8px 16px', fontSize: '0.8rem', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent-indigo)', borderColor: 'rgba(99, 102, 241, 0.3)' }}
                       >
                         <FileText size={14} />
-                        <span>Export FER PDF</span>
+                        <span>Simulate / Export FER</span>
                       </button>
                     </div>
 

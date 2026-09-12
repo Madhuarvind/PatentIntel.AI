@@ -69,11 +69,7 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
   ];
 
   return (
-    <aside style={{
-      width: '285px',
-      minWidth: '285px',
-      height: '100%',
-      flexShrink: 0,
+    <aside className="app-sidebar" style={{
       borderRight: '1px solid var(--border-color)',
       background: 'var(--bg-card-solid)',
       padding: '20px 14px',
@@ -87,7 +83,7 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
         {sections.map((section, sIdx) => (
           <div key={sIdx}>
-            <div style={{
+            <div className="sidebar-section-title" style={{
               fontSize: '0.68rem',
               fontWeight: 800,
               color: 'var(--text-dim)',
@@ -129,11 +125,11 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                       <Icon size={18} style={{ flexShrink: 0 }} color={isActive ? 'var(--accent-cyan)' : 'var(--text-muted)'} />
-                      <span style={{ whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>{item.label}</span>
+                      <span className="sidebar-item-label" style={{ whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>{item.label}</span>
                     </div>
 
                     {item.badge && (
-                      <span style={{
+                      <span className="sidebar-badge" style={{
                         fontSize: '0.62rem',
                         fontWeight: 800,
                         padding: '2px 7px',
@@ -156,7 +152,7 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
       </div>
 
       {/* Dynamic Active Workspace & API Sync Status Card */}
-      <div className="glass-panel" style={{
+      <div className="glass-panel sidebar-footer-card" style={{
         padding: '14px',
         borderRadius: '12px',
         background: 'linear-gradient(180deg, rgba(0, 242, 254, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%)',

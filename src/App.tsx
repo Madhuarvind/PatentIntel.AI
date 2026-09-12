@@ -181,7 +181,7 @@ export const App: React.FC = () => {
       </div>
 
       {/* Main Workspace Area (Fixed Full Height Body) */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', height: 'calc(100vh - 64px)' }}>
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', height: 'calc(100vh - 64px)', width: '100%', maxWidth: '100%', minWidth: 0 }}>
         {/* Module Sidebar (Fixed Position Pinning) */}
         <Sidebar
           activeView={activeView}
@@ -189,7 +189,19 @@ export const App: React.FC = () => {
         />
 
         {/* Dynamic View Content Container (Individually Scrollable Main Area) */}
-        <main style={{ flex: 1, height: '100%', padding: '32px', overflowY: 'auto' }}>
+        <main 
+          className={`app-main-content ${activeView === 'review-queue' ? 'review-queue-main-container' : ''}`} 
+          style={{ 
+            flex: 1, 
+            height: '100%', 
+            width: '100%', 
+            maxWidth: '100%', 
+            minWidth: 0, 
+            padding: activeView === 'review-queue' ? '20px 28px' : '32px', 
+            overflowY: activeView === 'review-queue' ? 'hidden' : 'auto', 
+            boxSizing: 'border-box' 
+          }}
+        >
           {activeView === 'dashboard' && (
             <DashboardView 
               onNavigate={handleSelectView} 

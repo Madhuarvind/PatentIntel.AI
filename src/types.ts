@@ -113,6 +113,8 @@ export interface InnovationProject {
   currentVersionNumber: number;
   createdAt: string;
   updatedAt: string;
+  isArchived?: boolean;
+  archivedAt?: string;
 }
 
 export interface InnovationDocument {

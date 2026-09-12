@@ -30,7 +30,12 @@ import {
   Calendar,
   Clock,
   Tag,
-  ArrowLeft
+  ArrowLeft,
+  MoreVertical,
+  Pencil,
+  Copy,
+  Archive,
+  RotateCcw
 } from 'lucide-react';
 
 import type { 
@@ -168,6 +173,18 @@ export const IdeaNoveltyView: React.FC<IdeaNoveltyViewProps> = ({
   const [isGeneratingAudit, setIsGeneratingAudit] = useState<boolean>(false);
   const [generatingStage, setGeneratingStage] = useState<string>('Initializing Prior-Art Analysis Engine...');
   const [generatingProgress, setGeneratingProgress] = useState<number>(15);
+
+  // Dashboard Innovation Project Management & Filter State
+  const [dashboardTab, setDashboardTab] = useState<'active' | 'archived' | 'all'>('active');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [sortBy, setSortBy] = useState<'updated' | 'created' | 'name'>('updated');
+  const [activeMenuProjectId, setActiveMenuProjectId] = useState<string | null>(null);
+  const [projectToRename, setProjectToRename] = useState<InnovationProject | null>(null);
+  const [renameValue, setRenameValue] = useState<string>('');
+  const [projectToDelete, setProjectToDelete] = useState<InnovationProject | null>(null);
+  const [showRenameModal, setShowRenameModal] = useState<boolean>(false);
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
 
   const handleInspectOrRunProject = async (proj: InnovationProject) => {
     setActiveProject(proj);
@@ -453,6 +470,95 @@ Provisional Determination: ${activeReport.tsmObviousnessRisk?.level === 'HIGH' ?
       setReviewComments(dbStore.getReviewComments(firstSub.id));
     }
   }, [activeTab, reviewSubmissions, activeSubmission]);
+
+  // Click-outside and Escape key listener for project actions dropdown
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      if (activeMenuProjectId) {
+        const target = e.target as HTMLElement;
+        if (!target.closest('.project-card-dropdown') && !target.closest('.project-card-menu-btn')) {
+          setActiveMenuProjectId(null);
+        }
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setActiveMenuProjectId(null);
+        setShowRenameModal(false);
+        setShowDeleteModal(false);
+      }
+    };
+
+    document.addEventListener('click', handleGlobalClick);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('click', handleGlobalClick);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeMenuProjectId]);
+
+  // Project Management Actions Handlers
+  const handleStartRename = (proj: InnovationProject) => {
+    setActiveMenuProjectId(null);
+    setProjectToRename(proj);
+    setRenameValue(proj.title);
+    setShowRenameModal(true);
+  };
+
+  const handleConfirmRename = () => {
+    if (!projectToRename || !renameValue.trim()) return;
+    const updated = dbStore.renameInnovationProject(projectToRename.id, renameValue.trim());
+    if (updated) {
+      if (activeProject?.id === projectToRename.id) {
+        setActiveProject(updated);
+      }
+      loadData();
+    }
+    setShowRenameModal(false);
+    setProjectToRename(null);
+    setRenameValue('');
+  };
+
+  const handleDuplicateProject = (proj: InnovationProject) => {
+    setActiveMenuProjectId(null);
+    const cloned = dbStore.duplicateInnovationProject(proj.id, currentUser || undefined);
+    if (cloned) {
+      loadData();
+    }
+  };
+
+  const handleArchiveProject = (proj: InnovationProject) => {
+    setActiveMenuProjectId(null);
+    dbStore.archiveInnovationProject(proj.id);
+    loadData();
+  };
+
+  const handleRestoreProject = (proj: InnovationProject) => {
+    setActiveMenuProjectId(null);
+    dbStore.restoreInnovationProject(proj.id);
+    loadData();
+  };
+
+  const handleStartDelete = (proj: InnovationProject) => {
+    setActiveMenuProjectId(null);
+    setProjectToDelete(proj);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!projectToDelete) return;
+    dbStore.deleteInnovationProject(projectToDelete.id);
+    if (activeProject?.id === projectToDelete.id) {
+      setActiveProject(null);
+      setActiveReport(null);
+      setActiveSubmission(null);
+      setActiveTab('dashboard');
+    }
+    loadData();
+    setShowDeleteModal(false);
+    setProjectToDelete(null);
+  };
 
 interface RDPreset {
   id: number;
@@ -1137,7 +1243,22 @@ const RESEARCH_PRESETS: RDPreset[] = [
   };
 
   return (
-    <div style={{ minHeight: '100vh', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div 
+      style={{ 
+        width: '100%', 
+        maxWidth: '100%', 
+        minWidth: 0, 
+        boxSizing: 'border-box', 
+        height: activeTab === 'review_queue' ? '100%' : 'auto',
+        minHeight: activeTab === 'review_queue' ? 0 : '100%', 
+        padding: activeTab === 'review_queue' ? 0 : '0 0 24px 0', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: activeTab === 'review_queue' ? 0 : '24px',
+        overflow: activeTab === 'review_queue' ? 'hidden' : 'visible',
+        flex: activeTab === 'review_queue' ? 1 : 'none'
+      }}
+    >
       {/* ========================================================================= */}
       {/* TOP HEADER & SUB-NAVIGATION                                              */}
       {/* ========================================================================= */}
@@ -1226,7 +1347,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
               </div>
               <div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em' }}>Total Innovations</div>
-                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>{projects.length}</div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
+                  {projects.filter(p => !p.isArchived).length}
+                </div>
               </div>
             </div>
 
@@ -1237,7 +1360,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
               <div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em' }}>Approved for Drafting</div>
                 <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
-                  {projects.filter(p => p.status === 'APPROVED_FOR_DRAFTING').length}
+                  {projects.filter(p => !p.isArchived && p.status === 'APPROVED_FOR_DRAFTING').length}
                 </div>
               </div>
             </div>
@@ -1249,7 +1372,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
               <div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em' }}>In Review Queue</div>
                 <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
-                  {projects.filter(p => p.status === 'SUBMITTED' || p.status === 'UNDER_REVIEW' || p.status === 'NEEDS_REVISION').length}
+                  {projects.filter(p => !p.isArchived && (p.status === 'SUBMITTED' || p.status === 'UNDER_REVIEW' || p.status === 'NEEDS_REVISION')).length}
                 </div>
               </div>
             </div>
@@ -1261,18 +1384,22 @@ const RESEARCH_PRESETS: RDPreset[] = [
               <div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em' }}>Ready for Review</div>
                 <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
-                  {projects.filter(p => p.status === 'READY_FOR_REVIEW').length}
+                  {projects.filter(p => !p.isArchived && p.status === 'READY_FOR_REVIEW').length}
                 </div>
               </div>
             </div>
           </div>
 
           {/* Section Header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
             <div>
-              <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Saved R&D Innovation Projects</h2>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>
+                {dashboardTab === 'archived' ? 'Archived Innovation Projects' : dashboardTab === 'all' ? 'All Innovation Projects' : 'Saved R&D Innovation Projects'}
+              </h2>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
-                Select any project to inspect prior-art citations, § 101/102/103 metrics, or trigger live automated benchmarking.
+                {dashboardTab === 'archived' 
+                  ? 'Inspect, restore, or permanently delete archived innovation proposals.'
+                  : 'Select any project to inspect prior-art citations, § 101/102/103 metrics, or manage records.'}
               </p>
             </div>
             <button
@@ -1287,138 +1414,515 @@ const RESEARCH_PRESETS: RDPreset[] = [
             </button>
           </div>
 
-          {projects.length === 0 ? (
-            <div 
-              style={{ 
-                background: 'var(--bg-card)', 
-                border: '1px dashed var(--border-color)', 
-                borderRadius: '20px', 
-                padding: '48px', 
-                textAlign: 'center', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                alignItems: 'center', 
-                gap: '16px' 
-              }}
-            >
-              <div 
-                style={{ 
-                  width: 64, 
-                  height: 64, 
-                  borderRadius: '50%', 
-                  background: 'var(--bg-surface)', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  color: 'var(--accent-indigo)' 
-                }}
-              >
-                <Lightbulb size={32} />
-              </div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>No Innovation Projects Yet</h3>
-              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', maxWidth: '440px', margin: 0 }}>
-                Start by uploading a project proposal document or using one of our pre-configured R&D research presets.
-              </p>
+          {/* Dashboard Filter, Search & View Controls */}
+          <div className="dashboard-filter-bar">
+            {/* View Tabs: Active | Archived | All */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
               <button
-                onClick={() => {
-                  setWizardStep(1);
-                  setActiveTab('wizard');
-                }}
-                className="btn-primary"
-                style={{ marginTop: 8 }}
+                type="button"
+                className={`dashboard-tab-pill ${dashboardTab === 'active' ? 'active' : ''}`}
+                onClick={() => setDashboardTab('active')}
               >
-                Launch Innovation Wizard
+                <span>Active</span>
+                <span style={{ fontSize: '0.7rem', opacity: 0.85, fontFamily: 'var(--font-mono)' }}>
+                  ({projects.filter(p => !p.isArchived).length})
+                </span>
+              </button>
+              <button
+                type="button"
+                className={`dashboard-tab-pill ${dashboardTab === 'archived' ? 'active' : ''}`}
+                onClick={() => setDashboardTab('archived')}
+              >
+                <span>Archived</span>
+                <span style={{ fontSize: '0.7rem', opacity: 0.85, fontFamily: 'var(--font-mono)' }}>
+                  ({projects.filter(p => p.isArchived).length})
+                </span>
+              </button>
+              <button
+                type="button"
+                className={`dashboard-tab-pill ${dashboardTab === 'all' ? 'active' : ''}`}
+                onClick={() => setDashboardTab('all')}
+              >
+                <span>All</span>
+                <span style={{ fontSize: '0.7rem', opacity: 0.85, fontFamily: 'var(--font-mono)' }}>
+                  ({projects.length})
+                </span>
               </button>
             </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
-              {projects.map((proj) => {
-                const report = dbStore.getLatestBenchmarkReport(proj.id);
-                const isAnalyzing = proj.status === 'ANALYZING';
-                return (
-                  <div 
-                    key={proj.id}
-                    className="glass-panel glass-panel-hover"
-                    style={{ 
-                      padding: '24px', 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      justifyContent: 'space-between', 
-                      gap: '16px', 
-                      cursor: 'pointer' 
-                    }}
-                    onClick={() => {
-                      openProjectById(proj.id);
+
+            {/* Search Input, Status Dropdown & Sorting */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              {/* Search Bar */}
+              <div style={{ position: 'relative', minWidth: '220px' }}>
+                <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search projects..."
+                  style={{
+                    width: '100%',
+                    padding: '7px 28px 7px 30px',
+                    borderRadius: '8px',
+                    background: 'var(--bg-input)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-main)',
+                    fontSize: '0.8rem',
+                    outline: 'none'
+                  }}
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    style={{
+                      position: 'absolute',
+                      right: 8,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      padding: 2,
+                      display: 'flex',
+                      alignItems: 'center'
                     }}
                   >
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span 
-                          style={{ 
-                            fontSize: '0.72rem', 
-                            fontFamily: 'var(--font-mono)', 
-                            padding: '3px 8px', 
-                            borderRadius: 6, 
-                            background: 'var(--bg-surface)', 
-                            color: 'var(--text-muted)', 
-                            border: '1px solid var(--border-color)' 
-                          }}
-                        >
-                          v{proj.currentVersionNumber}.0
-                        </span>
-                        <span 
-                          style={{ 
-                            fontSize: '0.7rem', 
-                            fontWeight: 700, 
-                            padding: '3px 10px', 
-                            borderRadius: 999, 
-                            textTransform: 'uppercase',
-                            background: proj.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16,185,129,0.12)' : proj.status === 'SUBMITTED' ? 'rgba(245,158,11,0.12)' : isAnalyzing ? 'rgba(168,85,247,0.15)' : 'rgba(99,102,241,0.12)',
-                            color: proj.status === 'APPROVED_FOR_DRAFTING' ? 'var(--accent-emerald)' : proj.status === 'SUBMITTED' ? 'var(--accent-amber)' : isAnalyzing ? 'var(--accent-purple)' : 'var(--accent-indigo)',
-                            border: `1px solid ${proj.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16,185,129,0.3)' : proj.status === 'SUBMITTED' ? 'rgba(245,158,11,0.3)' : isAnalyzing ? 'rgba(168,85,247,0.4)' : 'rgba(99,102,241,0.3)'}`,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 5
-                          }}
-                        >
-                          {isAnalyzing && <RefreshCw size={10} style={{ animation: 'spin 1.5s linear infinite' }} />}
-                          <span>{proj.status.replace(/_/g, ' ')}</span>
-                        </span>
-                      </div>
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
 
-                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)', margin: 0, lineHeight: 1.3 }}>
-                        {proj.title}
-                      </h3>
+              {/* Status Filter Dropdown */}
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                style={{
+                  padding: '7px 12px',
+                  borderRadius: '8px',
+                  background: 'var(--bg-input)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-main)',
+                  fontSize: '0.8rem',
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="ALL">All Statuses</option>
+                <option value="DRAFT">Draft</option>
+                <option value="READY_FOR_REVIEW">Ready for Review</option>
+                <option value="SUBMITTED">Submitted</option>
+                <option value="UNDER_REVIEW">Under Review</option>
+                <option value="APPROVED_FOR_DRAFTING">Approved for Drafting</option>
+                <option value="NEEDS_REVISION">Needs Revision</option>
+                <option value="ANALYZING">Analyzing</option>
+              </select>
 
-                      <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                        {proj.description}
-                      </p>
-                    </div>
-
-                    <div style={{ paddingTop: '14px', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {report && (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.78rem' }}>
-                          <span style={{ color: 'var(--text-dim)' }}>Review Readiness</span>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent-indigo)' }}>{report.reviewReadinessScore}%</span>
-                        </div>
-                      )}
-
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-                        <span>Created {new Date(proj.createdAt).toLocaleDateString()}</span>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--accent-indigo)', fontWeight: 600 }}>
-                          <span>{report ? 'Inspect Report' : isAnalyzing ? 'Resume Analysis' : 'Run Benchmark'}</span>
-                          <ChevronRight size={13} />
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {/* Sort Order Dropdown */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                style={{
+                  padding: '7px 12px',
+                  borderRadius: '8px',
+                  background: 'var(--bg-input)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-main)',
+                  fontSize: '0.8rem',
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="updated">Recently Updated</option>
+                <option value="created">Recently Created</option>
+                <option value="name">Name (A–Z)</option>
+              </select>
             </div>
-          )}
+          </div>
 
-          {/* Quick Innovation Starter Presets (Eliminates Empty Space) */}
-          {projects.length < 3 && (
+          {/* Project List / Grid Rendering */}
+          {(() => {
+            const displayedProjects = projects.filter(proj => {
+              if (dashboardTab === 'active' && proj.isArchived) return false;
+              if (dashboardTab === 'archived' && !proj.isArchived) return false;
+              if (statusFilter !== 'ALL' && proj.status !== statusFilter) return false;
+              if (searchQuery.trim()) {
+                const q = searchQuery.toLowerCase().trim();
+                const titleMatch = proj.title?.toLowerCase().includes(q);
+                const descMatch = proj.description?.toLowerCase().includes(q);
+                const domainMatch = proj.domain?.toLowerCase().includes(q);
+                const idMatch = proj.id?.toLowerCase().includes(q);
+                if (!titleMatch && !descMatch && !domainMatch && !idMatch) return false;
+              }
+              return true;
+            }).sort((a, b) => {
+              if (sortBy === 'name') {
+                return (a.title || '').localeCompare(b.title || '');
+              }
+              if (sortBy === 'created') {
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+              }
+              return new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime();
+            });
+
+            if (projects.length === 0) {
+              return (
+                <div 
+                  style={{ 
+                    background: 'var(--bg-card)', 
+                    border: '1px dashed var(--border-color)', 
+                    borderRadius: '20px', 
+                    padding: '48px', 
+                    textAlign: 'center', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    alignItems: 'center', 
+                    gap: '16px' 
+                  }}
+                >
+                  <div 
+                    style={{ 
+                      width: 64, 
+                      height: 64, 
+                      borderRadius: '50%', 
+                      background: 'var(--bg-surface)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      color: 'var(--accent-indigo)' 
+                    }}
+                  >
+                    <Lightbulb size={32} />
+                  </div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>No Innovation Projects Yet</h3>
+                  <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', maxWidth: '440px', margin: 0 }}>
+                    Start by uploading a project proposal document or using one of our pre-configured R&D research presets.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setWizardStep(1);
+                      setActiveTab('wizard');
+                    }}
+                    className="btn-primary"
+                    style={{ marginTop: 8 }}
+                  >
+                    Launch Innovation Wizard
+                  </button>
+                </div>
+              );
+            }
+
+            if (dashboardTab === 'archived' && displayedProjects.length === 0) {
+              return (
+                <div 
+                  style={{ 
+                    background: 'var(--bg-card)', 
+                    border: '1px dashed var(--border-color)', 
+                    borderRadius: '20px', 
+                    padding: '44px 20px', 
+                    textAlign: 'center', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    alignItems: 'center', 
+                    gap: '14px' 
+                  }}
+                >
+                  <div 
+                    style={{ 
+                      width: 56, 
+                      height: 56, 
+                      borderRadius: '50%', 
+                      background: 'rgba(148, 163, 184, 0.1)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      color: '#94a3b8' 
+                    }}
+                  >
+                    <Archive size={26} />
+                  </div>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>No Archived Projects</h3>
+                  <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', maxWidth: '420px', margin: 0 }}>
+                    When you archive inactive or completed projects, they will be kept here safely without cluttering your active dashboard.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setDashboardTab('active')}
+                    className="btn-secondary"
+                    style={{ fontSize: '0.8rem', marginTop: 6 }}
+                  >
+                    View Active Projects
+                  </button>
+                </div>
+              );
+            }
+
+            if (displayedProjects.length === 0) {
+              return (
+                <div 
+                  style={{ 
+                    background: 'var(--bg-card)', 
+                    border: '1px dashed var(--border-color)', 
+                    borderRadius: '20px', 
+                    padding: '44px 20px', 
+                    textAlign: 'center', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    alignItems: 'center', 
+                    gap: '14px' 
+                  }}
+                >
+                  <div 
+                    style={{ 
+                      width: 56, 
+                      height: 56, 
+                      borderRadius: '50%', 
+                      background: 'rgba(99, 102, 241, 0.1)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      color: 'var(--accent-indigo)' 
+                    }}
+                  >
+                    <Search size={24} />
+                  </div>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>No Matching Projects Found</h3>
+                  <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', maxWidth: '420px', margin: 0 }}>
+                    No projects match your current search query or status filter. Try clearing your filters to see more results.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setStatusFilter('ALL');
+                    }}
+                    className="btn-secondary"
+                    style={{ fontSize: '0.8rem', marginTop: 6 }}
+                  >
+                    Clear Search & Filters
+                  </button>
+                </div>
+              );
+            }
+
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+                {displayedProjects.map((proj) => {
+                  const report = dbStore.getLatestBenchmarkReport(proj.id);
+                  const isAnalyzing = proj.status === 'ANALYZING';
+                  return (
+                    <div 
+                      key={proj.id}
+                      className="glass-panel glass-panel-hover"
+                      style={{ 
+                        padding: '24px', 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        justifyContent: 'space-between', 
+                        gap: '16px', 
+                        cursor: 'pointer',
+                        position: 'relative',
+                        opacity: proj.isArchived ? 0.85 : 1
+                      }}
+                      onClick={() => {
+                        openProjectById(proj.id);
+                      }}
+                    >
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {/* Project Card Header with Version, Status, and Action Menu */}
+                        <div className="project-card-header">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span 
+                              style={{ 
+                                fontSize: '0.72rem', 
+                                fontFamily: 'var(--font-mono)', 
+                                padding: '3px 8px', 
+                                borderRadius: 6, 
+                                background: 'var(--bg-surface)', 
+                                color: 'var(--text-muted)', 
+                                border: '1px solid var(--border-color)' 
+                              }}
+                            >
+                              v{proj.currentVersionNumber}.0
+                            </span>
+
+                            {proj.isArchived && (
+                              <span
+                                style={{
+                                  fontSize: '0.68rem',
+                                  fontWeight: 700,
+                                  padding: '2px 7px',
+                                  borderRadius: 4,
+                                  textTransform: 'uppercase',
+                                  background: 'rgba(148, 163, 184, 0.12)',
+                                  color: '#94a3b8',
+                                  border: '1px solid rgba(148, 163, 184, 0.3)',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4
+                                }}
+                              >
+                                <Archive size={10} />
+                                <span>Archived</span>
+                              </span>
+                            )}
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
+                            <span 
+                              style={{ 
+                                fontSize: '0.7rem', 
+                                fontWeight: 700, 
+                                padding: '3px 10px', 
+                                borderRadius: 999, 
+                                textTransform: 'uppercase',
+                                background: proj.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16,185,129,0.12)' : proj.status === 'SUBMITTED' ? 'rgba(245,158,11,0.12)' : isAnalyzing ? 'rgba(168,85,247,0.15)' : 'rgba(99,102,241,0.12)',
+                                color: proj.status === 'APPROVED_FOR_DRAFTING' ? 'var(--accent-emerald)' : proj.status === 'SUBMITTED' ? 'var(--accent-amber)' : isAnalyzing ? 'var(--accent-purple)' : 'var(--accent-indigo)',
+                                border: `1px solid ${proj.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16,185,129,0.3)' : proj.status === 'SUBMITTED' ? 'rgba(245,158,11,0.3)' : isAnalyzing ? 'rgba(168,85,247,0.4)' : 'rgba(99,102,241,0.3)'}`,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 5
+                              }}
+                            >
+                              {isAnalyzing && <RefreshCw size={10} style={{ animation: 'spin 1.5s linear infinite' }} />}
+                              <span>{proj.status.replace(/_/g, ' ')}</span>
+                            </span>
+
+                            {/* Compact Three-Dot Action Button */}
+                            <button
+                              type="button"
+                              className={`project-card-menu-btn ${activeMenuProjectId === proj.id ? 'active' : ''}`}
+                              title="Project actions"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveMenuProjectId(activeMenuProjectId === proj.id ? null : proj.id);
+                              }}
+                            >
+                              <MoreVertical size={16} />
+                            </button>
+
+                            {/* Three-Dot Action Dropdown Menu */}
+                            {activeMenuProjectId === proj.id && (
+                              <div 
+                                className="project-card-dropdown"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <button
+                                  type="button"
+                                  className="project-card-dropdown-item"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveMenuProjectId(null);
+                                    openProjectById(proj.id);
+                                  }}
+                                >
+                                  <ExternalLink size={14} />
+                                  <span>Open / Inspect</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="project-card-dropdown-item"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStartRename(proj);
+                                  }}
+                                >
+                                  <Pencil size={14} />
+                                  <span>Rename</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="project-card-dropdown-item"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDuplicateProject(proj);
+                                  }}
+                                >
+                                  <Copy size={14} />
+                                  <span>Duplicate as Draft</span>
+                                </button>
+
+                                <div className="project-card-dropdown-divider" />
+
+                                {proj.isArchived ? (
+                                  <button
+                                    type="button"
+                                    className="project-card-dropdown-item"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRestoreProject(proj);
+                                    }}
+                                  >
+                                    <RotateCcw size={14} />
+                                    <span>Restore to Active</span>
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    className="project-card-dropdown-item"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleArchiveProject(proj);
+                                    }}
+                                  >
+                                    <Archive size={14} />
+                                    <span>Archive Project</span>
+                                  </button>
+                                )}
+
+                                <button
+                                  type="button"
+                                  className="project-card-dropdown-item destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStartDelete(proj);
+                                  }}
+                                >
+                                  <Trash2 size={14} />
+                                  <span>{proj.isArchived ? 'Delete Permanently' : 'Delete Project'}</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)', margin: 0, lineHeight: 1.3 }}>
+                          {proj.title}
+                        </h3>
+
+                        <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {proj.description}
+                        </p>
+                      </div>
+
+                      <div style={{ paddingTop: '14px', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {report && (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.78rem' }}>
+                            <span style={{ color: 'var(--text-dim)' }}>Review Readiness</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent-indigo)' }}>{report.reviewReadinessScore}%</span>
+                          </div>
+                        )}
+
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+                          <span>Created {new Date(proj.createdAt).toLocaleDateString()}</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--accent-indigo)', fontWeight: 600 }}>
+                            <span>{report ? 'Inspect Report' : isAnalyzing ? 'Resume Analysis' : 'Run Benchmark'}</span>
+                            <ChevronRight size={13} />
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
+          {/* Quick Innovation Starter Presets (Shown when active projects < 3 and not on Archived tab) */}
+          {dashboardTab !== 'archived' && projects.filter(p => !p.isArchived).length < 3 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <h3 style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0 }}>
@@ -1938,7 +2442,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
       {/* SUB-VIEW 3: INNOVATION PROJECT DETAIL & BENCHMARK AUDIT                   */}
       {/* ========================================================================= */}
       {activeTab === 'audit' && activeProject && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', width: '100%' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
           {/* ----------------------------------------------------------------- */}
           {/* 1. PROJECT HEADER                                                 */}
           {/* ----------------------------------------------------------------- */}
@@ -2088,7 +2592,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
           {/* ----------------------------------------------------------------- */}
           {/* 2. PROJECT SUMMARY: TECHNICAL PROBLEM & PROPOSED SOLUTION         */}
           {/* ----------------------------------------------------------------- */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '16px', width: '100%' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '16px', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
             {/* Card 1: Technical Problem */}
             <div className="glass-panel" style={{ padding: '22px 24px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -2328,11 +2832,11 @@ const RESEARCH_PRESETS: RDPreset[] = [
             </div>
 
             {/* Component Status Counts (Clickable Filter Buttons) */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn: 'span 2' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn: '1 / -1', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
               <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-dim)' }}>
                 Component Overlap Breakdown (Click Card to Drill Down)
               </span>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', textAlign: 'center' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '10px', textAlign: 'center', width: '100%', maxWidth: '100%', minWidth: 0 }}>
                 <div 
                   onClick={() => { 
                     setSelectedFilterStatus('KNOWN_PRIOR_ART'); 
@@ -3751,9 +4255,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
       {/* SUB-VIEW 4: PATENT TEAM REVIEW QUEUE & REVIEWER WORKSPACE                 */}
       {/* ========================================================================= */}
       {activeTab === 'review_queue' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
-          {/* Top Header Bar */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+        <div className="review-page-shell">
+          {/* Top Header Bar (Fixed height, flex-shrink: 0) */}
+          <div className="review-page-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <h2 style={{ fontSize: '1.28rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.01em' }}>
                 Patent Team Review Queue
@@ -3768,11 +4272,11 @@ const RESEARCH_PRESETS: RDPreset[] = [
             </div>
           </div>
 
-          {/* Balanced Two-Pane Responsive Workspace */}
-          <div className="review-workspace-grid">
-            {/* LEFT PANE: Full Review Queue (~40% width) */}
-            <div className="review-queue-pane">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2px 2px 2px' }}>
+          {/* Balanced Two-Pane Full-Height Workspace */}
+          <div className="review-workspace">
+            {/* LEFT PANE: Full Review Queue (~38% width, independent internal scroll) */}
+            <div className="proposal-pane glass-panel">
+              <div className="proposal-pane-header">
                 <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                   Incoming Proposals ({reviewSubmissions.length})
                 </span>
@@ -3781,178 +4285,181 @@ const RESEARCH_PRESETS: RDPreset[] = [
                 </span>
               </div>
 
-              {reviewSubmissions.length === 0 ? (
-                <div className="glass-panel" style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--text-muted)', borderRadius: '16px' }}>
-                  <FileCheck size={32} color="var(--accent-indigo)" style={{ margin: '0 auto 10px', display: 'block' }} />
-                  <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-main)' }}>Queue is Clean</div>
-                  <p style={{ fontSize: '0.78rem', margin: '6px 0 0 0', lineHeight: 1.4 }}>No pending patent proposals for evaluation.</p>
-                </div>
-              ) : (
-                reviewSubmissions.map((sub) => {
-                  const proj = dbStore.getInnovationProjectById(sub.innovationProjectId);
-                  const rep = dbStore.getLatestBenchmarkReport(sub.innovationProjectId);
-                  const isSelected = activeSubmission?.id === sub.id;
-                  
-                  const statusColor = 
-                    sub.status === 'APPROVED_FOR_DRAFTING' ? 'var(--accent-emerald)' :
-                    sub.status === 'NEEDS_REVISION' ? 'var(--accent-amber)' :
-                    sub.status === 'REJECTED' ? 'var(--accent-rose)' : 'var(--accent-indigo)';
-                  const statusBg = 
-                    sub.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16, 185, 129, 0.14)' :
-                    sub.status === 'NEEDS_REVISION' ? 'rgba(245, 158, 11, 0.14)' :
-                    sub.status === 'REJECTED' ? 'rgba(244, 63, 94, 0.14)' : 'rgba(99, 102, 241, 0.14)';
-                  const statusBorder = 
-                    sub.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16, 185, 129, 0.35)' :
-                    sub.status === 'NEEDS_REVISION' ? 'rgba(245, 158, 11, 0.35)' :
-                    sub.status === 'REJECTED' ? 'rgba(244, 63, 94, 0.35)' : 'rgba(99, 102, 241, 0.35)';
+              <div className="proposal-list custom-scrollbar">
+                {reviewSubmissions.length === 0 ? (
+                  <div style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--text-muted)', borderRadius: '16px' }}>
+                    <FileCheck size={32} color="var(--accent-indigo)" style={{ margin: '0 auto 10px', display: 'block' }} />
+                    <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-main)' }}>Queue is Clean</div>
+                    <p style={{ fontSize: '0.78rem', margin: '6px 0 0 0', lineHeight: 1.4 }}>No pending patent proposals for evaluation.</p>
+                  </div>
+                ) : (
+                  reviewSubmissions.map((sub) => {
+                    const proj = dbStore.getInnovationProjectById(sub.innovationProjectId);
+                    const rep = dbStore.getLatestBenchmarkReport(sub.innovationProjectId);
+                    const isSelected = activeSubmission?.id === sub.id;
+                    
+                    const statusColor = 
+                      sub.status === 'APPROVED_FOR_DRAFTING' ? 'var(--accent-emerald)' :
+                      sub.status === 'NEEDS_REVISION' ? 'var(--accent-amber)' :
+                      sub.status === 'REJECTED' ? 'var(--accent-rose)' : 'var(--accent-indigo)';
+                    const statusBg = 
+                      sub.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16, 185, 129, 0.14)' :
+                      sub.status === 'NEEDS_REVISION' ? 'rgba(245, 158, 11, 0.14)' :
+                      sub.status === 'REJECTED' ? 'rgba(244, 63, 94, 0.14)' : 'rgba(99, 102, 241, 0.14)';
+                    const statusBorder = 
+                      sub.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16, 185, 129, 0.35)' :
+                      sub.status === 'NEEDS_REVISION' ? 'rgba(245, 158, 11, 0.35)' :
+                      sub.status === 'REJECTED' ? 'rgba(244, 63, 94, 0.35)' : 'rgba(99, 102, 241, 0.35)';
 
-                  return (
-                    <div
-                      key={sub.id}
-                      onClick={() => {
-                        setActiveSubmission(sub);
-                        if (proj) setActiveProject(proj);
-                        if (rep) setActiveReport(ensureFeatureMatches(rep));
-                        setReviewComments(dbStore.getReviewComments(sub.id));
-                      }}
-                      className="glass-panel glass-panel-hover"
-                      style={{
-                        padding: '16px 18px',
-                        borderRadius: '14px',
-                        border: isSelected ? '1.5px solid var(--accent-indigo)' : '1px solid var(--border-color)',
-                        borderLeft: isSelected ? '5px solid var(--accent-indigo)' : '4px solid transparent',
-                        background: isSelected 
-                          ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.16) 0%, rgba(99, 102, 241, 0.05) 100%)' 
-                          : 'var(--bg-card)',
-                        boxShadow: isSelected ? '0 6px 24px rgba(99, 102, 241, 0.22)' : 'var(--shadow-sm)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '10px',
-                        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
-                      }}
-                    >
-                      {/* Submitter & Status Row */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
-                          <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <User size={12} color="var(--accent-indigo)" />
-                          </div>
-                          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {sub.submittedByName}
-                          </span>
-                        </div>
-
-                        <span style={{
-                          fontSize: '0.66rem',
-                          padding: '3px 8px',
-                          borderRadius: 6,
-                          fontWeight: 800,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.04em',
-                          background: statusBg,
-                          color: statusColor,
-                          border: `1px solid ${statusBorder}`,
+                    return (
+                      <div
+                        key={sub.id}
+                        onClick={() => {
+                          setActiveSubmission(sub);
+                          if (proj) setActiveProject(proj);
+                          if (rep) setActiveReport(ensureFeatureMatches(rep));
+                          setReviewComments(dbStore.getReviewComments(sub.id));
+                        }}
+                        className="glass-panel glass-panel-hover"
+                        style={{
+                          padding: '15px 16px',
+                          borderRadius: '14px',
+                          border: isSelected ? '1.5px solid var(--accent-indigo)' : '1px solid var(--border-color)',
+                          borderLeft: isSelected ? '5px solid var(--accent-indigo)' : '4px solid transparent',
+                          background: isSelected 
+                            ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.16) 0%, rgba(99, 102, 241, 0.05) 100%)' 
+                            : 'var(--bg-card)',
+                          boxShadow: isSelected ? '0 6px 24px rgba(99, 102, 241, 0.22)' : 'var(--shadow-sm)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '9px',
+                          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                           flexShrink: 0
-                        }}>
-                          {sub.status.replace(/_/g, ' ')}
-                        </span>
-                      </div>
-
-                      {/* Project Title */}
-                      <h4 style={{
-                        fontWeight: 800,
-                        fontSize: '0.94rem',
-                        color: 'var(--text-main)',
-                        margin: 0,
-                        lineHeight: 1.35,
-                        letterSpacing: '-0.01em'
-                      }}>
-                        {proj?.title || 'Innovation Submission'}
-                      </h4>
-
-                      {/* Domain / Feature Snippet */}
-                      {proj?.domain && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: 'var(--accent-cyan)' }}>
-                          <Tag size={12} />
-                          <span>{proj.domain}</span>
-                        </div>
-                      )}
-
-                      {proj?.technicalProblem && (
-                        <p style={{
-                          fontSize: '0.75rem',
-                          color: 'var(--text-muted)',
-                          margin: 0,
-                          lineHeight: 1.35,
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden'
-                        }}>
-                          {proj.technicalProblem}
-                        </p>
-                      )}
-
-                      {/* Meta Footer Row */}
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        fontSize: '0.72rem',
-                        color: 'var(--text-dim)',
-                        borderTop: '1px solid rgba(255,255,255,0.05)',
-                        paddingTop: '8px',
-                        marginTop: '2px',
-                        flexWrap: 'wrap',
-                        gap: '6px'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <span style={{
-                            fontFamily: 'var(--font-mono)',
-                            fontWeight: 700,
-                            padding: '2px 6px',
-                            borderRadius: 4,
-                            background: 'var(--bg-surface)',
-                            color: 'var(--accent-indigo)',
-                            border: '1px solid var(--border-color)'
-                          }}>
-                            v{sub.versionNumber}.0
-                          </span>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Calendar size={11} />
-                            {new Date(sub.submittedAt).toLocaleDateString()}
-                          </span>
-                        </div>
-
-                        {rep && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{
-                              fontWeight: 800,
-                              color: 'var(--accent-emerald)',
-                              fontFamily: 'var(--font-mono)',
-                              background: 'rgba(16, 185, 129, 0.1)',
-                              padding: '1px 6px',
-                              borderRadius: 4,
-                              border: '1px solid rgba(16, 185, 129, 0.25)'
-                            }}>
-                              {rep.overallNoveltyScore}% Novelty
+                        }}
+                      >
+                        {/* Submitter & Status Row */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
+                            <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <User size={12} color="var(--accent-indigo)" />
+                            </div>
+                            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {sub.submittedByName}
                             </span>
                           </div>
+
+                          <span style={{
+                            fontSize: '0.66rem',
+                            padding: '3px 8px',
+                            borderRadius: 6,
+                            fontWeight: 800,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.04em',
+                            background: statusBg,
+                            color: statusColor,
+                            border: `1px solid ${statusBorder}`,
+                            flexShrink: 0
+                          }}>
+                            {sub.status.replace(/_/g, ' ')}
+                          </span>
+                        </div>
+
+                        {/* Project Title */}
+                        <h4 style={{
+                          fontWeight: 800,
+                          fontSize: '0.92rem',
+                          color: 'var(--text-main)',
+                          margin: 0,
+                          lineHeight: 1.35,
+                          letterSpacing: '-0.01em'
+                        }}>
+                          {proj?.title || 'Innovation Submission'}
+                        </h4>
+
+                        {/* Domain / Feature Snippet */}
+                        {proj?.domain && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: 'var(--accent-cyan)' }}>
+                            <Tag size={12} />
+                            <span>{proj.domain}</span>
+                          </div>
                         )}
+
+                        {proj?.technicalProblem && (
+                          <p style={{
+                            fontSize: '0.75rem',
+                            color: 'var(--text-muted)',
+                            margin: 0,
+                            lineHeight: 1.35,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden'
+                          }}>
+                            {proj.technicalProblem}
+                          </p>
+                        )}
+
+                        {/* Meta Footer Row */}
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          fontSize: '0.72rem',
+                          color: 'var(--text-dim)',
+                          borderTop: '1px solid rgba(255,255,255,0.05)',
+                          paddingTop: '8px',
+                          marginTop: '2px',
+                          flexWrap: 'wrap',
+                          gap: '6px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{
+                              fontFamily: 'var(--font-mono)',
+                              fontWeight: 700,
+                              padding: '2px 6px',
+                              borderRadius: 4,
+                              background: 'var(--bg-surface)',
+                              color: 'var(--accent-indigo)',
+                              border: '1px solid var(--border-color)'
+                            }}>
+                              v{sub.versionNumber}.0
+                            </span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Calendar size={11} />
+                              {new Date(sub.submittedAt).toLocaleDateString()}
+                            </span>
+                          </div>
+
+                          {rep && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{
+                                fontWeight: 800,
+                                color: 'var(--accent-emerald)',
+                                fontFamily: 'var(--font-mono)',
+                                background: 'rgba(16, 185, 129, 0.1)',
+                                padding: '1px 6px',
+                                borderRadius: 4,
+                                border: '1px solid rgba(16, 185, 129, 0.25)'
+                              }}>
+                                {rep.overallNoveltyScore}% Novelty
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })
-              )}
+                    );
+                  })
+                )}
+              </div>
             </div>
 
-            {/* RIGHT PANE: Review Detail Panel (~60% width) */}
-            <div className="review-detail-pane">
+            {/* RIGHT PANE: Review Detail Panel (~62% width, independent internal scroll) */}
+            <div className="detail-pane glass-panel">
               {activeSubmission && activeProject ? (
-                <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '22px' }}>
+                <div className="detail-content custom-scrollbar">
                   {/* Header Section */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '100%', minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <span style={{
                         fontFamily: 'var(--font-mono)',
@@ -3986,7 +4493,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                       )}
                     </div>
 
-                    <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)', margin: '4px 0 0 0', lineHeight: 1.3, letterSpacing: '-0.01em' }}>
+                    <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)', margin: '4px 0 0 0', lineHeight: 1.3, letterSpacing: '-0.01em', overflowWrap: 'break-word', wordBreak: 'break-word' }}>
                       {activeProject.title}
                     </h3>
 
@@ -4012,7 +4519,11 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     borderBottom: '1px solid var(--border-color)',
                     padding: '14px 0',
                     flexWrap: 'wrap',
-                    gap: '12px'
+                    gap: '12px',
+                    width: '100%',
+                    maxWidth: '100%',
+                    minWidth: 0,
+                    boxSizing: 'border-box'
                   }}>
                     {/* Secondary Actions */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
@@ -4069,51 +4580,50 @@ const RESEARCH_PRESETS: RDPreset[] = [
                       background: 'var(--bg-input)',
                       padding: '16px 18px',
                       borderRadius: '14px',
-                      border: '1px solid var(--border-color)'
+                      border: '1px solid var(--border-color)',
+                      width: '100%',
+                      maxWidth: '100%',
+                      minWidth: 0,
+                      boxSizing: 'border-box'
                     }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+                      <div className="review-metric-card">
+                        <span className="review-metric-label">
                           Overall Novelty
                         </span>
-                        <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--accent-emerald)', fontFamily: 'var(--font-mono)' }}>
+                        <div className="review-metric-value" style={{ fontSize: 'clamp(1.1rem, 2vw, 1.35rem)', color: 'var(--accent-emerald)' }}>
                           {activeReport.overallNoveltyScore}%
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+                      <div className="review-metric-card">
+                        <span className="review-metric-label">
                           Review Readiness
                         </span>
-                        <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--accent-indigo)', fontFamily: 'var(--font-mono)' }}>
+                        <div className="review-metric-value" style={{ fontSize: 'clamp(1.1rem, 2vw, 1.35rem)', color: 'var(--accent-indigo)' }}>
                           {activeReport.reviewReadinessScore}%
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+                      <div className="review-metric-card">
+                        <span className="review-metric-label">
                           Obviousness Risk
                         </span>
-                        <div style={{
-                          fontSize: '1.2rem',
-                          fontWeight: 800,
-                          color: activeReport.tsmObviousnessRisk?.level === 'HIGH' ? 'var(--accent-rose)' : 'var(--accent-amber)',
-                          fontFamily: 'var(--font-mono)',
-                          whiteSpace: 'nowrap'
+                        <div className="review-metric-value" style={{
+                          fontSize: 'clamp(0.95rem, 1.8vw, 1.2rem)',
+                          color: activeReport.tsmObviousnessRisk?.level === 'HIGH' ? 'var(--accent-rose)' : 'var(--accent-amber)'
                         }}>
                           {activeReport.tsmObviousnessRisk?.score || 95}% ({activeReport.tsmObviousnessRisk?.level || 'HIGH'})
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+                      <div className="review-metric-card">
+                        <span className="review-metric-label">
                           Prior-Art Concern
                         </span>
-                        <div style={{
-                          fontSize: '0.88rem',
-                          fontWeight: 800,
+                        <div className="review-metric-value" style={{
+                          fontSize: 'clamp(0.82rem, 1.5vw, 0.92rem)',
                           color: activeReport.priorArtConcern === 'HIGH' ? 'var(--accent-rose)' : activeReport.priorArtConcern === 'MODERATE' ? 'var(--accent-amber)' : 'var(--accent-emerald)',
-                          marginTop: 4,
-                          whiteSpace: 'nowrap'
+                          marginTop: 4
                         }}>
                           {activeReport.priorArtConcern} CONCERN
                         </div>
@@ -4122,26 +4632,23 @@ const RESEARCH_PRESETS: RDPreset[] = [
                   )}
 
                   {/* Version History Audit Trail */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
                     <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                       Version Audit Trail ({dbStore.getInnovationVersions(activeProject.id).length} Versions Recorded):
                     </span>
-                    <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '6px' }}>
+                    <div className="review-version-list">
                       {dbStore.getInnovationVersions(activeProject.id).map((v) => {
                         const isCurrentVersion = v.versionNumber === activeSubmission.versionNumber;
                         return (
                           <div
                             key={v.id}
+                            className="review-version-card"
                             style={{
                               background: isCurrentVersion ? 'rgba(99, 102, 241, 0.18)' : 'var(--bg-input)',
                               border: `1px solid ${isCurrentVersion ? 'var(--accent-indigo)' : 'var(--border-color)'}`,
                               borderRadius: 10,
                               padding: '8px 14px',
                               fontSize: '0.75rem',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px',
-                              flexShrink: 0,
                               boxShadow: isCurrentVersion ? '0 2px 10px rgba(99, 102, 241, 0.2)' : 'none'
                             }}
                           >
@@ -4155,7 +4662,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                   </div>
 
                   {/* Technical Problem & Proposed Solution (2-column desktop, 1-col mobile) */}
-                  <div className="review-tech-specs-grid" style={{ fontSize: '0.84rem' }}>
+                  <div className="review-tech-specs-grid" style={{ fontSize: '0.84rem', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
                     <div style={{
                       background: 'var(--bg-input)',
                       padding: '16px 18px',
@@ -4163,12 +4670,15 @@ const RESEARCH_PRESETS: RDPreset[] = [
                       border: '1px solid var(--border-color)',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '6px'
+                      gap: '6px',
+                      minWidth: 0,
+                      maxWidth: '100%',
+                      boxSizing: 'border-box'
                     }}>
                       <span style={{ color: 'var(--accent-cyan)', fontWeight: 800, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                         Technical Problem:
                       </span>
-                      <p style={{ color: 'var(--text-main)', margin: 0, lineHeight: 1.5 }}>
+                      <p style={{ color: 'var(--text-main)', margin: 0, lineHeight: 1.5, overflowWrap: 'break-word', wordBreak: 'break-word' }}>
                         {activeProject.technicalProblem}
                       </p>
                     </div>
@@ -4180,19 +4690,22 @@ const RESEARCH_PRESETS: RDPreset[] = [
                       border: '1px solid var(--border-color)',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '6px'
+                      gap: '6px',
+                      minWidth: 0,
+                      maxWidth: '100%',
+                      boxSizing: 'border-box'
                     }}>
                       <span style={{ color: 'var(--accent-indigo)', fontWeight: 800, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                         Proposed Solution & Architecture:
                       </span>
-                      <p style={{ color: 'var(--text-main)', margin: 0, lineHeight: 1.5 }}>
+                      <p style={{ color: 'var(--text-main)', margin: 0, lineHeight: 1.5, overflowWrap: 'break-word', wordBreak: 'break-word' }}>
                         {activeProject.proposedSolution}
                       </p>
                     </div>
                   </div>
 
                   {/* Review Thread & Comments */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingTop: '16px', borderTop: '1px solid var(--border-color)', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <h4 style={{ fontSize: '0.76rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-dim)', letterSpacing: '0.04em', margin: 0 }}>
                         Review Thread & Examiner Feedback ({reviewComments.length})
@@ -4202,7 +4715,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '220px', overflowY: 'auto', paddingRight: '4px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px', width: '100%', maxWidth: '100%', minWidth: 0 }}>
                       {reviewComments.map((comm) => (
                         <div
                           key={comm.id}
@@ -4214,10 +4727,13 @@ const RESEARCH_PRESETS: RDPreset[] = [
                             fontSize: '0.82rem',
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: '4px'
+                            gap: '4px',
+                            minWidth: 0,
+                            maxWidth: '100%',
+                            boxSizing: 'border-box'
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 700, color: 'var(--text-main)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 700, color: 'var(--text-main)', flexWrap: 'wrap', gap: '4px' }}>
                             <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <User size={13} color="var(--accent-cyan)" />
                               {comm.authorName}
@@ -4226,24 +4742,24 @@ const RESEARCH_PRESETS: RDPreset[] = [
                               {new Date(comm.createdAt).toLocaleTimeString()}
                             </span>
                           </div>
-                          <p style={{ color: 'var(--text-muted)', margin: 0, lineHeight: 1.45 }}>{comm.comment}</p>
+                          <p style={{ color: 'var(--text-muted)', margin: 0, lineHeight: 1.45, overflowWrap: 'break-word', wordBreak: 'break-word' }}>{comm.comment}</p>
                         </div>
                       ))}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ display: 'flex', gap: '10px', width: '100%', maxWidth: '100%', minWidth: 0, flexWrap: 'wrap' }}>
                       <input
                         type="text"
                         value={newCommentText}
                         onChange={(e) => setNewCommentText(e.target.value)}
                         placeholder="Add review feedback, guidance, or question for R&D submitter..."
                         className="input-field"
-                        style={{ flex: 1 }}
+                        style={{ flex: '1 1 220px', minWidth: 0 }}
                       />
                       <button
                         onClick={handleAddReviewComment}
                         className="btn-secondary"
-                        style={{ padding: '8px 18px', fontSize: '0.8rem' }}
+                        style={{ padding: '8px 18px', fontSize: '0.8rem', whiteSpace: 'nowrap', flexShrink: 0 }}
                       >
                         Post Feedback
                       </button>
@@ -4251,7 +4767,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                   </div>
                 </div>
               ) : (
-                <div className="glass-panel" style={{ padding: '56px 32px', textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.9rem', borderRadius: '18px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '32px', gap: '14px' }}>
                   <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(99, 102, 241, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
                     <Lightbulb size={28} />
                   </div>
@@ -4896,6 +5412,205 @@ const RESEARCH_PRESETS: RDPreset[] = [
             <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '14px' }}>
               <button onClick={() => setShowNoRevisionWarningModal(false)} className="btn-secondary" style={{ fontSize: '0.78rem' }}>
                 Cancel & Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: RENAME INNOVATION PROJECT MODAL                                    */}
+      {/* ========================================================================= */}
+      {showRenameModal && projectToRename && (
+        <div 
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            background: 'rgba(0,0,0,0.8)', 
+            backdropFilter: 'blur(8px)', 
+            zIndex: 1100, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            padding: '20px' 
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowRenameModal(false);
+              setProjectToRename(null);
+            }
+          }}
+        >
+          <div 
+            style={{ 
+              background: 'var(--bg-card-solid)', 
+              border: '1px solid var(--border-color)', 
+              borderRadius: '20px', 
+              padding: '28px', 
+              maxWidth: '520px', 
+              width: '100%', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '20px', 
+              boxShadow: '0 25px 50px rgba(0,0,0,0.8)' 
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: 42, height: 42, borderRadius: 10, background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Pencil size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Rename Innovation Project</h3>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>v{projectToRename.currentVersionNumber}.0 • {projectToRename.id}</span>
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowRenameModal(false);
+                  setProjectToRename(null);
+                }} 
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4 }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-dim)' }}>Project Title</label>
+              <input
+                type="text"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                placeholder="Enter new project title..."
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleConfirmRename();
+                  if (e.key === 'Escape') {
+                    setShowRenameModal(false);
+                    setProjectToRename(null);
+                  }
+                }}
+                style={{
+                  padding: '12px 14px',
+                  background: 'var(--bg-input)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  color: 'var(--text-main)',
+                  fontSize: '0.92rem',
+                  outline: 'none'
+                }}
+              />
+              {!renameValue.trim() && (
+                <span style={{ fontSize: '0.75rem', color: 'var(--accent-rose)' }}>Project title cannot be empty.</span>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowRenameModal(false);
+                  setProjectToRename(null);
+                }}
+                className="btn-secondary"
+                style={{ fontSize: '0.85rem' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRename}
+                disabled={!renameValue.trim()}
+                className="btn-primary"
+                style={{ fontSize: '0.85rem', opacity: !renameValue.trim() ? 0.6 : 1 }}
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: DELETE CONFIRMATION MODAL                                          */}
+      {/* ========================================================================= */}
+      {showDeleteModal && projectToDelete && (
+        <div 
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            background: 'rgba(0,0,0,0.85)', 
+            backdropFilter: 'blur(8px)', 
+            zIndex: 1100, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            padding: '20px' 
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowDeleteModal(false);
+              setProjectToDelete(null);
+            }
+          }}
+        >
+          <div 
+            style={{ 
+              background: 'var(--bg-card-solid)', 
+              border: '1px solid rgba(244, 63, 94, 0.4)', 
+              borderRadius: '20px', 
+              padding: '28px', 
+              maxWidth: '520px', 
+              width: '100%', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '20px', 
+              boxShadow: '0 25px 50px rgba(0,0,0,0.8)' 
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(244, 63, 94, 0.15)', color: 'var(--accent-rose)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid rgba(244, 63, 94, 0.3)' }}>
+                <Trash2 size={24} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                  {projectToDelete.isArchived ? 'Permanently Delete Project?' : 'Delete Innovation Project?'}
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '6px 0 0 0', lineHeight: 1.4 }}>
+                  Are you sure you want to delete <strong style={{ color: 'var(--text-main)' }}>"{projectToDelete.title}"</strong>?
+                </p>
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(244, 63, 94, 0.08)', border: '1px solid rgba(244, 63, 94, 0.25)', borderRadius: '12px', padding: '14px', fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+              <div style={{ fontWeight: 700, color: 'var(--accent-rose)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <AlertTriangle size={14} />
+                <span>Warning: Cascading deletion cannot be undone</span>
+              </div>
+              This will permanently remove the project record along with all associated benchmark reports, version audit histories, review submissions, and examiner comments.
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setProjectToDelete(null);
+                }}
+                className="btn-secondary"
+                style={{ fontSize: '0.85rem' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="btn-primary"
+                style={{ fontSize: '0.85rem', background: 'var(--accent-rose)', borderColor: 'var(--accent-rose)' }}
+              >
+                <Trash2 size={14} />
+                <span>Yes, Delete Project</span>
               </button>
             </div>
           </div>

@@ -282,6 +282,15 @@ export async function searchRealtimeAcademicPapers(
   };
 }
 
+function createTimeoutSignal(ms: number): AbortSignal {
+  if (typeof AbortSignal !== 'undefined' && typeof (AbortSignal as any).timeout === 'function') {
+    return (AbortSignal as any).timeout(ms);
+  }
+  const controller = new AbortController();
+  setTimeout(() => controller.abort(), ms);
+  return controller.signal;
+}
+
 /**
  * Fetch from Semantic Scholar Graph API
  */
@@ -295,7 +304,10 @@ async function fetchSemanticScholar(query: string, filters: AcademicSearchFilter
       url += `&year=${from}-${to}`;
     }
 
-    const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    const response = await fetch(url, { 
+      headers: { 'Accept': 'application/json' },
+      signal: createTimeoutSignal(2200)
+    });
     if (response.ok) {
       const data = await response.json();
       if (data && Array.isArray(data.data)) {
@@ -323,7 +335,9 @@ async function fetchOpenAlex(query: string, filters: AcademicSearchFilters): Pro
       url += `&filter=publication_year:${from}-${to}`;
     }
 
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      signal: createTimeoutSignal(2200)
+    });
     if (response.ok) {
       const data = await response.json();
       if (data && Array.isArray(data.results)) {
@@ -346,7 +360,9 @@ async function fetchCrossref(query: string, filters: AcademicSearchFilters): Pro
     if (filters.yearFrom) {
       url += `&filter=from-pub-date:${filters.yearFrom}-01-01`;
     }
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      signal: createTimeoutSignal(2200)
+    });
     if (response.ok) {
       const data = await response.json();
       if (data && data.message && Array.isArray(data.message.items)) {

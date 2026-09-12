@@ -98,30 +98,61 @@ export interface EvidenceMatch {
 
 /**
  * Find the best-matching evidence chunk for a given claim element text.
- * Returns the top match and its Jaccard similarity score.
+ * Uses containment scoring and exact phrase matching to accurately reflect
+ * whether the element is disclosed in the specification.
  */
 export function findBestEvidence(
   elementText: string,
   chunks: TextChunk[]
 ): EvidenceMatch | null {
-  if (chunks.length === 0) return null;
+  if (chunks.length === 0 || !elementText.trim()) return null;
 
-  const elemTokens = tokenize(elementText);
+  const cleanElem = elementText.toLowerCase().trim();
+  const elemTokens = tokenize(cleanElem);
   let best: EvidenceMatch | null = null;
 
   for (const chunk of chunks) {
-    const chunkTokens = tokenize(chunk.text);
-    const score = jaccardSimilarity(elemTokens, chunkTokens);
+    const chunkLower = chunk.text.toLowerCase();
 
-    if (!best || score > best.score) {
-      // Find the single sentence with highest overlap
-      let bestSentence = chunk.sentences[0] || chunk.text.slice(0, 100);
-      let bestSentScore = 0;
-      for (const s of chunk.sentences) {
-        const st = jaccardSimilarity(elemTokens, tokenize(s));
-        if (st > bestSentScore) { bestSentScore = st; bestSentence = s; }
+    // 1. Check each sentence in the chunk for exact phrase or high token containment
+    for (const s of chunk.sentences) {
+      const sLower = s.toLowerCase();
+      let sentScore = 0;
+
+      // Exact substring match in sentence
+      if (cleanElem.length > 2 && sLower.includes(cleanElem)) {
+        sentScore = 1.0;
+      } else if (elemTokens.size > 0) {
+        const sTokens = tokenize(sLower);
+        let inter = 0;
+        elemTokens.forEach(t => { if (sTokens.has(t)) inter++; });
+        const containment = inter / elemTokens.size;
+        const jaccard = jaccardSimilarity(elemTokens, sTokens);
+        // Weighted blend: 85% containment + 15% jaccard context
+        sentScore = Math.min(1.0, containment * 0.85 + jaccard * 0.15);
       }
-      best = { chunk, score, bestSentence };
+
+      if (!best || sentScore > best.score) {
+        best = { chunk, score: sentScore, bestSentence: s };
+      }
+    }
+
+    // 2. Also check whole chunk if individual sentences were split or dense
+    if (!best || best.score < 0.65) {
+      let chunkScore = 0;
+      if (cleanElem.length > 2 && chunkLower.includes(cleanElem)) {
+        chunkScore = 0.95;
+      } else if (elemTokens.size > 0) {
+        const chunkTokens = tokenize(chunkLower);
+        let inter = 0;
+        elemTokens.forEach(t => { if (chunkTokens.has(t)) inter++; });
+        chunkScore = (inter / elemTokens.size) * 0.9;
+      }
+
+      if (!best || chunkScore > best.score) {
+        const bestSentence = chunk.sentences[0] || chunk.text.slice(0, 100);
+        best = { chunk, score: chunkScore, bestSentence };
+      }
     }
   }
 
@@ -151,10 +182,11 @@ export function groundClaimElement(
   elementText: string,
   chunks: TextChunk[]
 ): ClaimEvidenceRef {
-  const searchTerm = `${elementLabel} ${elementText}`;
-  const match = findBestEvidence(searchTerm, chunks);
+  // Use elementText if substantive; fallback to elementLabel
+  const targetText = (elementText && elementText.trim().length > 2) ? elementText.trim() : elementLabel.trim();
+  const match = findBestEvidence(targetText, chunks);
 
-  if (!match || match.score === 0) {
+  if (!match || match.score < 0.15) {
     return {
       elementText: elementLabel,
       sourceSection: 'No matching source found',

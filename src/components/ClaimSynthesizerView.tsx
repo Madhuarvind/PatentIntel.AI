@@ -36,7 +36,7 @@ import {
   Edit3, RefreshCw, Plus, Save, Download,
   GitBranch, History, Layers, ArrowRight,
   FileText, Copy, CheckCheck, Info, Zap, BarChart3,
-  ChevronUp, AlertCircle, Clock
+  ChevronUp, AlertCircle, Clock, Sparkles
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -847,7 +847,7 @@ export const ClaimSynthesizerView: React.FC<ClaimSynthesizerViewProps> = ({ init
   const hasResults = candidates.length > 0;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, height: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, minHeight: '100%', paddingBottom: 48 }}>
 
       {/* ── HEADER ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -888,13 +888,67 @@ export const ClaimSynthesizerView: React.FC<ClaimSynthesizerViewProps> = ({ init
         </span>
       </div>
 
-      {/* ── MAIN 3-COLUMN LAYOUT ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr 320px', gap: 20, minHeight: 0 }}>
+      {/* ── LINKED R&D INNOVATION HANDOFF BANNER ── */}
+      {initialData?.title && (
+        <div style={{
+          background: 'linear-gradient(90deg, rgba(0, 242, 254, 0.12) 0%, rgba(99, 102, 241, 0.12) 100%)',
+          border: '1px solid rgba(0, 242, 254, 0.4)',
+          borderRadius: '14px',
+          padding: '14px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '16px',
+          boxShadow: '0 6px 24px rgba(0, 242, 254, 0.08)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{
+              width: 38,
+              height: 38,
+              borderRadius: 10,
+              background: 'rgba(0, 242, 254, 0.18)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1px solid rgba(0, 242, 254, 0.4)',
+              flexShrink: 0
+            }}>
+              <Sparkles size={18} color="var(--accent-cyan)" />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--accent-cyan)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                Linked R&D Innovation Project · Automatic Specification Handoff
+              </div>
+              <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', marginTop: 2 }}>
+                {initialData.title}
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '4px 12px', borderRadius: 999, background: 'rgba(16, 185, 129, 0.18)', color: 'var(--accent-emerald)', border: '1px solid rgba(16, 185, 129, 0.4)' }}>
+              ✓ APPROVED FOR DRAFTING
+            </span>
+          </div>
+        </div>
+      )}
 
-        {/* ════════════════════ LEFT PANEL — INPUT ════════════════════ */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', maxHeight: 'calc(100vh - 340px)' }}>
-          <div className="glass-panel" style={{ padding: 18 }}>
-            <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Technical Specification</div>
+      {/* ── MAIN 3-COLUMN LAYOUT ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '320px minmax(0, 1fr) 330px', gap: 18, minHeight: 0, alignItems: 'start' }}>
+
+        {/* ════════════════════ LEFT PANEL — INPUT & CONFIG ════════════════════ */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="glass-panel" style={{ padding: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Technical Specification
+              </span>
+              {importedPatentId && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', color: 'var(--accent-emerald)', fontWeight: 700 }}>
+                  <CheckCircle2 size={11} /> {importedPatentId}
+                  <button onClick={() => setImportedPatentId(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', padding: 0 }}>✕</button>
+                </span>
+              )}
+            </div>
 
             <textarea
               id="claim-synthesizer-spec-input"
@@ -902,120 +956,127 @@ export const ClaimSynthesizerView: React.FC<ClaimSynthesizerViewProps> = ({ init
               onChange={e => setSourceText(e.target.value)}
               className="input-field"
               placeholder="Describe the invention, system architecture, components, functions, technical relationships, and constraints..."
-              style={{ width: '100%', minHeight: 180, resize: 'vertical', fontFamily: 'var(--font-sans)', fontSize: '0.85rem', lineHeight: 1.6 }}
+              style={{ width: '100%', minHeight: 140, resize: 'vertical', fontFamily: 'var(--font-sans)', fontSize: '0.82rem', lineHeight: 1.55 }}
             />
 
             <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-              <button className="btn-secondary" style={{ flex: 1, fontSize: '0.8rem', padding: '8px 10px' }} onClick={() => fileInputRef.current?.click()}>
-                <Upload size={13} /> Upload Spec
+              <button className="btn-secondary" style={{ flex: 1, fontSize: '0.76rem', padding: '6px 8px' }} onClick={() => fileInputRef.current?.click()}>
+                <Upload size={12} /> Upload Spec
               </button>
-              <button className="btn-secondary" style={{ flex: 1, fontSize: '0.8rem', padding: '8px 10px' }} onClick={() => setIsImportModalOpen(true)}>
-                <FolderOpen size={13} /> From Workspace
+              <button className="btn-secondary" style={{ flex: 1, fontSize: '0.76rem', padding: '6px 8px' }} onClick={() => setIsImportModalOpen(true)}>
+                <FolderOpen size={12} /> From Workspace
               </button>
               <input ref={fileInputRef} type="file" accept=".txt,.pdf,.md,.text" style={{ display: 'none' }} onChange={handleFileUpload} />
             </div>
-
-            {importedPatentId && (
-              <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.76rem', color: 'var(--accent-emerald)' }}>
-                <CheckCircle2 size={12} /> Imported from: {importedPatentId}
-                <button onClick={() => setImportedPatentId(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', padding: 0, marginLeft: 2 }}>✕</button>
-              </div>
-            )}
           </div>
 
-          {/* Options */}
-          <div className="glass-panel" style={{ padding: 18 }}>
-            <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Configuration</div>
-
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>Technology Domain (optional)</label>
-              <input value={technologyDomain} onChange={e => setTechnologyDomain(e.target.value)} className="input-field" placeholder="e.g. telecommunications, AI/ML, biotech…" style={{ fontSize: '0.84rem' }} />
+          {/* Configuration */}
+          <div className="glass-panel" style={{ padding: 16 }}>
+            <div style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
+              Drafting Strategy & Options
             </div>
 
+            {/* Strategy Pills */}
             <div style={{ marginBottom: 14 }}>
-              <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>Target Jurisdiction (optional)</label>
-              <select value={targetJurisdiction} onChange={e => setTargetJurisdiction(e.target.value)} className="input-field" style={{ fontSize: '0.84rem' }}>
-                <option value="">Not specified</option>
-                <option value="US">United States (USPTO)</option>
-                <option value="EP">European Patent Office (EPO)</option>
-                <option value="PCT">PCT International</option>
-                <option value="CN">China (CNIPA)</option>
-                <option value="JP">Japan (JPO)</option>
-              </select>
-            </div>
-
-            {/* Claim Strategy */}
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>Claim Strategy</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>Claim Scope Strategy</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
                 {([
-                  { value: 'broad', label: 'Broadest Supported Claim', desc: 'Max scope within disclosure' },
-                  { value: 'balanced', label: 'Balanced Claim', desc: 'Default — recommended' },
-                  { value: 'narrow', label: 'Narrow Technical Claim', desc: 'Exact terminology preserved' },
-                ] as { value: ClaimStrategy; label: string; desc: string }[]).map(opt => (
-                  <label key={opt.value} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', padding: '8px 10px', borderRadius: 8, background: strategy === opt.value ? 'rgba(0,242,254,0.07)' : 'transparent', border: `1px solid ${strategy === opt.value ? 'rgba(0,242,254,0.25)' : 'transparent'}`, transition: 'all 0.15s' }}>
-                    <input type="radio" name="strategy" value={opt.value} checked={strategy === opt.value} onChange={() => setStrategy(opt.value)} style={{ marginTop: 3, accentColor: 'var(--accent-cyan)' }} />
-                    <div>
-                      <div style={{ fontSize: '0.83rem', fontWeight: 600, color: strategy === opt.value ? 'var(--accent-cyan)' : 'var(--text-main)' }}>{opt.label}</div>
-                      <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)' }}>{opt.desc}</div>
-                    </div>
-                  </label>
+                  { value: 'broad', label: 'Broad' },
+                  { value: 'balanced', label: 'Balanced' },
+                  { value: 'narrow', label: 'Narrow' },
+                ] as { value: ClaimStrategy; label: string }[]).map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setStrategy(opt.value)}
+                    style={{
+                      padding: '7px 4px',
+                      borderRadius: 8,
+                      fontSize: '0.78rem',
+                      fontWeight: strategy === opt.value ? 700 : 500,
+                      border: `1px solid ${strategy === opt.value ? 'var(--accent-cyan)' : 'var(--border-color)'}`,
+                      background: strategy === opt.value ? 'rgba(0,242,254,0.18)' : 'var(--bg-surface)',
+                      color: strategy === opt.value ? 'var(--accent-cyan)' : 'var(--text-muted)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      textAlign: 'center'
+                    }}
+                  >
+                    {opt.label}
+                  </button>
                 ))}
               </div>
-              <p style={{ fontSize: '0.74rem', color: 'var(--text-dim)', marginTop: 6, lineHeight: 1.4 }}>
-                "Broad" means broadest within the supplied disclosure — not unlimited scope.
-              </p>
             </div>
 
-            {/* Claim Categories */}
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>Claim Categories</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            {/* Domain & Jurisdiction side-by-side */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+              <div>
+                <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Tech Domain</label>
+                <input value={technologyDomain} onChange={e => setTechnologyDomain(e.target.value)} className="input-field" placeholder="Domain…" style={{ fontSize: '0.78rem', padding: '6px 8px' }} />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Jurisdiction</label>
+                <select value={targetJurisdiction} onChange={e => setTargetJurisdiction(e.target.value)} className="input-field" style={{ fontSize: '0.78rem', padding: '6px 8px' }}>
+                  <option value="">Global / Auto</option>
+                  <option value="US">USPTO (US)</option>
+                  <option value="EP">EPO (Europe)</option>
+                  <option value="PCT">PCT (WIPO)</option>
+                  <option value="IN">Indian Patent Office</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Claim Categories 2x2 */}
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>Claim Categories</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                 {([
                   { value: 'apparatus', label: 'Apparatus / System' },
                   { value: 'method', label: 'Method' },
-                  { value: 'computer-method', label: 'Computer-implemented Method' },
-                  { value: 'crm', label: 'Computer-readable Medium' },
+                  { value: 'computer-method', label: 'Comp. Method' },
+                  { value: 'crm', label: 'CRM / Software' },
                 ] as { value: ClaimCategory; label: string }[]).map(cat => (
-                  <label key={cat.value} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                    <input type="checkbox" checked={claimCategories.includes(cat.value)} onChange={() => toggleCategory(cat.value)} style={{ accentColor: 'var(--accent-cyan)', width: 14, height: 14 }} />
-                    {cat.label}
+                  <label key={cat.value} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    <input type="checkbox" checked={claimCategories.includes(cat.value)} onChange={() => toggleCategory(cat.value)} style={{ accentColor: 'var(--accent-cyan)', width: 13, height: 13 }} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.label}</span>
                   </label>
                 ))}
               </div>
             </div>
 
             {/* Dependent claims count */}
-            <div>
-              <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>
-                Dependent Claims: <strong style={{ color: 'var(--accent-cyan)' }}>{dependentClaimCount}</strong>
-              </label>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>Dependent Claims</span>
+                <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--accent-cyan)' }}>{dependentClaimCount} claims</span>
+              </div>
               <input type="range" min={2} max={12} value={dependentClaimCount} onChange={e => setDependentClaimCount(Number(e.target.value))}
                 style={{ width: '100%', accentColor: 'var(--accent-cyan)' }} />
             </div>
+
+            {/* Prominent Generate Button */}
+            <button
+              id="claim-synthesizer-generate-btn"
+              className="btn-primary"
+              onClick={handleGenerate}
+              disabled={isGenerating || !sourceText.trim()}
+              style={{ width: '100%', padding: '12px', fontSize: '0.9rem', fontWeight: 800, opacity: isGenerating || !sourceText.trim() ? 0.6 : 1, justifyContent: 'center' }}
+            >
+              {isGenerating ? <><RefreshCw size={15} style={{ animation: 'spin 1s linear infinite' }} /> {generationStep || 'Synthesizing…'}</> : <><Wand2 size={15} /> Synthesize Patent Claims</>}
+            </button>
+
+            {generateError && (
+              <div style={{ background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.3)', borderRadius: 10, padding: '10px 12px', display: 'flex', gap: 8, marginTop: 10 }}>
+                <AlertCircle size={14} color="var(--accent-rose)" style={{ flexShrink: 0, marginTop: 1 }} />
+                <p style={{ fontSize: '0.78rem', color: 'var(--accent-rose)', margin: 0, lineHeight: 1.4 }}>{generateError}</p>
+              </div>
+            )}
           </div>
-
-          {/* Generate Button */}
-          <button
-            id="claim-synthesizer-generate-btn"
-            className="btn-primary"
-            onClick={handleGenerate}
-            disabled={isGenerating || !sourceText.trim()}
-            style={{ width: '100%', padding: '13px', fontSize: '0.95rem', fontWeight: 800, opacity: isGenerating || !sourceText.trim() ? 0.6 : 1, justifyContent: 'center' }}
-          >
-            {isGenerating ? <><RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> {generationStep || 'Generating…'}</> : <><Wand2 size={16} /> Generate Claims</>}
-          </button>
-
-          {generateError && (
-            <div style={{ background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.3)', borderRadius: 10, padding: '12px 14px', display: 'flex', gap: 8 }}>
-              <AlertCircle size={15} color="var(--accent-rose)" style={{ flexShrink: 0, marginTop: 1 }} />
-              <p style={{ fontSize: '0.82rem', color: 'var(--accent-rose)', margin: 0, lineHeight: 1.5 }}>{generateError}</p>
-            </div>
-          )}
         </div>
 
         {/* ════════════════════ CENTRE PANEL — CLAIMS ════════════════════ */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', maxHeight: 'calc(100vh - 340px)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', maxHeight: 'calc(100vh - 230px)' }} className="custom-scrollbar">
 
           {!hasResults && !isGenerating && (
             <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40, minHeight: 300 }}>
@@ -1024,7 +1085,7 @@ export const ClaimSynthesizerView: React.FC<ClaimSynthesizerViewProps> = ({ init
               </div>
               <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 8px' }}>Ready to Synthesize</h3>
               <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', textAlign: 'center', maxWidth: 340, lineHeight: 1.6, margin: 0 }}>
-                Provide a technical specification in the left panel and click <strong>Generate Claims</strong> to begin AI-assisted drafting.
+                Provide a technical specification in the left panel and click <strong>Synthesize Patent Claims</strong> to begin AI-assisted drafting.
               </p>
               <div style={{ marginTop: 20, padding: '12px 16px', background: 'rgba(99,102,241,0.06)', borderRadius: 10, border: '1px solid rgba(99,102,241,0.15)', maxWidth: 380 }}>
                 <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent-indigo)', marginBottom: 6 }}>Try the acceptance test spec:</div>
@@ -1132,7 +1193,7 @@ export const ClaimSynthesizerView: React.FC<ClaimSynthesizerViewProps> = ({ init
         </div>
 
         {/* ════════════════════ RIGHT PANEL — EVIDENCE ════════════════════ */}
-        <div className="glass-panel" style={{ padding: 18, overflowY: 'auto', maxHeight: 'calc(100vh - 340px)' }}>
+        <div className="glass-panel custom-scrollbar" style={{ padding: 18, overflowY: 'auto', maxHeight: 'calc(100vh - 230px)' }}>
           <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>Evidence & Grounding</div>
           <EvidencePanel claim={selectedClaim} />
         </div>

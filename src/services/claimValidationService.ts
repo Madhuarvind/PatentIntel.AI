@@ -66,21 +66,20 @@ function countUnsupportedElements(claims: GeneratedClaim[]): number {
 
 /** Rule 7: Detect terminology conflicts (same concept referenced by different terms) */
 function detectTerminologyConflicts(claims: GeneratedClaim[]): { count: number; examples: string[] } {
-  // Build vocabulary per claim set
-  const terms: string[] = [];
-  for (const c of claims) {
-    for (const el of c.elements || []) {
-      if (el.label) terms.push(el.label.toLowerCase().trim());
-    }
-  }
+  // Build deduplicated vocabulary of distinct substantive terms across claims
+  const uniqueTerms = [...new Set(
+    claims.flatMap(c => (c.elements || []).map(el => (el.label || el.text || '').toLowerCase().trim()))
+      .filter(t => t.length > 3)
+  )];
 
-  // Look for pairs that share the same root stem but different surface forms
-  // Simple heuristic: flag if two distinct terms are substrings of each other
   const conflicts: string[] = [];
-  for (let i = 0; i < terms.length; i++) {
-    for (let j = i + 1; j < terms.length; j++) {
-      const a = terms[i], b = terms[j];
-      if (a !== b && (a.includes(b.slice(0, 5)) || b.includes(a.slice(0, 5)))) {
+  for (let i = 0; i < uniqueTerms.length; i++) {
+    for (let j = i + 1; j < uniqueTerms.length; j++) {
+      const a = uniqueTerms[i], b = uniqueTerms[j];
+      // Flag only genuine conflicting variations (e.g. hyphenation / separator inconsistency like "transceiver" vs "trans-ceiver")
+      const normA = a.replace(/[-\s_]/g, '');
+      const normB = b.replace(/[-\s_]/g, '');
+      if (a !== b && normA === normB && normA.length > 4) {
         const pair = `"${a}" / "${b}"`;
         if (!conflicts.includes(pair)) conflicts.push(pair);
       }

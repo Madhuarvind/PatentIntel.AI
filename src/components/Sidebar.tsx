@@ -13,7 +13,9 @@ import {
   Settings,
   Activity,
   Database,
-  PenTool
+  PenTool,
+  Lightbulb,
+  FileCheck
 } from 'lucide-react';
 
 interface Props {
@@ -48,6 +50,8 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
     {
       title: 'ANALYSIS & REASONING',
       items: [
+        { id: 'idea-novelty', label: 'R&D Idea Benchmarker', icon: Lightbulb, badge: 'R&D' },
+        { id: 'review-queue', label: 'Patent Review Queue', icon: FileCheck, badge: 'Review' },
         { id: 'claims', label: 'Claim Decomposition', icon: Layers },
         { id: 'mapping', label: 'Claim-to-Claim Mapping', icon: GitCompare, badge: 'Core' },
         { id: 'timeline', label: 'Prior-Art Timeline', icon: Clock },
@@ -65,11 +69,7 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
   ];
 
   return (
-    <aside style={{
-      width: '285px',
-      minWidth: '285px',
-      height: '100%',
-      flexShrink: 0,
+    <aside className="app-sidebar" style={{
       borderRight: '1px solid var(--border-color)',
       background: 'var(--bg-card-solid)',
       padding: '20px 14px',
@@ -83,7 +83,7 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
         {sections.map((section, sIdx) => (
           <div key={sIdx}>
-            <div style={{
+            <div className="sidebar-section-title" style={{
               fontSize: '0.68rem',
               fontWeight: 800,
               color: 'var(--text-dim)',
@@ -104,36 +104,39 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
                     onClick={() => onSelectView(item.id)}
                     style={{
                       width: '100%',
-                      padding: '10px 10px',
-                      borderRadius: '10px',
+                      padding: '10px 12px',
+                      borderRadius: '12px',
                       border: 'none',
-                      background: isActive ? 'rgba(0, 242, 254, 0.1)' : 'transparent',
+                      background: isActive 
+                        ? 'linear-gradient(90deg, rgba(0, 242, 254, 0.15) 0%, rgba(99, 102, 241, 0.08) 100%)' 
+                        : 'transparent',
                       color: isActive ? 'var(--accent-cyan)' : 'var(--text-muted)',
                       fontWeight: isActive ? 700 : 500,
-                      fontSize: '0.85rem',
+                      fontSize: '0.86rem',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      transition: 'all 0.15s ease',
-                      borderLeft: isActive ? '3px solid var(--accent-cyan)' : '3px solid transparent',
+                      transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                      borderLeft: isActive ? '4px solid var(--accent-cyan)' : '4px solid transparent',
+                      boxShadow: isActive ? '0 4px 15px rgba(0, 242, 254, 0.15)' : 'none',
                       whiteSpace: 'nowrap'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
-                      <Icon size={17} style={{ flexShrink: 0 }} color={isActive ? 'var(--accent-cyan)' : 'var(--text-muted)'} />
-                      <span style={{ whiteSpace: 'nowrap' }}>{item.label}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                      <Icon size={18} style={{ flexShrink: 0 }} color={isActive ? 'var(--accent-cyan)' : 'var(--text-muted)'} />
+                      <span className="sidebar-item-label" style={{ whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>{item.label}</span>
                     </div>
 
                     {item.badge && (
-                      <span style={{
+                      <span className="sidebar-badge" style={{
                         fontSize: '0.62rem',
-                        fontWeight: 700,
-                        padding: '1px 5px',
-                        borderRadius: '4px',
-                        background: isActive ? 'rgba(0,242,254,0.2)' : 'var(--bg-surface)',
+                        fontWeight: 800,
+                        padding: '2px 7px',
+                        borderRadius: '6px',
+                        background: isActive ? 'rgba(0,242,254,0.22)' : 'var(--bg-surface)',
                         color: isActive ? 'var(--accent-cyan)' : 'var(--text-dim)',
-                        border: '1px solid var(--border-color)',
+                        border: '1px solid ' + (isActive ? 'rgba(0,242,254,0.4)' : 'var(--border-color)'),
                         flexShrink: 0,
                         marginLeft: '4px'
                       }}>
@@ -149,7 +152,7 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
       </div>
 
       {/* Dynamic Active Workspace & API Sync Status Card */}
-      <div className="glass-panel" style={{
+      <div className="glass-panel sidebar-footer-card" style={{
         padding: '14px',
         borderRadius: '12px',
         background: 'linear-gradient(180deg, rgba(0, 242, 254, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%)',

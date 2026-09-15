@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Datasets and Large Generated Artifacts
+datasets/*.json
+datasets/*.jsonl
+scratch/
+.tempmediaStorage/
+*.tmp

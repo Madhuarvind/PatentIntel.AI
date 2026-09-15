@@ -17,7 +17,7 @@ import type { TechnicalElementsModel } from '../types';
 // ---------------------------------------------------------------------------
 
 const COMPONENT_PATTERNS = [
-  /\b(controller|processor|module|unit|sensor|transmitter|receiver|device|server|node|engine|interface|circuit|chip|memory|network|database|subsystem|gateway|hub|antenna|transceiver|camera|microphone|speaker|display|actuator|encoder|decoder|scheduler|buffer|cache|queue)\b/gi,
+  /\b(controller|processor|module|unit|sensor|transmitter|receiver|device|server|node|engine|interface|circuit|chip|memory|network|database|subsystem|gateway|hub|antenna|transceiver|camera|microphone|speaker|display|actuator|encoder|decoder|scheduler|buffer|cache|queue|accelerator|crossbar|array|converter|telemetry|synthesizer|filter|modulator|demodulator|estimator|regulator|driver|switch|multiplexer|modem|electrode|biosensor|amplifier|generator)\b/gi,
 ];
 
 const FUNCTION_PATTERNS = [
@@ -63,6 +63,12 @@ function extractSentencesWith(text: string, keywords: string[]): string[] {
 }
 
 function inferSystem(text: string): string {
+  // Check for explicit title line first
+  const titleMatch = text.match(/Invention Title:\s*([^\n\r]+)/i);
+  if (titleMatch && titleMatch[1].trim()) {
+    return titleMatch[1].trim();
+  }
+
   // Try to find the first noun phrase that looks like a system description
   const systemPatterns = [
     /(?:a|an|the)\s+([A-Za-z\s\-]+?(?:system|apparatus|device|platform|framework|network|architecture))/i,
@@ -107,6 +113,23 @@ export function extractTechnicalFeatures(sourceText: string): TechnicalElementsM
   const text = sourceText;
 
   const components = extractMatches(text, COMPONENT_PATTERNS);
+
+  // Extract structured feature lines (from R&D handoff or itemized disclosures)
+  const bulletLines = text.split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(l => /^[-*•]\s*(\[[^\]]+\])?\s*.+/i.test(l));
+
+  for (const line of bulletLines) {
+    const clean = line.replace(/^[-*•]\s*(\[[^\]]+\])?\s*/i, '').trim();
+    const colonIdx = clean.indexOf(':');
+    if (colonIdx > 0 && colonIdx < 60) {
+      const term = clean.slice(0, colonIdx).trim();
+      if (term.length > 2) components.unshift(term);
+    } else if (clean.length > 2 && clean.length < 50) {
+      components.unshift(clean);
+    }
+  }
+
   const functions_ = extractMatches(text, FUNCTION_PATTERNS);
   const inputs = extractMatches(text, INPUT_SIGNAL_PATTERNS);
   const outputs = extractMatches(text, OUTPUT_SIGNAL_PATTERNS);

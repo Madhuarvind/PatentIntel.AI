@@ -203,9 +203,9 @@ class WorkspaceStore {
 
   public addNormalizedPatent(normalized: NormalizedPatent): { isDuplicate: boolean; patent: PatentDocument } {
     const existing = (normalized.fileHash ? this.findByFileHash(normalized.fileHash) : undefined) ||
-                     this.findPatent(normalized.id) || 
-                     this.findPatent(normalized.publicationNumber);
-    
+      this.findPatent(normalized.id) ||
+      this.findPatent(normalized.publicationNumber);
+
     if (existing) {
       return { isDuplicate: true, patent: existing };
     }

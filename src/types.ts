@@ -795,6 +795,10 @@ export interface ClaimLimitationDetail {
   searchQuerySuggestion?: string;
   startOffset?: number;
   endOffset?: number;
+  hiddenConstraints?: HiddenLimitationConstraint[];
+  evidenceConflicts?: ClaimEvidenceConflict[];
+  calibratedConfidence?: CalibratedConfidenceBreakdown;
+  hallucinationValidation?: HallucinationValidationResult;
 }
 
 export interface ClaimDependencyNode {
@@ -852,6 +856,156 @@ export interface PriorArtLimitationHeatmapRow {
   category: ClaimLimitationCategory;
   criticality: LimitationCriticality;
   scores: Record<string, { score: number; status: 'HIGH' | 'PARTIAL' | 'LOW' | 'NONE' | 'INSUFFICIENT_EVIDENCE'; evidence: string }>;
+}
+
+// 1. AI Claim Skeleton
+export interface ClaimSkeletonNode {
+  id: string;
+  nodeType: 'SYSTEM_ROOT' | 'SUBSYSTEM' | 'FUNCTIONAL_CAPABILITY' | 'OPERATIONAL_CONSTRAINT';
+  title: string;
+  role: string;
+  claimLimitationId?: string;
+  statutoryTextSpan: string;
+  specParagraphRef?: string;
+  specExcerpt?: string;
+  figureRef?: string;
+  children: ClaimSkeletonNode[];
+}
+
+// 2. Hidden Limitation & Nested Constraints
+export interface HiddenLimitationConstraint {
+  id: string;
+  parentLimitationId: string;
+  primaryLimitation: string;
+  triggerPhrase: string;
+  hiddenDependency: string;
+  hiddenConstraint: string;
+  nestedConditions: { conditionId: string; label: string; description: string }[];
+  searchRefinementImpact: string;
+}
+
+// 3. Claim Semantic Contradiction / Consistency
+export interface ClaimSemanticConflict {
+  id: string;
+  conflictType: 'DIRECT_CONTRADICTION' | 'SCOPE_TENSION' | 'OPERATIONAL_IMPOSSIBILITY' | 'TEMPORAL_CONFLICT';
+  limitationAId: string;
+  limitationAName: string;
+  limitationAText: string;
+  limitationBId: string;
+  limitationBName: string;
+  limitationBText: string;
+  tensionRationale: string;
+  mpepContext: string;
+  auditRecommendation: string;
+}
+
+// 4. Claim Dependency Impact Propagation
+export interface DependencyImpactSimulation {
+  targetElementId: string;
+  targetElementName: string;
+  parentClaimNumber: number;
+  affectedClaimNumbers: number[];
+  unaffectedClaimNumbers: number[];
+  propagationPath: { claimNumber: number; inheritedImpact: string; status: 'DIRECTLY_AFFECTED' | 'INHERITED_AFFECTED' | 'UNAFFECTED' }[];
+  draftingAssessment: string;
+}
+
+// 5. Counterfactual Claim Analysis
+export interface CounterfactualSimulationResult {
+  simulationId: string;
+  action: 'REMOVE' | 'SUBSTITUTE';
+  targetLimitationId: string;
+  targetLimitationName: string;
+  originalText: string;
+  substituteText?: string;
+  scopeBreadthShiftPercentage: number;
+  scopeDirection: 'BROADENED' | 'NARROWED' | 'SHIFTED';
+  priorArtOverlapDelta: number;
+  affectedDownstreamLimitationIds: string[];
+  technicalImpactAnalysis: string[];
+  examinerScrutinyForecast: string;
+}
+
+// 6. Claim Mutation Laboratory
+export interface ClaimMutationVariant {
+  variantId: 'VARIANT_A' | 'VARIANT_B' | 'VARIANT_C';
+  variantLabel: string;
+  targetElementId: string;
+  originalClause: string;
+  mutatedClause: string;
+  mutationStrategy: 'GENUS_EXPANSION' | 'DEFENSIVE_NARROWING' | 'ALTERNATIVE_PHYSICAL_MECHANISM';
+  retrievalOverlapShift: 'INCREASED_OVERLAP' | 'DECREASED_OVERLAP' | 'BALANCED';
+  retrievalOverlapDeltaCount: number;
+  conceptPreservationScore: 'HIGH' | 'MEDIUM' | 'LOW';
+  draftingTradeoff: string;
+  preservationPercent: number;
+}
+
+// 7. Structural Fingerprint
+export interface ClaimStructuralFingerprint {
+  claimNumber: number;
+  architectureScore: number;
+  dataFlowScore: number;
+  functionScore: number;
+  constraintScore: number;
+  relationshipScore: number;
+  overallAnalyticalSimilarity: number;
+  fingerprintVector: {
+    architecture: string;
+    dataFlow: string;
+    controlPipeline: string;
+    primaryConstraints: string[];
+  };
+}
+
+// 8. Search Failure Diagnosis
+export interface SearchFailureDiagnosis {
+  claimNumber: number;
+  hasFailure: boolean;
+  detectedDomainJargon: string[];
+  diagnosisRationale: string;
+  recommendedTransformations: {
+    originalJargon: string;
+    suggestedTerm: string;
+    expansionType: 'SYNONYM' | 'CPC_EXPANSION' | 'GENERALIZED_GENUS';
+  }[];
+  expandedQuery: string;
+  baselineHits: number;
+  simulatedExpandedHits: number;
+  retrievalQualityDelta: string;
+}
+
+// 9. Claim Evidence Conflict
+export interface ClaimEvidenceConflict {
+  id: string;
+  limitationId: string;
+  canonicalName: string;
+  claimTerm: string;
+  specExcerpt: string;
+  specParagraphRef: string;
+  tensionType: 'TIMING_MISMATCH' | 'RANGE_INCONSISTENCY' | 'DEFINITION_DIVERGENCE' | 'SCOPE_NARROWING';
+  severity: 'WARNING' | 'ADVISORY';
+  explanation: string;
+}
+
+// 10. Calibrated Confidence Breakdown
+export interface CalibratedConfidenceBreakdown {
+  compositeScore: number;
+  sourceSpanCoverage: number;
+  grammarBoundaryScore: number;
+  specGroundingScore: number;
+  antecedentHealthScore: number;
+  confidenceTier: 'HIGH' | 'MODERATE' | 'REVIEW_RECOMMENDED';
+  calibratedFactors: { label: string; score: number; passed: boolean; note: string }[];
+}
+
+// 11. AI Hallucination Guard
+export interface HallucinationValidationResult {
+  isGrounded: boolean;
+  confidence: number;
+  sourceSpan?: string;
+  validationChecks: { checkName: string; passed: boolean; detail: string }[];
+  rejectionReason?: string;
 }
 
 export interface DecomposedClaim {

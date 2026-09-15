@@ -74,6 +74,14 @@ export interface ExtractedIdeaComponent {
   overlapConfidence: number;
   matchedPriorArt: PriorArtMatch[];
   supportingEvidence: EvidenceReference[];
+  canonicalName?: string;
+  sourceText?: string;
+  sourceSpan?: {
+    startOffset?: number;
+    endOffset?: number;
+    page?: number;
+    section?: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -241,13 +249,142 @@ export interface NoveltyFeatureMatch {
   semanticSimilarityScore?: number;
   combinationOverlap?: string;
   createdAt?: string;
+  proposalProvenance?: {
+    documentName: string;
+    page: number;
+    section: string;
+    sourceText: string;
+  };
+  priorArtProvenance?: {
+    candidateId: string;
+    title: string;
+    publicationNumber: string;
+    sourceProvider: string;
+    claimOrSection: string;
+    exactEvidenceText: string;
+    sourceUrl?: string;
+  };
+  patentFamily?: {
+    familyId: string;
+    members: string[];
+    relationship: string;
+  };
+}
+
+export interface CombinationReference {
+  id: string;
+  title: string;
+  type: 'PATENT' | 'NON_PATENT_LITERATURE';
+  publicationNumberOrDoi?: string;
+  publicationDate?: string;
+  assigneeOrAuthors?: string;
+  provider: string;
+  sourceUrl?: string;
+  coveredFeatureCodes: string[];
+}
+
+export interface CombinationFeatureMatrixRow {
+  featureCode: string;
+  featureName: string;
+  category: string;
+  refACovered: boolean;
+  refBCovered: boolean;
+  combinedCovered: boolean;
+  evidenceExcerpt: string;
+  evidenceLocation: string;
+}
+
+export interface SharedPriorArtConcept {
+  concept: string;
+  featureCode: string;
+  referenceId: string;
+  evidenceLocation: string;
+  evidencePassage: string;
+}
+
+export interface CombinationDependentElement {
+  featureCode: string;
+  featureName: string;
+  coveredByCombined: boolean;
+  singleRefCoverage: boolean;
+  evidencePassage: string;
+  rationale: string;
+}
+
+export interface InterComponentRelationshipAnalysis {
+  relationshipId: string;
+  sourceFeatureCode: string;
+  sourceFeatureName: string;
+  targetFeatureCode: string;
+  targetFeatureName: string;
+  relationshipType: string;
+  classification: 'KNOWN_RELATIONSHIP' | 'PARTIAL_RELATIONSHIP' | 'POTENTIALLY_DISTINCTIVE' | 'INSUFFICIENT_EVIDENCE';
+  proposalEvidence: string;
+  priorArtEvidence: string;
+  confidence: number;
+  rationale: string;
 }
 
 export interface CombinationAnalysisResult {
+  // Legacy fields for backward compatibility
   sharedWorkflowChain: string[];
   proposalSpecificElements: string[];
   potentialDifferentiator: string;
   evidenceGrounded: boolean;
+
+  // Rich Multi-Document Obviousness Screening fields
+  combinationId?: string;
+  projectId?: string;
+  versionId?: string;
+  runId?: string;
+  screeningIndicator?: 'HIGH_CONCERN' | 'MODERATE_CONCERN' | 'LOW_CONCERN' | 'INSUFFICIENT_EVIDENCE';
+  screeningExplanation?: string;
+  contributingFactors?: {
+    featureCoverage: string; // e.g. "3 / 4 features"
+    combinationDependentCount: number;
+    strongEvidenceLinks: number;
+    relationshipSupport: 'High' | 'Moderate' | 'Low' | 'Insufficient';
+    chronologicalSuitability: 'Verified' | 'Not verified' | 'Chronology unavailable';
+    humanReviewRecommended: boolean;
+  };
+  referenceA?: CombinationReference;
+  referenceB?: CombinationReference;
+  combinedFeatureCoverage?: {
+    coveredCount: number;
+    totalCount: number;
+    coveredCodes: string[];
+  };
+  featureMatrix?: CombinationFeatureMatrixRow[];
+  sharedConcepts?: SharedPriorArtConcept[];
+  combinationDependentElements?: CombinationDependentElement[];
+  relationships?: InterComponentRelationshipAnalysis[];
+  rationaleFactors?: {
+    factor: string;
+    status: 'IDENTIFIED' | 'NOT_IDENTIFIED' | 'NEUTRAL';
+    evidenceNote: string;
+  }[];
+  proposalSpecificFeatures?: {
+    featureCode: string;
+    featureName: string;
+    status: 'POTENTIALLY_DISTINCTIVE';
+    priorArtCoverage: string;
+    reason: string;
+  }[];
+  differentiator?: {
+    recommendation: string;
+    basisFeatureCodes: string[];
+    relationshipIds: string[];
+    rationale: string;
+    confidence: number;
+  };
+  humanReview?: {
+    priority: 'HIGH' | 'MEDIUM' | 'LOW';
+    recommendations: string[];
+    reviewerNote?: string;
+    reviewTimestamp?: string;
+  };
+  jurisdiction?: 'US_103' | 'EPO_56';
+  createdAt?: string;
 }
 
 export interface StatutoryEligibilityAnalysis {

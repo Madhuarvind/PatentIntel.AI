@@ -300,64 +300,151 @@ export async function executeRealtimeLLM(options: LLMRequestOptions): Promise<LL
 /**
  * Dynamic NLP Component Extraction returning valid JSON format
  */
+/**
+ * Dynamic NLP Component Extraction returning valid JSON format
+ * Extracts genuine technical multi-word phrases and tight sentence spans directly from proposal text.
+ */
 function dynamicComponentsJsonNLP(prompt: string): string {
   const cleaned = prompt.replace(/.*(?:Proposal Text:)/is, '').trim();
-  const words = cleaned.match(/\b[A-Za-z][A-Za-z0-9_-]{3,}\b/g) || [];
-  const stopwords = new Set(['this', 'that', 'with', 'from', 'have', 'been', 'which', 'their', 'about', 'these', 'where', 'there', 'system', 'using', 'based']);
-  const meaningful = Array.from(new Set(words.filter(w => !stopwords.has(w.toLowerCase())))).slice(0, 5);
+  const sentences = cleaned
+    .split(/(?<=[.!?])\s+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 15);
 
-  const t1 = meaningful[0] || 'Sensory Telemetry Ingestion Node';
-  const t2 = meaningful[1] || 'Convolutional Inference Engine';
-  const t3 = meaningful[2] || 'Dynamic Execution Scaler';
-  const t4 = meaningful[3] || 'Hardware Thermal Feedback Loop';
+  interface ExtractedCompItem {
+    term: string;
+    category: 'COMPONENT' | 'FUNCTION' | 'DATA' | 'PROCESS' | 'CONSTRAINT' | 'OUTPUT' | 'TECHNICAL_EFFECT';
+    description: string;
+    importance: 'CORE' | 'SUPPORTING' | 'OPTIONAL';
+  }
+
+  const items: ExtractedCompItem[] = [];
+
+  const PHRASE_EXTRACTORS: {
+    regex: RegExp;
+    category: ExtractedCompItem['category'];
+    nameBuilder: (match: RegExpMatchArray) => string;
+  }[] = [
+    {
+      regex: /\b(temperature|humidity|environmental|optical|spectral|pressure|motion|acoustic|vibration|biometric|weight|gas)\s+(?:and\s+\w+\s+)?(?:sensors?|transducers?|monitoring\s+units?|subsystems?|probes?)\b/i,
+      category: 'COMPONENT',
+      nameBuilder: (m) => m[0].split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+    },
+    {
+      regex: /\b(?:real-time\s+)?(?:environmental\s+|sensor\s+|operational\s+)?telemetry\s+(?:acquisition|ingestion|streaming|data\s+stream)\b/i,
+      category: 'FUNCTION',
+      nameBuilder: (m) => m[0].split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+    },
+    {
+      regex: /\b(?:edge\s+computing\s+|embedded\s+|microcontroller\s+|hardware\s+)?(?:controller|processing\s+node|compute\s+module|coprocessor|accelerator)\b/i,
+      category: 'COMPONENT',
+      nameBuilder: (m) => m[0].split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+    },
+    {
+      regex: /\b(?:local\s+|in-situ\s+)?(?:sensor-data\s+|telemetry\s+)?preprocessing(?:\s+pipeline)?\b/i,
+      category: 'PROCESS',
+      nameBuilder: (m) => m[0].split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+    },
+    {
+      regex: /\b(?:feature\s+extraction|signal\s+filtering|noise\s+reduction|spectral\s+decomposition)\b/i,
+      category: 'PROCESS',
+      nameBuilder: (m) => m[0].split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+    },
+    {
+      regex: /\b(?:machine-learning|deep\s+learning|convolutional|neural\s+network|predictive\s+model|AI\s+model)\s*(?:-based)?\s*(?:shelf-life|degradation|decay|wear|failure|state-of-health)?\s*(?:prediction|estimation|forecasting|inference)\b/i,
+      category: 'FUNCTION',
+      nameBuilder: (m) => m[0].split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+    },
+    {
+      regex: /\b(?:abnormal\s+)?(?:degradation|anomaly|fault|outlier|defect)\s+(?:detection|identification|classification)\b/i,
+      category: 'FUNCTION',
+      nameBuilder: (m) => m[0].split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+    },
+    {
+      regex: /\b(?:wireless|cellular|bluetooth|wifi|lora|mqtt)\s+(?:transmission|communication|telemetry\s+dispatch)\s*(?:of\s+prediction\s+results)?\b/i,
+      category: 'FUNCTION',
+      nameBuilder: (m) => m[0].split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+    },
+    {
+      regex: /\b(?:historical\s+telemetry\s+storage|state\s+buffer|local\s+flash\s+cache|memory\s+ring\s+buffer)\b/i,
+      category: 'DATA',
+      nameBuilder: (m) => m[0].split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+    },
+    {
+      regex: /\b(?:configurable|dynamic|adaptive)\s+(?:remaining-shelf-life|degradation|alert|expiration)\s+threshold\b/i,
+      category: 'CONSTRAINT',
+      nameBuilder: (m) => m[0].split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+    },
+    {
+      regex: /\b(?:alert\s+generation|notification\s+dispatch|warning\s+signal)\s*(?:for\s+degradation|for\s+low\s+shelf\s+life)?\b/i,
+      category: 'OUTPUT',
+      nameBuilder: (m) => m[0].split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+    },
+    {
+      regex: /\b(?:centralized|cloud|dashboard|logistics|inventory)\s+(?:monitoring\s+platform|recommendation\s+engine|management\s+system)\b/i,
+      category: 'COMPONENT',
+      nameBuilder: (m) => m[0].split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+    }
+  ];
+
+  // Scan sentences for domain phrases
+  for (const sentence of sentences) {
+    for (const extractor of PHRASE_EXTRACTORS) {
+      const match = sentence.match(extractor.regex);
+      if (match) {
+        const canonical = extractor.nameBuilder(match);
+        if (!items.some(it => it.term.toLowerCase() === canonical.toLowerCase())) {
+          items.push({
+            term: canonical,
+            category: extractor.category,
+            description: sentence.length > 200 ? sentence.slice(0, 197) + '...' : sentence,
+            importance: items.length < 3 ? 'CORE' : items.length < 7 ? 'SUPPORTING' : 'OPTIONAL'
+          });
+        }
+      }
+    }
+  }
+
+  // Fallback if sentences did not match predefined patterns: derive from sentence clauses
+  if (items.length < 3) {
+    sentences.slice(0, 5).forEach((sentence, idx) => {
+      const words = sentence.replace(/[^A-Za-z0-9\s-]/g, '').split(/\s+/).filter(w => w.length > 3);
+      if (words.length >= 2) {
+        const termPhrase = words.slice(0, 3).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+        if (!items.some(it => it.term.toLowerCase() === termPhrase.toLowerCase())) {
+          items.push({
+            term: termPhrase,
+            category: idx === 0 ? 'COMPONENT' : idx === 1 ? 'PROCESS' : 'FUNCTION',
+            description: sentence.length > 200 ? sentence.slice(0, 197) + '...' : sentence,
+            importance: idx === 0 ? 'CORE' : 'SUPPORTING'
+          });
+        }
+      }
+    });
+  }
+
+  // Generate relationships between consecutive components
+  const relationships = [];
+  for (let i = 0; i < items.length - 1; i++) {
+    const from = items[i];
+    const to = items[i + 1];
+    let relType = 'feeds data to';
+    if (from.category === 'COMPONENT' && to.category === 'PROCESS') relType = 'transmits telemetry to';
+    else if (from.category === 'PROCESS' && to.category === 'FUNCTION') relType = 'executes';
+    else if (from.category === 'FUNCTION' && to.category === 'OUTPUT') relType = 'triggers';
+    else if (from.category === 'FUNCTION' && to.category === 'COMPONENT') relType = 'couples to';
+
+    relationships.push({
+      fromTerm: from.term,
+      toTerm: to.term,
+      relationshipType: relType,
+      description: `Disclosed technical coupling where ${from.term} ${relType} ${to.term}.`
+    });
+  }
 
   return JSON.stringify({
-    components: [
-      {
-        term: t1,
-        category: 'COMPONENT',
-        description: `Primary hardware-coupled ingestion interface configured to acquire real-time operational telemetry streams for ${t1}.`,
-        importance: 'CORE'
-      },
-      {
-        term: t2,
-        category: 'PROCESS',
-        description: `High-throughput neural processing module coupled to evaluate multi-spectral telemetry matrices.`,
-        importance: 'CORE'
-      },
-      {
-        term: t3,
-        category: 'FUNCTION',
-        description: `Closed-loop adaptive latency controller that dynamically adjusts computational throughput under resource constraints.`,
-        importance: 'SUPPORTING'
-      },
-      {
-        term: t4,
-        category: 'TECHNICAL_EFFECT',
-        description: `Physical apparatus limitation configured to prevent hardware saturation and ensure sub-15ms latency guarantees.`,
-        importance: 'SUPPORTING'
-      }
-    ],
-    relationships: [
-      {
-        fromTerm: t1,
-        toTerm: t2,
-        relationshipType: 'feeds data to',
-        description: `${t1} continuously streams acquired operational telemetry into ${t2}.`
-      },
-      {
-        fromTerm: t2,
-        toTerm: t3,
-        relationshipType: 'dynamically modulates',
-        description: `${t2} output matrices calibrate ${t3} operational execution thresholds.`
-      },
-      {
-        fromTerm: t3,
-        toTerm: t4,
-        relationshipType: 'couples to',
-        description: `${t3} provides feedback signals directly into ${t4}.`
-      }
-    ]
+    components: items,
+    relationships
   }, null, 2);
 }
 

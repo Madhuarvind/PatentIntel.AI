@@ -709,6 +709,66 @@ export type ClaimLimitationCategory =
   | 'OPERATIONAL_CONSTRAINT'
   | 'DATA_INTERFACE';
 
+export type LimitationCriticality = 'CORE' | 'SUPPORTING' | 'CONTEXTUAL';
+
+export interface ClaimLanguagePattern {
+  id: string;
+  patternType: 'FUNCTIONAL_LANGUAGE' | 'NEGATIVE_LIMITATION' | 'CONDITIONAL_TRIGGER' | 'RELATIONAL_COUPLING' | 'MARKUSH_GROUP' | 'MEANS_PLUS_FUNCTION';
+  triggerPhrase: string;
+  matchedText: string;
+  significance: string;
+}
+
+export interface NumericalRangeConstraint {
+  id: string;
+  operator: 'BETWEEN' | 'AT_LEAST' | 'LESS_THAN' | 'WITHIN' | 'EXACT' | 'PERCENTAGE' | 'THRESHOLD';
+  lowerBound?: number;
+  upperBound?: number;
+  unit: string;
+  rawExpression: string;
+}
+
+export interface MarkushAlternativeGroup {
+  introPhrase: string;
+  alternatives: string[];
+  isClosedGroup: boolean;
+}
+
+export interface LimitationRelationship {
+  id: string;
+  sourceLimitationId: string;
+  targetLimitationId: string;
+  relationshipType: 'feeds' | 'processed_by' | 'performs' | 'enables' | 'triggers' | 'modulates' | 'couples_to';
+  evidenceSpan: string;
+  confidence: number;
+}
+
+export interface ClaimSpecEvidence {
+  documentId: string;
+  claimLineReference: string;
+  specificationParagraphs: string[];
+  specificationExcerpt: string;
+  figureReferences: string[];
+  sourceUrl?: string;
+}
+
+export interface ClaimLimitationSplitRationale {
+  clauseBoundary: string;
+  syntacticTrigger: string;
+  detectedSubject: string;
+  detectedPredicate: string;
+  detectedObject: string;
+  semanticRole: string;
+  classificationBasis: string;
+}
+
+export interface LimitationSearchIntelligence {
+  exactTechnicalQuery: string;
+  semanticQuery: string;
+  componentExpansionQuery: string;
+  producedReferencesCount?: number;
+}
+
 export interface ClaimLimitationDetail {
   id: string;
   elementNumber: number;
@@ -718,12 +778,80 @@ export interface ClaimLimitationDetail {
   cleanedText: string;
   scopeTag: string;
   cpcCategory?: string;
+  criticality: LimitationCriticality;
+  criticalityRationale: string;
   antecedentStatus: 'VERIFIED' | 'MISSING_ANTECEDENT' | 'NEW_INTRODUCTION' | 'NOT_APPLICABLE';
   antecedentNotes?: string;
   breadthImpact: 'BROAD' | 'MODERATE' | 'NARROW';
+  confidence: number;
+  ambiguityStatus: 'DEFINITIVE' | 'HUMAN_REVIEW_RECOMMENDED';
+  splitRationale: ClaimLimitationSplitRationale;
+  languagePatterns: ClaimLanguagePattern[];
+  numericalConstraints: NumericalRangeConstraint[];
+  markushGroups?: MarkushAlternativeGroup[];
+  specEvidence?: ClaimSpecEvidence;
+  searchIntelligence: LimitationSearchIntelligence;
+  relationships: LimitationRelationship[];
   searchQuerySuggestion?: string;
   startOffset?: number;
   endOffset?: number;
+}
+
+export interface ClaimDependencyNode {
+  claimNumber: number;
+  claimType: 'independent' | 'dependent';
+  dependsOnClaimNumbers: number[];
+  childClaimNumbers: number[];
+  inheritedLimitations: { claimNumber: number; elementId: string; canonicalName: string }[];
+  addedLimitations: { elementId: string; canonicalName: string; rawText: string }[];
+  cumulativeLimitationsCount: number;
+}
+
+export interface ClaimGlossaryTerm {
+  term: string;
+  definitionCandidate: string;
+  occurrenceClaims: number[];
+  specificationParagraph: string;
+  specificationSnippet: string;
+  consistencyStatus: 'CONSISTENT' | 'AMBIGUOUS' | 'NEEDS_SPEC_SUPPORT';
+  confidence: number;
+}
+
+export interface ClaimVersionDiff {
+  claimNumber: number;
+  sourceVersion: string;
+  targetVersion: string;
+  status: 'ADDED' | 'REMOVED' | 'MODIFIED' | 'UNCHANGED';
+  limitationDiffs: {
+    elementId: string;
+    canonicalName: string;
+    diffType: 'ADDED' | 'REMOVED' | 'MODIFIED' | 'UNCHANGED';
+    oldText?: string;
+    newText?: string;
+    explanation: string;
+  }[];
+}
+
+export interface FamilyClaimComparison {
+  primaryPatentId: string;
+  primaryJurisdiction: string;
+  familyMembers: {
+    patentId: string;
+    jurisdiction: 'US' | 'EP' | 'WO' | 'IN' | 'JP';
+    claimNumber: number;
+    claimText: string;
+    keyDifferences: string[];
+    addedLimitations: string[];
+    removedLimitations: string[];
+  }[];
+}
+
+export interface PriorArtLimitationHeatmapRow {
+  limitationId: string;
+  canonicalName: string;
+  category: ClaimLimitationCategory;
+  criticality: LimitationCriticality;
+  scores: Record<string, { score: number; status: 'HIGH' | 'PARTIAL' | 'LOW' | 'NONE' | 'INSUFFICIENT_EVIDENCE'; evidence: string }>;
 }
 
 export interface DecomposedClaim {

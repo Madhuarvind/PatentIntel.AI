@@ -778,7 +778,7 @@ export type ProvenanceTag =
   | 'RULE-PARSED' 
   | 'COMPUTED-RETRIEVAL';
 
-export type AmbiguityStatus = 'DEFINITIVE' | 'HUMAN_REVIEW_RECOMMENDED' | 'ABSTAIN';
+export type AmbiguityStatus = 'SUPPORTED' | 'REVIEW_RECOMMENDED' | 'ABSTAIN';
 
 export interface MultiAgentConsensus {
   parserAgentVote: string;
@@ -800,13 +800,21 @@ export interface MultiAgentConsensus {
 }
 
 export interface LimitationReasoningTrace {
-  rawInput: string;
-  parserAction: string;
-  semanticPattern: string;
-  knowledgeRulesMatched: string[];
-  statutoryEvidenceSpan: string;
+  inputSpan: string;
+  parserSignals: string[];
+  detectedSubject: string;
+  detectedPredicate: string;
+  detectedPattern: string;
+  evidenceSpan: string;
+  agentVotes: {
+    agentName: string;
+    role: string;
+    proposedCategory: string;
+    confidence: number;
+    rationale: string;
+  }[];
+  consensusRule: string;
   finalDecision: string;
-  explanation: string;
   charStart?: number;
   charEnd?: number;
   calibratedConfidence?: number;
@@ -850,6 +858,16 @@ export interface CounterfactualRetrievalComparison {
   structuralBreadthShift: 'EXPANDED' | 'NARROWED' | 'SHIFTED';
   structuralBreadthBasis: string[];
   examinerScrutinyForecast: string;
+  parityControls: {
+    queryQ0: string;
+    queryQ1: string;
+    corpusSnapshot: string;
+    retrievalProvider: string;
+    topK: number;
+    filtersApplied: string[];
+    timestamp: string;
+    rankingConfiguration: string;
+  };
 }
 
 export interface AnalysisRunSnapshot {
@@ -866,6 +884,14 @@ export interface AnalysisRunSnapshot {
   hallucinationGateStatus: 'ALL_OBJECTS_GROUNDED' | 'FLAGS_DETECTED';
   driftStatus: 'STABLE' | 'DRIFT_DETECTED';
   corpusDeltaCount?: number;
+  evidenceFreshness: {
+    patentMetadataStatus: 'CURRENT' | 'OUTDATED';
+    claimTextStatus: 'CURRENT' | 'MODIFIED';
+    specEvidenceStatus: 'CURRENT' | 'STALE';
+    priorArtRetrievalStatus: 'CURRENT' | 'STALE_CORPUS_UPDATED';
+    overallStatus: 'CURRENT' | 'STALE_RERUN_RECOMMENDED';
+    stalenessReason?: string;
+  };
 }
 
 export interface ClaimLimitationDetail {
@@ -899,6 +925,7 @@ export interface ClaimLimitationDetail {
   calibratedConfidence?: CalibratedConfidenceBreakdown;
   hallucinationValidation?: HallucinationValidationResult;
   provenanceTag: ProvenanceTag;
+  provenanceSourceId: string;
   multiAgentConsensus?: MultiAgentConsensus;
   reasoningTrace?: LimitationReasoningTrace;
 }
@@ -1053,7 +1080,12 @@ export interface ClaimMutationVariant {
     relationshipChangesCount: number;
     searchResultsDelta: { before: number; after: number; surfacedCount: number };
     structuralFingerprintChange: string;
-    evidenceCoverageDelta: { before: number; after: number };
+    evidenceCoverageDelta: {
+      beforeFraction: string;
+      afterFraction: string;
+      deltaCount: number;
+      isGrounded: boolean;
+    };
   };
 }
 

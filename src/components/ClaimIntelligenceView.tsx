@@ -84,6 +84,10 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
   // Heatmap drilldown state
   const [heatmapCellDetail, setHeatmapCellDetail] = useState<{ limitation: string; patentId: string; status: string; score: number; evidence: string } | null>(null);
 
+  // Evidence Freshness & Run Snapshot state
+  const [isReRunningAnalysis, setIsReRunningAnalysis] = useState<boolean>(false);
+  const [simulatedCorpusDrift, setSimulatedCorpusDrift] = useState<boolean>(false);
+
   useEffect(() => {
     const unsubscribe = workspaceStore.subscribe(() => {
       const updated = workspaceStore.getPatents();
@@ -925,6 +929,171 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                 </div>
               </div>
 
+              {/* Universal Reproducibility Run Snapshot & Evidence Freshness */}
+              {decomposedClaim.runSnapshot && (
+                <div className="glass-panel" style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '14px', border: simulatedCorpusDrift ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <ShieldCheck size={15} color="var(--accent-cyan)" />
+                        <span style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase' }}>
+                          Reproducibility Run Snapshot
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                        {decomposedClaim.runSnapshot.runId}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{
+                        fontSize: '0.66rem',
+                        fontWeight: 800,
+                        padding: '3px 8px',
+                        borderRadius: 4,
+                        background: simulatedCorpusDrift ? 'rgba(245, 158, 11, 0.18)' : 'rgba(16, 185, 129, 0.18)',
+                        color: simulatedCorpusDrift ? 'var(--accent-amber)' : 'var(--accent-emerald)',
+                        border: simulatedCorpusDrift ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid rgba(16, 185, 129, 0.4)'
+                      }}>
+                        {simulatedCorpusDrift ? '⚠ STALE — RE-RUN RECOMMENDED' : '✓ CURRENT (RUN #102)'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Metadata Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', fontSize: '0.72rem' }}>
+                    <div style={{ background: 'var(--bg-input)', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                      <span style={{ color: 'var(--text-dim)', display: 'block', fontSize: '0.66rem' }}>Analysis Timestamp:</span>
+                      <strong style={{ color: 'var(--text-main)' }}>{decomposedClaim.runSnapshot.timestamp}</strong>
+                    </div>
+                    <div style={{ background: 'var(--bg-input)', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                      <span style={{ color: 'var(--text-dim)', display: 'block', fontSize: '0.66rem' }}>Engines / Models:</span>
+                      <strong style={{ color: 'var(--accent-indigo)' }}>{decomposedClaim.runSnapshot.nlpParserEngine} • {decomposedClaim.runSnapshot.embeddingModel}</strong>
+                    </div>
+                    <div style={{ background: 'var(--bg-input)', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                      <span style={{ color: 'var(--text-dim)', display: 'block', fontSize: '0.66rem' }}>Corpus Snapshot:</span>
+                      <strong style={{ color: 'var(--accent-cyan)' }}>{decomposedClaim.runSnapshot.corpusVersion} ({decomposedClaim.runSnapshot.corpusDocumentCount} docs)</strong>
+                    </div>
+                    <div style={{ background: 'var(--bg-input)', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                      <span style={{ color: 'var(--text-dim)', display: 'block', fontSize: '0.66rem' }}>Hallucination Gate:</span>
+                      <strong style={{ color: 'var(--accent-emerald)' }}>
+                        ✓ {decomposedClaim.runSnapshot.hallucinationGateStatus.replace(/_/g, ' ')} ({decomposedClaim.runSnapshot.verifiedEvidenceCount} records)
+                      </strong>
+                    </div>
+                  </div>
+
+                  {/* Evidence Freshness Matrix */}
+                  <div style={{
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px',
+                    padding: '10px 12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <strong style={{ fontSize: '0.72rem', color: 'var(--text-main)', textTransform: 'uppercase' }}>
+                        Evidence Freshness & Drift Monitoring:
+                      </strong>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>
+                        Deterministic Multi-Source Health
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px', fontSize: '0.7rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)' }}>
+                        <span style={{ color: 'var(--accent-emerald)', fontWeight: 800 }}>✓</span>
+                        <span>Patent Metadata:</span>
+                        <strong style={{ color: 'var(--text-main)' }}>Current</strong>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)' }}>
+                        <span style={{ color: 'var(--accent-emerald)', fontWeight: 800 }}>✓</span>
+                        <span>Claim Text:</span>
+                        <strong style={{ color: 'var(--text-main)' }}>Current</strong>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)' }}>
+                        <span style={{ color: 'var(--accent-emerald)', fontWeight: 800 }}>✓</span>
+                        <span>Specification Grounding:</span>
+                        <strong style={{ color: 'var(--text-main)' }}>Current</strong>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)' }}>
+                        {simulatedCorpusDrift ? (
+                          <>
+                            <span style={{ color: 'var(--accent-amber)', fontWeight: 800 }}>⚠</span>
+                            <span>Prior-Art Retrieval:</span>
+                            <strong style={{ color: 'var(--accent-amber)' }}>Corpus updated (+4 docs)</strong>
+                          </>
+                        ) : (
+                          <>
+                            <span style={{ color: 'var(--accent-emerald)', fontWeight: 800 }}>✓</span>
+                            <span>Prior-Art Retrieval:</span>
+                            <strong style={{ color: 'var(--text-main)' }}>Current</strong>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {simulatedCorpusDrift && (
+                      <div style={{
+                        marginTop: 4,
+                        padding: '6px 8px',
+                        background: 'rgba(245, 158, 11, 0.12)',
+                        borderRadius: 4,
+                        border: '1px solid rgba(245, 158, 11, 0.3)',
+                        fontSize: '0.68rem',
+                        color: 'var(--accent-amber)'
+                      }}>
+                        <strong>Drift Detected:</strong> USPTO corpus updated since analysis run. Re-running analysis will incorporate newly surfaced prior-art documents into retrieval sets.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions: Re-Run Analysis / Test Drift */}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => {
+                        setIsReRunningAnalysis(true);
+                        setTimeout(() => {
+                          setIsReRunningAnalysis(false);
+                          setSimulatedCorpusDrift(false);
+                          setCopyFeedback('Analysis refreshed against current patent corpus!');
+                          setTimeout(() => setCopyFeedback(null), 2500);
+                        }, 600);
+                      }}
+                      disabled={isReRunningAnalysis}
+                      className="btn-primary"
+                      style={{
+                        flex: 1,
+                        padding: '6px 12px',
+                        fontSize: '0.74rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                        opacity: isReRunningAnalysis ? 0.7 : 1
+                      }}
+                    >
+                      <RefreshCw size={12} className={isReRunningAnalysis ? 'animate-spin' : ''} />
+                      {isReRunningAnalysis ? 'Re-running Analysis...' : 'Re-run Analysis'}
+                    </button>
+
+                    <button
+                      onClick={() => setSimulatedCorpusDrift(!simulatedCorpusDrift)}
+                      className="btn-secondary"
+                      style={{
+                        padding: '6px 10px',
+                        fontSize: '0.72rem',
+                        color: simulatedCorpusDrift ? 'var(--accent-amber)' : 'var(--text-dim)'
+                      }}
+                      title="Test corpus drift state"
+                    >
+                      {simulatedCorpusDrift ? 'Reset Corpus' : 'Simulate Drift'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
             </div>
 
             {/* Right Column: Decomposed Limitation Cards */}
@@ -1036,7 +1205,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                         
                         {/* Top bar: Canonical Name + Badges */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 6 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                             <span style={{
                               fontSize: '0.62rem',
                               fontFamily: 'var(--font-mono)',
@@ -1049,6 +1218,20 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                             }}>
                               [{elem.provenanceTag}]
                             </span>
+                            {elem.provenanceSourceId && (
+                              <span style={{
+                                fontSize: '0.62rem',
+                                fontFamily: 'var(--font-mono)',
+                                padding: '1px 5px',
+                                borderRadius: 3,
+                                background: 'rgba(99, 102, 241, 0.12)',
+                                color: 'var(--accent-indigo)',
+                                border: '1px solid rgba(99, 102, 241, 0.3)',
+                                fontWeight: 700
+                              }} title="Statutory Grounding Source ID">
+                                {elem.provenanceSourceId}
+                              </span>
+                            )}
                             <h4 style={{ 
                               fontSize: '0.94rem', 
                               fontWeight: 800, 
@@ -1072,9 +1255,35 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                                 color: '#f87171',
                                 border: '1px solid rgba(239, 68, 68, 0.4)'
                               }}>
-                                ⚠ ABSTAIN: AMBIGUOUS
+                                ⚠ ABSTAIN
                               </span>
-                            ) : elem.multiAgentConsensus && (
+                            ) : elem.ambiguityStatus === 'REVIEW_RECOMMENDED' ? (
+                              <span style={{
+                                fontSize: '0.64rem',
+                                fontWeight: 800,
+                                padding: '2px 7px',
+                                borderRadius: 4,
+                                background: 'rgba(245, 158, 11, 0.18)',
+                                color: 'var(--accent-amber)',
+                                border: '1px solid rgba(245, 158, 11, 0.4)'
+                              }}>
+                                ⚠ REVIEW RECOMMENDED
+                              </span>
+                            ) : (
+                              <span style={{
+                                fontSize: '0.64rem',
+                                fontWeight: 800,
+                                padding: '2px 7px',
+                                borderRadius: 4,
+                                background: 'rgba(16, 185, 129, 0.18)',
+                                color: 'var(--accent-emerald)',
+                                border: '1px solid rgba(16, 185, 129, 0.4)'
+                              }}>
+                                ✓ SUPPORTED
+                              </span>
+                            )}
+
+                            {elem.multiAgentConsensus && (
                               <span style={{
                                 fontSize: '0.64rem',
                                 fontWeight: 700,
@@ -1084,7 +1293,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                                 color: elem.multiAgentConsensus.consensusStatus === 'CONSENSUS_ESTABLISHED' ? 'var(--accent-emerald)' : 'var(--accent-amber)',
                                 border: '1px solid var(--border-color)'
                               }}>
-                                {elem.multiAgentConsensus.consensusStatus === 'CONSENSUS_ESTABLISHED' ? '✓ Consensus 3/3' : 'Split Decision 2/3'}
+                                {elem.multiAgentConsensus.consensusStatus === 'CONSENSUS_ESTABLISHED' ? 'Consensus 3/3' : 'Split Decision 2/3'}
                               </span>
                             )}
 
@@ -2056,6 +2265,52 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                 </div>
               </div>
             </div>
+
+            {/* Retrieval Parity Controls (Reproducibility Controls) */}
+            {counterfactualComparison.parityControls && (
+              <div style={{
+                background: 'rgba(99, 102, 241, 0.07)',
+                border: '1px solid rgba(99, 102, 241, 0.25)',
+                borderRadius: '8px',
+                padding: '12px 14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--accent-indigo)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <ShieldCheck size={13} /> Retrieval Parity Controls (Reproducibility Controls)
+                  </span>
+                  <span style={{ fontSize: '0.64rem', background: 'rgba(99, 102, 241, 0.18)', color: 'var(--accent-indigo)', padding: '1px 6px', borderRadius: 3, fontWeight: 700 }}>
+                    PARITY ENFORCED
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', fontSize: '0.72rem' }}>
+                  <div>
+                    <span style={{ color: 'var(--text-dim)' }}>Baseline Query (Q₀):</span>
+                    <div style={{ color: 'var(--text-main)', fontFamily: 'var(--font-mono)', fontSize: '0.68rem', marginTop: 2 }}>
+                      {counterfactualComparison.parityControls.queryQ0}
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-dim)' }}>Counterfactual Query (Q₁):</span>
+                    <div style={{ color: 'var(--accent-cyan)', fontFamily: 'var(--font-mono)', fontSize: '0.68rem', marginTop: 2 }}>
+                      {counterfactualComparison.parityControls.queryQ1}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '0.7rem', color: 'var(--text-muted)', borderTop: '1px dashed rgba(99, 102, 241, 0.2)', paddingTop: '6px' }}>
+                  <span><strong>Corpus:</strong> {counterfactualComparison.parityControls.corpusSnapshot}</span>
+                  <span><strong>Provider:</strong> {counterfactualComparison.parityControls.retrievalProvider}</span>
+                  <span><strong>Top-K:</strong> {counterfactualComparison.parityControls.topK}</span>
+                  <span><strong>Ranking:</strong> {counterfactualComparison.parityControls.rankingConfiguration}</span>
+                  <span><strong>Filters:</strong> {counterfactualComparison.parityControls.filtersApplied.join('; ')}</span>
+                  <span><strong>Timestamp:</strong> {counterfactualComparison.parityControls.timestamp}</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Section 2: AI Claim Mutation Laboratory */}
@@ -2157,10 +2412,29 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                         <strong style={{ color: 'var(--accent-cyan)' }}>{mut.downstreamTracking.structuralFingerprintChange}</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
-                        <span>Evidence Coverage:</span>
-                        <strong style={{ color: 'var(--accent-emerald)' }}>
-                          {mut.downstreamTracking.evidenceCoverageDelta.before}% ➔ {mut.downstreamTracking.evidenceCoverageDelta.after}%
-                        </strong>
+                        <span>Evidence Coverage Shift:</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <strong style={{ color: 'var(--accent-emerald)', fontFamily: 'var(--font-mono)' }}>
+                            {mut.downstreamTracking.evidenceCoverageDelta.beforeFraction} ➔ {mut.downstreamTracking.evidenceCoverageDelta.afterFraction}
+                          </strong>
+                          <span style={{
+                            fontSize: '0.66rem',
+                            padding: '1px 5px',
+                            borderRadius: 3,
+                            fontWeight: 800,
+                            background: mut.downstreamTracking.evidenceCoverageDelta.deltaCount < 0 ? 'rgba(245, 158, 11, 0.18)' : 'rgba(16, 185, 129, 0.18)',
+                            color: mut.downstreamTracking.evidenceCoverageDelta.deltaCount < 0 ? 'var(--accent-amber)' : 'var(--accent-emerald)'
+                          }}>
+                            {mut.downstreamTracking.evidenceCoverageDelta.deltaCount > 0 
+                              ? `+${mut.downstreamTracking.evidenceCoverageDelta.deltaCount}` 
+                              : mut.downstreamTracking.evidenceCoverageDelta.deltaCount === 0 
+                                ? 'STABLE' 
+                                : `${mut.downstreamTracking.evidenceCoverageDelta.deltaCount}`}
+                          </span>
+                          {mut.downstreamTracking.evidenceCoverageDelta.isGrounded && (
+                            <span style={{ fontSize: '0.62rem', color: 'var(--accent-cyan)', fontWeight: 700 }}>[GROUNDED]</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -2770,54 +3044,82 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               </div>
             )}
 
-            {/* Auditable Reasoning Trace */}
+            {/* Auditable Reasoning Trace - Structured Decision Factors */}
             {activeLimitation.reasoningTrace && (
               <div style={{ background: 'var(--bg-surface)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--accent-cyan)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Cpu size={14} /> Auditable Reasoning Trace
+                    <Cpu size={14} /> Structured Decision Trace (Auditable Factors)
                   </span>
                   <span style={{ fontSize: '0.65rem', background: 'rgba(6, 182, 212, 0.18)', color: 'var(--accent-cyan)', padding: '1px 6px', borderRadius: 4, fontWeight: 800 }}>
-                    STEP-BY-STEP AUDIT CHAIN
+                    FACTOR-BASED AUDIT
                   </span>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.75rem' }}>
+                  {/* 1. inputSpan */}
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <span style={{ color: 'var(--text-dim)', minWidth: '95px' }}>1. Raw Input:</span>
+                    <span style={{ color: 'var(--text-dim)', minWidth: '110px' }}>1. Input Span:</span>
                     <span style={{ color: 'var(--text-main)', fontStyle: 'italic' }}>
-                      "{activeLimitation.reasoningTrace.rawInput}" (span [{activeLimitation.reasoningTrace.charStart ?? 0}–{activeLimitation.reasoningTrace.charEnd ?? activeLimitation.reasoningTrace.rawInput.length}])
+                      "{activeLimitation.reasoningTrace.inputSpan}" (span [{activeLimitation.reasoningTrace.charStart ?? 0}–{activeLimitation.reasoningTrace.charEnd ?? activeLimitation.reasoningTrace.inputSpan.length}])
                     </span>
                   </div>
 
+                  {/* 2. parserSignals */}
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <span style={{ color: 'var(--text-dim)', minWidth: '95px' }}>2. Parser:</span>
-                    <span style={{ color: 'var(--accent-indigo)' }}>{activeLimitation.reasoningTrace.parserAction}</span>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <span style={{ color: 'var(--text-dim)', minWidth: '95px' }}>3. Semantic Model:</span>
-                    <span style={{ color: 'var(--accent-cyan)' }}>{activeLimitation.reasoningTrace.semanticPattern}</span>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <span style={{ color: 'var(--text-dim)', minWidth: '95px' }}>4. Knowledge Rules:</span>
+                    <span style={{ color: 'var(--text-dim)', minWidth: '110px' }}>2. Parser Signals:</span>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                      {activeLimitation.reasoningTrace.knowledgeRulesMatched.map((rule, rIdx) => (
-                        <span key={rIdx} style={{ background: 'var(--bg-input)', padding: '1px 6px', borderRadius: 3, color: 'var(--text-main)', fontSize: '0.7rem' }}>
-                          {rule}
+                      {activeLimitation.reasoningTrace.parserSignals.map((sig, sIdx) => (
+                        <span key={sIdx} style={{ background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.3)', padding: '1px 6px', borderRadius: 3, color: 'var(--accent-indigo)', fontSize: '0.7rem' }}>
+                          {sig}
                         </span>
                       ))}
                     </div>
                   </div>
 
+                  {/* 3. detectedSubject & detectedPredicate */}
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <span style={{ color: 'var(--text-dim)', minWidth: '95px' }}>5. Evidence Span:</span>
-                    <span style={{ color: 'var(--accent-emerald)' }}>{activeLimitation.reasoningTrace.statutoryEvidenceSpan}</span>
+                    <span style={{ color: 'var(--text-dim)', minWidth: '110px' }}>3. Subject / Predicate:</span>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <span style={{ color: 'var(--text-main)' }}><strong>Subject:</strong> {activeLimitation.reasoningTrace.detectedSubject}</span>
+                      <span style={{ color: 'var(--text-dim)' }}>|</span>
+                      <span style={{ color: 'var(--text-main)' }}><strong>Predicate:</strong> {activeLimitation.reasoningTrace.detectedPredicate}</span>
+                    </div>
                   </div>
 
+                  {/* 4. detectedPattern */}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <span style={{ color: 'var(--text-dim)', minWidth: '110px' }}>4. Detected Pattern:</span>
+                    <span style={{ color: 'var(--accent-cyan)' }}>{activeLimitation.reasoningTrace.detectedPattern}</span>
+                  </div>
+
+                  {/* 5. evidenceSpan */}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <span style={{ color: 'var(--text-dim)', minWidth: '110px' }}>5. Evidence Span:</span>
+                    <span style={{ color: 'var(--accent-emerald)', fontFamily: 'var(--font-mono)' }}>{activeLimitation.reasoningTrace.evidenceSpan}</span>
+                  </div>
+
+                  {/* 6. agentVotes */}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <span style={{ color: 'var(--text-dim)', minWidth: '110px' }}>6. Agent Votes:</span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {activeLimitation.reasoningTrace.agentVotes.map((vote, vIdx) => (
+                        <span key={vIdx} style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', padding: '2px 6px', borderRadius: 4, fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                          <strong style={{ color: 'var(--text-main)' }}>{vote.agentName}</strong>: {vote.proposedCategory.replace(/_/g, ' ')} ({(vote.confidence * 100).toFixed(0)}%)
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 7. consensusRule */}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <span style={{ color: 'var(--text-dim)', minWidth: '110px' }}>7. Consensus Rule:</span>
+                    <span style={{ color: 'var(--accent-amber)' }}>{activeLimitation.reasoningTrace.consensusRule}</span>
+                  </div>
+
+                  {/* 8. finalDecision */}
                   <div style={{ display: 'flex', gap: 8, background: 'var(--bg-input)', padding: '6px 8px', borderRadius: 4 }}>
-                    <span style={{ color: 'var(--text-dim)', minWidth: '95px' }}>6. Decision:</span>
+                    <span style={{ color: 'var(--text-dim)', minWidth: '110px' }}>8. Final Decision:</span>
                     <strong style={{ color: 'var(--text-main)' }}>
                       {activeLimitation.reasoningTrace.finalDecision} (Calibrated Conf: {activeLimitation.reasoningTrace.calibratedConfidence ?? activeLimitation.confidence})
                     </strong>

@@ -971,8 +971,13 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                       <strong style={{ color: 'var(--accent-indigo)' }}>{decomposedClaim.runSnapshot.nlpParserEngine} • {decomposedClaim.runSnapshot.embeddingModel}</strong>
                     </div>
                     <div style={{ background: 'var(--bg-input)', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
-                      <span style={{ color: 'var(--text-dim)', display: 'block', fontSize: '0.66rem' }}>Corpus Snapshot:</span>
-                      <strong style={{ color: 'var(--accent-cyan)' }}>{decomposedClaim.runSnapshot.corpusVersion} ({decomposedClaim.runSnapshot.corpusDocumentCount} docs)</strong>
+                      <span style={{ color: 'var(--text-dim)', display: 'block', fontSize: '0.66rem' }}>Corpus Snapshot & Hash:</span>
+                      <strong style={{ color: 'var(--accent-cyan)' }}>
+                        {decomposedClaim.runSnapshot.corpusVersion} ({decomposedClaim.runSnapshot.corpusDocumentCount} docs)
+                      </strong>
+                      <div style={{ fontSize: '0.62rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', marginTop: 2 }}>
+                        Hash: {decomposedClaim.runSnapshot.corpusSnapshot?.contentHash || '0x811c9dc5'}
+                      </div>
                     </div>
                     <div style={{ background: 'var(--bg-input)', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
                       <span style={{ color: 'var(--text-dim)', display: 'block', fontSize: '0.66rem' }}>Hallucination Gate:</span>
@@ -997,7 +1002,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                         Evidence Freshness & Drift Monitoring:
                       </strong>
                       <span style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>
-                        Deterministic Multi-Source Health
+                        Deterministic Content & Hash Health
                       </span>
                     </div>
 
@@ -1008,9 +1013,13 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                         <strong style={{ color: 'var(--text-main)' }}>Current</strong>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)' }}>
-                        <span style={{ color: 'var(--accent-emerald)', fontWeight: 800 }}>✓</span>
-                        <span>Claim Text:</span>
-                        <strong style={{ color: 'var(--text-main)' }}>Current</strong>
+                        <span style={{ color: simulatedCorpusDrift ? 'var(--accent-amber)' : 'var(--accent-emerald)', fontWeight: 800 }}>
+                          {simulatedCorpusDrift ? '⚠' : '✓'}
+                        </span>
+                        <span>Claim Text Hash:</span>
+                        <strong style={{ color: simulatedCorpusDrift ? 'var(--accent-amber)' : 'var(--text-main)' }}>
+                          {simulatedCorpusDrift ? 'Modified (Hash Drift)' : 'Current'}
+                        </strong>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)' }}>
                         <span style={{ color: 'var(--accent-emerald)', fontWeight: 800 }}>✓</span>
@@ -1037,14 +1046,17 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                     {simulatedCorpusDrift && (
                       <div style={{
                         marginTop: 4,
-                        padding: '6px 8px',
+                        padding: '8px 10px',
                         background: 'rgba(245, 158, 11, 0.12)',
                         borderRadius: 4,
                         border: '1px solid rgba(245, 158, 11, 0.3)',
                         fontSize: '0.68rem',
                         color: 'var(--accent-amber)'
                       }}>
-                        <strong>Drift Detected:</strong> USPTO corpus updated since analysis run. Re-running analysis will incorporate newly surfaced prior-art documents into retrieval sets.
+                        <div><strong>⚠ CONTENT DRIFT DETECTED:</strong> Document count unchanged ({decomposedClaim.runSnapshot.corpusDocumentCount} docs), but 2 document/claim text hashes changed since snapshot.</div>
+                        <div style={{ fontSize: '0.64rem', color: 'var(--text-dim)', marginTop: 2, fontFamily: 'var(--font-mono)' }}>
+                          Baseline: {decomposedClaim.runSnapshot.corpusSnapshot?.contentHash || '0x811c9dc5'} ➔ Modified Hash: 0x9b43d1a0
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1246,39 +1258,48 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                             {/* Ambiguity / Consensus Status */}
                             {elem.ambiguityStatus === 'ABSTAIN' ? (
-                              <span style={{
-                                fontSize: '0.64rem',
-                                fontWeight: 800,
-                                padding: '2px 7px',
-                                borderRadius: 4,
-                                background: 'rgba(239, 68, 68, 0.2)',
-                                color: '#f87171',
-                                border: '1px solid rgba(239, 68, 68, 0.4)'
-                              }}>
-                                ⚠ ABSTAIN
+                              <span 
+                                title="Safety Guard: The engine could not reliably determine the structure. Presumption withheld (ABSTAIN ≠ NONE, ABSTAIN ≠ NOT RELEVANT, ABSTAIN ≠ LOW SIMILARITY). Manual review required."
+                                style={{
+                                  fontSize: '0.64rem',
+                                  fontWeight: 800,
+                                  padding: '2px 7px',
+                                  borderRadius: 4,
+                                  background: 'rgba(239, 68, 68, 0.2)',
+                                  color: '#f87171',
+                                  border: '1px solid rgba(239, 68, 68, 0.4)'
+                                }}
+                              >
+                                ⚠ ABSTAIN: PRESUMPTION WITHHELD
                               </span>
                             ) : elem.ambiguityStatus === 'REVIEW_RECOMMENDED' ? (
-                              <span style={{
-                                fontSize: '0.64rem',
-                                fontWeight: 800,
-                                padding: '2px 7px',
-                                borderRadius: 4,
-                                background: 'rgba(245, 158, 11, 0.18)',
-                                color: 'var(--accent-amber)',
-                                border: '1px solid rgba(245, 158, 11, 0.4)'
-                              }}>
+                              <span 
+                                title="Review Recommended: Multi-model split decision or validation gate requires human verification."
+                                style={{
+                                  fontSize: '0.64rem',
+                                  fontWeight: 800,
+                                  padding: '2px 7px',
+                                  borderRadius: 4,
+                                  background: 'rgba(245, 158, 11, 0.18)',
+                                  color: 'var(--accent-amber)',
+                                  border: '1px solid rgba(245, 158, 11, 0.4)'
+                                }}
+                              >
                                 ⚠ REVIEW RECOMMENDED
                               </span>
                             ) : (
-                              <span style={{
-                                fontSize: '0.64rem',
-                                fontWeight: 800,
-                                padding: '2px 7px',
-                                borderRadius: 4,
-                                background: 'rgba(16, 185, 129, 0.18)',
-                                color: 'var(--accent-emerald)',
-                                border: '1px solid rgba(16, 185, 129, 0.4)'
-                              }}>
+                              <span 
+                                title="Supported: Result is grounded in the source text/evidence, passes validation, and has sufficient independent model agreement."
+                                style={{
+                                  fontSize: '0.64rem',
+                                  fontWeight: 800,
+                                  padding: '2px 7px',
+                                  borderRadius: 4,
+                                  background: 'rgba(16, 185, 129, 0.18)',
+                                  color: 'var(--accent-emerald)',
+                                  border: '1px solid rgba(16, 185, 129, 0.4)'
+                                }}
+                              >
                                 ✓ SUPPORTED
                               </span>
                             )}
@@ -2304,7 +2325,8 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '0.7rem', color: 'var(--text-muted)', borderTop: '1px dashed rgba(99, 102, 241, 0.2)', paddingTop: '6px' }}>
                   <span><strong>Corpus:</strong> {counterfactualComparison.parityControls.corpusSnapshot}</span>
                   <span><strong>Provider:</strong> {counterfactualComparison.parityControls.retrievalProvider}</span>
-                  <span><strong>Top-K:</strong> {counterfactualComparison.parityControls.topK}</span>
+                  <span><strong>Default Top-K:</strong> {counterfactualComparison.parityControls.defaultTopK || 25}</span>
+                  <span><strong>Actual Top-K:</strong> <strong style={{ color: 'var(--accent-indigo)' }}>{counterfactualComparison.parityControls.actualTopK || 20}</strong></span>
                   <span><strong>Ranking:</strong> {counterfactualComparison.parityControls.rankingConfiguration}</span>
                   <span><strong>Filters:</strong> {counterfactualComparison.parityControls.filtersApplied.join('; ')}</span>
                   <span><strong>Timestamp:</strong> {counterfactualComparison.parityControls.timestamp}</span>
@@ -2599,8 +2621,9 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                     </td>
                     {Object.keys(heatmapData.coverageSummary).map(patId => {
                       const cell = row.scores[patId] || { score: 0, status: 'NONE', evidence: '' };
-                      const bg = cell.status === 'HIGH' ? 'rgba(244, 63, 94, 0.2)' : cell.status === 'PARTIAL' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.1)';
-                      const color = cell.status === 'HIGH' ? '#f87171' : cell.status === 'PARTIAL' ? 'var(--accent-amber)' : 'var(--accent-emerald)';
+                      const isAbstain = cell.status === 'ABSTAIN_UNRESOLVED';
+                      const bg = isAbstain ? 'rgba(239, 68, 68, 0.18)' : cell.status === 'HIGH' ? 'rgba(244, 63, 94, 0.2)' : cell.status === 'PARTIAL' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.1)';
+                      const color = isAbstain ? '#f87171' : cell.status === 'HIGH' ? '#f87171' : cell.status === 'PARTIAL' ? 'var(--accent-amber)' : 'var(--accent-emerald)';
 
                       return (
                         <td key={patId} style={{ padding: '10px 12px', textAlign: 'center' }}>
@@ -2612,6 +2635,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                               score: cell.score,
                               evidence: cell.evidence
                             })}
+                            title={isAbstain ? 'Safety Guard: Presumption Withheld (ABSTAIN ≠ NONE, ABSTAIN ≠ NOT RELEVANT)' : `Match: ${cell.score}%`}
                             style={{
                               padding: '4px 10px',
                               borderRadius: '6px',
@@ -2623,7 +2647,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                               color
                             }}
                           >
-                            {cell.score}% ({cell.status})
+                            {isAbstain ? 'ABSTAIN' : `${cell.score}%`}
                           </button>
                         </td>
                       );
@@ -3289,12 +3313,28 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               Disclosing reference: <strong>{heatmapCellDetail.patentId}</strong> for limitation <strong>"{heatmapCellDetail.limitation}"</strong>.
             </div>
 
-            <div style={{ background: 'var(--bg-input)', padding: '14px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.82rem', color: 'var(--text-main)', lineHeight: 1.5 }}>
-              "{heatmapCellDetail.evidence}"
-            </div>
+            {heatmapCellDetail.status === 'ABSTAIN_UNRESOLVED' ? (
+              <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#f87171' }}>
+                  Downstream Safety Guard: Classification Presumption Withheld
+                </div>
+                <div style={{ fontSize: '0.74rem', color: 'var(--text-main)', lineHeight: 1.4 }}>
+                  {heatmapCellDetail.evidence}
+                </div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', fontStyle: 'italic', marginTop: 2 }}>
+                  ABSTAIN ≠ NONE, ABSTAIN ≠ NOT RELEVANT, ABSTAIN ≠ LOW SIMILARITY. Manual human re-interpretation required before drawing prior-art conclusions.
+                </div>
+              </div>
+            ) : (
+              <div style={{ background: 'var(--bg-input)', padding: '14px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.82rem', color: 'var(--text-main)', lineHeight: 1.5 }}>
+                "{heatmapCellDetail.evidence}"
+              </div>
+            )}
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.74rem', color: 'var(--text-dim)' }}>Correspondence Match: <strong>{heatmapCellDetail.score}% ({heatmapCellDetail.status})</strong></span>
+              <span style={{ fontSize: '0.74rem', color: 'var(--text-dim)' }}>
+                Correspondence Match: <strong>{heatmapCellDetail.status === 'ABSTAIN_UNRESOLVED' ? 'UNRESOLVED (ABSTAIN)' : `${heatmapCellDetail.score}% (${heatmapCellDetail.status})`}</strong>
+              </span>
               <button onClick={() => setHeatmapCellDetail(null)} className="btn-secondary" style={{ fontSize: '0.78rem' }}>
                 Close
               </button>

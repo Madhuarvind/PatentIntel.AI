@@ -864,6 +864,8 @@ export interface CounterfactualRetrievalComparison {
     corpusSnapshot: string;
     retrievalProvider: string;
     topK: number;
+    defaultTopK: number;
+    actualTopK: number;
     filtersApplied: string[];
     timestamp: string;
     rankingConfiguration: string;
@@ -879,10 +881,19 @@ export interface AnalysisRunSnapshot {
   nlpParserEngine: string;
   corpusVersion: string;
   corpusDocumentCount: number;
+  corpusSnapshot: {
+    documentCount: number;
+    documentIds: string[];
+    contentHash: string;
+    claimTextHash: string;
+    specificationHash: string;
+    retrievalConfigHash: string;
+  };
   searchStrategy: string;
   verifiedEvidenceCount: number;
   hallucinationGateStatus: 'ALL_OBJECTS_GROUNDED' | 'FLAGS_DETECTED';
   driftStatus: 'STABLE' | 'DRIFT_DETECTED';
+  driftType?: 'NONE' | 'COUNT_DRIFT' | 'CONTENT_HASH_DRIFT' | 'SPECIFICATION_DRIFT' | 'CONFIGURATION_DRIFT';
   corpusDeltaCount?: number;
   evidenceFreshness: {
     patentMetadataStatus: 'CURRENT' | 'OUTDATED';
@@ -984,7 +995,12 @@ export interface PriorArtLimitationHeatmapRow {
   canonicalName: string;
   category: ClaimLimitationCategory;
   criticality: LimitationCriticality;
-  scores: Record<string, { score: number; status: 'HIGH' | 'PARTIAL' | 'LOW' | 'NONE' | 'INSUFFICIENT_EVIDENCE'; evidence: string }>;
+  scores: Record<string, { 
+    score: number; 
+    status: 'HIGH' | 'PARTIAL' | 'LOW' | 'NONE' | 'INSUFFICIENT_EVIDENCE' | 'ABSTAIN_UNRESOLVED'; 
+    evidence: string;
+    safetyGuard?: string;
+  }>;
 }
 
 // 1. AI Claim Skeleton

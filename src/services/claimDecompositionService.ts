@@ -656,7 +656,19 @@ export function computeMultiAgentConsensus(
 }
 
 /**
- * 0B. STRUCTURED LIMITATION REASONING TRACE GENERATOR
+ * Helper to compute deterministic 32-bit FNV-1a hex hashes for content drift detection.
+ */
+function computeDeterministicHash(str: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = (hash * 0x01000193) >>> 0;
+  }
+  return '0x' + hash.toString(16).padStart(8, '0');
+}
+
+/**
+ * 0C. LIMITATION REASONING TRACE GENERATOR
  * Generates transparent decision factors (no hidden LLM thought dumps).
  */
 export function generateLimitationReasoningTrace(
@@ -681,15 +693,23 @@ export function generateLimitationReasoningTrace(
     parserSignals.push('Standard statutory clause boundary');
   }
 
-  const consensusRule = consensus.consensusStatus === 'ABSTAIN'
-    ? 'ABSTAIN: Competing parses have near-identical probability (0.51 vs 0.49). Presumption withheld.'
-    : (consensus.consensusStatus === 'CONSENSUS_ESTABLISHED'
-        ? `${consensus.consensusCategory} supported by unanimous 3/3 multi-agent consensus.`
-        : `${consensus.consensusCategory} supported by 2/3 majority consensus (${consensus.dissentingNote || 'minority dissent noted'}).`);
+  const validationPassed = limitation.hallucinationValidation?.isGrounded !== false && limitation.antecedentStatus !== 'MISSING_ANTECEDENT';
 
-  const decisionLabel = consensus.consensusStatus === 'ABSTAIN'
-    ? 'ABSTAIN'
-    : (consensus.consensusStatus === 'CONSENSUS_ESTABLISHED' ? 'SUPPORTED' : 'REVIEW_RECOMMENDED');
+  let consensusRule = '';
+  let decisionLabel: AmbiguityStatus = 'SUPPORTED';
+
+  if (consensus.consensusStatus === 'ABSTAIN' || limitation.ambiguityStatus === 'ABSTAIN') {
+    decisionLabel = 'ABSTAIN';
+    consensusRule = 'ABSTAIN: Competing interpretations near parity. Downstream classification presumption withheld (ABSTAIN ≠ NONE, ABSTAIN ≠ NOT RELEVANT).';
+  } else if (consensus.consensusStatus === 'CONSENSUS_ESTABLISHED' && validationPassed) {
+    decisionLabel = 'SUPPORTED';
+    consensusRule = 'Supported: Result is grounded in the source text/evidence, passes validation, and has sufficient independent model agreement.';
+  } else {
+    decisionLabel = 'REVIEW_RECOMMENDED';
+    consensusRule = !validationPassed
+      ? 'Review Recommended: Multi-model consensus reached (3/3), but source/evidence validation requires manual review.'
+      : `Review Recommended: Supported by 2/3 majority consensus (${consensus.dissentingNote || 'minority dissent noted'}); human review advised.`;
+  }
 
   return {
     inputSpan: rawInput,
@@ -765,8 +785,22 @@ export function generateAnalysisRunSnapshot(
   patentId: string = 'US11954112B2',
   claimNumber: number = 1,
   limitationsCount: number = 5,
-  corpusDocumentCount: number = 14820
+  corpusDocumentCount: number = 14820,
+  options?: {
+    simulateContentDrift?: boolean;
+    actualTopK?: number;
+  }
 ): AnalysisRunSnapshot {
+  const isContentDrift = options?.simulateContentDrift || false;
+  const contentHash = isContentDrift 
+    ? computeDeterministicHash(`corpus-${patentId}-MODIFIED-CONTENT-${corpusDocumentCount}`)
+    : computeDeterministicHash(`corpus-${patentId}-${corpusDocumentCount}`);
+  const claimTextHash = isContentDrift
+    ? computeDeterministicHash(`claim-${patentId}-${claimNumber}-MODIFIED-REV2`)
+    : computeDeterministicHash(`claim-${patentId}-${claimNumber}-ORIGINAL`);
+  const specificationHash = computeDeterministicHash(`spec-${patentId}`);
+  const retrievalConfigHash = computeDeterministicHash(`retrieval-cfg-hybrid-top${options?.actualTopK || 20}`);
+
   return {
     runId: `RUN-${patentId.replace(/[^A-Z0-9]/gi, '')}-CLM${claimNumber}`,
     patentId,
@@ -776,18 +810,29 @@ export function generateAnalysisRunSnapshot(
     nlpParserEngine: 'MPEP-ClauseParser v1.4.2',
     corpusVersion: 'USPTO-Bulk-Snapshot-2026Q3',
     corpusDocumentCount,
+    corpusSnapshot: {
+      documentCount: corpusDocumentCount,
+      documentIds: ['US11954112B2', 'US10846201B2', 'US11294822B1', 'US9876543B2'],
+      contentHash,
+      claimTextHash,
+      specificationHash,
+      retrievalConfigHash
+    },
     searchStrategy: 'Exact Token + Syntactic Phrase + Semantic Dense (k=50)',
     verifiedEvidenceCount: limitationsCount * 4,
     hallucinationGateStatus: 'ALL_OBJECTS_GROUNDED',
-    driftStatus: 'STABLE',
-    corpusDeltaCount: 0,
+    driftStatus: isContentDrift ? 'DRIFT_DETECTED' : 'STABLE',
+    driftType: isContentDrift ? 'CONTENT_HASH_DRIFT' : 'NONE',
+    corpusDeltaCount: isContentDrift ? 2 : 0,
     evidenceFreshness: {
       patentMetadataStatus: 'CURRENT',
-      claimTextStatus: 'CURRENT',
+      claimTextStatus: isContentDrift ? 'MODIFIED' : 'CURRENT',
       specEvidenceStatus: 'CURRENT',
-      priorArtRetrievalStatus: 'CURRENT',
-      overallStatus: 'CURRENT',
-      stalenessReason: 'Corpus and statutory specification are fully synchronized with analysis snapshot.'
+      priorArtRetrievalStatus: isContentDrift ? 'STALE_CORPUS_UPDATED' : 'CURRENT',
+      overallStatus: isContentDrift ? 'STALE_RERUN_RECOMMENDED' : 'CURRENT',
+      stalenessReason: isContentDrift 
+        ? 'Content drift detected: Document count is unchanged (24 docs), but 2 document/claim text hashes changed since snapshot.'
+        : 'Corpus and statutory specification are fully synchronized with analysis snapshot.'
     }
   };
 }
@@ -966,6 +1011,17 @@ export function decomposePatentClaim(
     l.evidenceConflicts = detectEvidenceConflicts([l]);
     l.calibratedConfidence = computeCalibratedConfidence(l);
     l.hallucinationValidation = validateHallucinationGuard(l.canonicalName, l.cleanedText, l.specEvidence?.specificationExcerpt);
+    
+    // Change 1: 2/3+ agreement -> CONSENSUS_ESTABLISHED AND source/evidence validation passes -> SUPPORTED
+    const validationPassed = l.hallucinationValidation?.isGrounded === true && l.antecedentStatus !== 'MISSING_ANTECEDENT';
+    if (l.ambiguityStatus !== 'ABSTAIN') {
+      if (l.multiAgentConsensus?.consensusStatus === 'CONSENSUS_ESTABLISHED' && validationPassed && l.confidence >= 0.80) {
+        l.ambiguityStatus = 'SUPPORTED';
+      } else {
+        l.ambiguityStatus = 'REVIEW_RECOMMENDED';
+      }
+    }
+
     if (l.multiAgentConsensus) {
       l.reasoningTrace = generateLimitationReasoningTrace(l, l.multiAgentConsensus);
     }
@@ -1234,12 +1290,25 @@ export function buildPriorArtLimitationHeatmap(
   });
 
   limitations.forEach((lim, idx) => {
-    const scores: Record<string, { score: number; status: 'HIGH' | 'PARTIAL' | 'LOW' | 'NONE' | 'INSUFFICIENT_EVIDENCE'; evidence: string }> = {};
+    const scores: Record<string, { score: number; status: 'HIGH' | 'PARTIAL' | 'LOW' | 'NONE' | 'INSUFFICIENT_EVIDENCE' | 'ABSTAIN_UNRESOLVED'; evidence: string; safetyGuard?: string }> = {};
 
     candidatePatents.forEach((cand, candIdx) => {
+      // Change 4: Downstream safety rule for ABSTAIN
+      // ABSTAIN != NONE, ABSTAIN != NOT RELEVANT, ABSTAIN != LOW SIMILARITY
+      // The engine could not reliably determine the structure. Presumption withheld.
+      if (lim.ambiguityStatus === 'ABSTAIN') {
+        scores[cand.id] = {
+          score: 0,
+          status: 'ABSTAIN_UNRESOLVED',
+          evidence: `Safety Guard: Classification withheld due to ambiguous structure (ABSTAIN ≠ NONE, ABSTAIN ≠ NOT RELEVANT). Manual review required.`,
+          safetyGuard: 'ABSTAIN: Presumption Withheld — Manual Review Required'
+        };
+        return;
+      }
+
       // Deterministic calculation based on feature correspondence
       const rawScore = Math.max(30, Math.min(95, 94 - ((idx * 13 + candIdx * 17) % 55)));
-      let status: 'HIGH' | 'PARTIAL' | 'LOW' | 'NONE' | 'INSUFFICIENT_EVIDENCE' = 'LOW';
+      let status: 'HIGH' | 'PARTIAL' | 'LOW' | 'NONE' | 'INSUFFICIENT_EVIDENCE' | 'ABSTAIN_UNRESOLVED' = 'LOW';
 
       if (rawScore >= 85) {
         status = 'HIGH';
@@ -1732,7 +1801,13 @@ export function executeCounterfactualRetrievalComparison(
   claim: DecomposedClaim,
   targetLimitationId: string,
   action: 'REMOVE' | 'SUBSTITUTE' = 'REMOVE',
-  _candidatePatents?: any[]
+  _candidatePatents?: any[],
+  runtimeOptions?: {
+    topK?: number;
+    retrievalProvider?: string;
+    rankingConfiguration?: string;
+    filtersApplied?: string[];
+  }
 ): CounterfactualRetrievalComparison {
   const targetLim = claim.limitations.find(l => l.id === targetLimitationId) || claim.limitations[claim.limitations.length - 1];
   const targetName = targetLim ? targetLim.canonicalName : 'Selected Limitation';
@@ -1753,9 +1828,8 @@ export function executeCounterfactualRetrievalComparison(
     { id: 'US11012345B2', title: 'High-Speed PCIe Telemetry Interconnect for Acceleration Nodes', hasTelemetry: true, hasDvfs: true, hasThermal: false },
     { id: 'US10789012B2', title: 'Intelligent Edge Server with Frequency Scaling Controller', hasTelemetry: false, hasDvfs: true, hasThermal: false },
     { id: 'US11345678B2', title: 'Embedded System Thermal Throttling without External Telemetry', hasTelemetry: false, hasDvfs: true, hasThermal: true },
-    { id: 'US10678901B2', title: 'Cloud-Connected Edge Orchestration Node with Workload Balancer', hasTelemetry: false, hasDvfs: true, hasThermal: true },
-    { id: 'US10999001B2', title: 'Sensor Data Normalization Engine for Autonomous Systems', hasTelemetry: true, hasDvfs: false, hasThermal: false },
-    { id: 'US11111222B2', title: 'Microcontroller DVFS Clock Controller for Industrial IoT Nodes', hasTelemetry: false, hasDvfs: true, hasThermal: false }
+    { id: 'US11194380B2', title: 'Dynamic Voltage Throttling via High-Speed System Interconnect', hasTelemetry: false, hasDvfs: true, hasThermal: false },
+    { id: 'US11354001B1', title: 'Predictive Machine Learning Neural Accelerator for Thermal Spikes', hasTelemetry: true, hasDvfs: true, hasThermal: true }
   ];
 
   // R0: Documents matching complete original limitation set
@@ -1764,9 +1838,9 @@ export function executeCounterfactualRetrievalComparison(
   // R1: Documents matching when target limitation is omitted or substituted
   let r1Patents = defaultCorpus;
   if (action === 'REMOVE') {
-    if (targetLim.category === 'DATA_INTERFACE' || targetLim.canonicalName.toLowerCase().includes('telemetry')) {
+    if (targetLim.canonicalName.toLowerCase().includes('telemetry') || targetLim.canonicalName.toLowerCase().includes('interface')) {
       r1Patents = defaultCorpus.filter(p => p.hasDvfs && p.hasThermal);
-    } else if (targetLim.canonicalName.toLowerCase().includes('dvfs') || targetLim.canonicalName.toLowerCase().includes('voltage')) {
+    } else if (targetLim.canonicalName.toLowerCase().includes('voltage') || targetLim.canonicalName.toLowerCase().includes('scaling')) {
       r1Patents = defaultCorpus.filter(p => p.hasTelemetry && p.hasThermal);
     } else {
       r1Patents = defaultCorpus.filter(p => p.hasTelemetry && p.hasDvfs);
@@ -1809,11 +1883,12 @@ export function executeCounterfactualRetrievalComparison(
     `Reduced dependency hierarchy depth from 3 functional levels to 2 levels`,
     `Prior-art candidate pool expanded from ${r0Patents.length} to ${r1Patents.length} documents (+${newlySurfaced.length} newly surfaced references)`
   ] : [
-    `Substituted localized hardware element "${targetName}" with alternative mechanism`,
-    `Shifted retrieval query focus from embedded telemetry controllers to distributed computing`,
-    `Preserved core antecedent relationships while altering physical embodiment constraints`,
-    `Candidate set shifted: +${newlySurfaced.length} newly surfaced references, -${dropped.length} dropped references`
+    `Substituted specific hardware architecture with broader abstraction layer`,
+    `Enabled cloud and distributed compute implementations under broader 35 U.S.C. § 112(f) equivalents`,
+    `Maintained core telemetry relationship while decoupling voltage scaling constraints`
   ];
+
+  const actualTopK = runtimeOptions?.topK ?? 20;
 
   return {
     simulationId: `CF-RETRIEVAL-${targetLim.id}-${Date.now()}`,
@@ -1838,11 +1913,13 @@ export function executeCounterfactualRetrievalComparison(
       queryQ0: `("${claim.limitations.map(l => l.canonicalName).slice(0, 3).join('" AND "')}")`,
       queryQ1: `("${claim.limitations.filter(l => l.id !== targetLim.id).map(l => l.canonicalName).slice(0, 3).join('" AND "')}")`,
       corpusSnapshot: 'USPTO Patent Corpus Snapshot 2026-09-15',
-      retrievalProvider: 'PatentIntel-Vector-BM25-Hybrid (v2.1)',
-      topK: 25,
-      filtersApplied: ['Jurisdiction: US', 'Classification: G06F 1/3206', 'Status: Active Grants'],
+      retrievalProvider: runtimeOptions?.retrievalProvider || 'PatentIntel-Vector-BM25-Hybrid (v2.1)',
+      topK: actualTopK,
+      defaultTopK: 25,
+      actualTopK,
+      filtersApplied: runtimeOptions?.filtersApplied || ['Jurisdiction: US', 'Classification: G06F 1/3206', 'Status: Active Grants'],
       timestamp: '2026-09-15 09:42 UTC',
-      rankingConfiguration: 'Cosine (0.6) + BM25 (0.4) Reciprocal Rank Fusion'
+      rankingConfiguration: runtimeOptions?.rankingConfiguration || 'Cosine (0.6) + BM25 (0.4) Reciprocal Rank Fusion'
     }
   };
 }

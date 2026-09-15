@@ -701,6 +701,53 @@ export interface Patent {
   importQuality?: 'COMPLETE' | 'PARTIAL' | 'FAILED';
 }
 
+export type ClaimLimitationCategory = 
+  | 'PREAMBLE'
+  | 'HARDWARE_COMPONENT'
+  | 'FUNCTIONAL_LIMITATION'
+  | 'PROCESS_STEP'
+  | 'OPERATIONAL_CONSTRAINT'
+  | 'DATA_INTERFACE';
+
+export interface ClaimLimitationDetail {
+  id: string;
+  elementNumber: number;
+  category: ClaimLimitationCategory;
+  canonicalName: string;
+  rawText: string;
+  cleanedText: string;
+  scopeTag: string;
+  cpcCategory?: string;
+  antecedentStatus: 'VERIFIED' | 'MISSING_ANTECEDENT' | 'NEW_INTRODUCTION' | 'NOT_APPLICABLE';
+  antecedentNotes?: string;
+  breadthImpact: 'BROAD' | 'MODERATE' | 'NARROW';
+  searchQuerySuggestion?: string;
+  startOffset?: number;
+  endOffset?: number;
+}
+
+export interface DecomposedClaim {
+  claimNumber: number;
+  claimType: 'independent' | 'dependent';
+  dependsOnClaimNumbers: number[];
+  fullText: string;
+  preamble: string;
+  transitionalPhrase: string;
+  transitionalScope: 'OPEN' | 'CLOSED' | 'PARTIALLY_OPEN';
+  limitations: ClaimLimitationDetail[];
+  antecedentAudit: {
+    totalDefiniteTerms: number;
+    validTerms: number;
+    flaggedTerms: string[];
+    healthScore: number;
+  };
+  complexityMetrics: {
+    totalLimitations: number;
+    breadthScore: number;
+    categoryCounts: Record<string, number>;
+  };
+}
+
 export interface ClaimElement {
   id: string;
   type?: 'component' | 'function' | 'process' | 'constraint';
@@ -708,6 +755,14 @@ export interface ClaimElement {
   description?: string;
   text?: string;
   cpcCategory?: string;
+  canonicalName?: string;
+  category?: ClaimLimitationCategory;
+  cleanedText?: string;
+  rawText?: string;
+  antecedentStatus?: 'VERIFIED' | 'MISSING_ANTECEDENT' | 'NEW_INTRODUCTION' | 'NOT_APPLICABLE';
+  antecedentNotes?: string;
+  breadthImpact?: 'BROAD' | 'MODERATE' | 'NARROW';
+  searchQuerySuggestion?: string;
 }
 
 export interface Claim {

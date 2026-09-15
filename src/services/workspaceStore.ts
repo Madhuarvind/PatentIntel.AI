@@ -1,4 +1,5 @@
 import type { PatentDocument, Claim, NormalizedPatent, ClaimElement } from '../types';
+import { decomposePatentClaim } from './claimDecompositionService';
 
 const DB_PATENTS_KEY = 'patentintel_db_patents';
 
@@ -211,11 +212,20 @@ class WorkspaceStore {
     }
 
     const docClaims: Claim[] = normalized.claims.map(nc => {
-      const phrases = nc.text.split(/;|\bcomprising:?\b|\bincluding:?\b|\bwherein\b/i).filter(p => p.trim().length > 15);
-      const elements: ClaimElement[] = phrases.map((ph, idx) => ({
-        id: `el_${nc.claimNumber}_${idx + 1}`,
-        text: ph.trim(),
-        cpcCategory: normalized.cpc[0] || 'G06F 17/00'
+      const decomposed = decomposePatentClaim(nc.text, nc.claimNumber, normalized.cpc);
+      const elements: ClaimElement[] = decomposed.limitations.map(l => ({
+        id: `el_${nc.claimNumber}_${l.elementNumber}`,
+        term: l.canonicalName,
+        text: l.cleanedText,
+        canonicalName: l.canonicalName,
+        category: l.category,
+        cleanedText: l.cleanedText,
+        rawText: l.rawText,
+        cpcCategory: l.cpcCategory,
+        antecedentStatus: l.antecedentStatus,
+        antecedentNotes: l.antecedentNotes,
+        breadthImpact: l.breadthImpact,
+        searchQuerySuggestion: l.searchQuerySuggestion
       }));
 
       return {

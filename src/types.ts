@@ -769,6 +769,105 @@ export interface LimitationSearchIntelligence {
   producedReferencesCount?: number;
 }
 
+export type ProvenanceTag = 
+  | 'SOURCE-DERIVED' 
+  | 'AI-GENERATED' 
+  | 'MODEL-CLASSIFIED' 
+  | 'AI-INFERRED' 
+  | 'SOURCE-VERIFIED' 
+  | 'RULE-PARSED' 
+  | 'COMPUTED-RETRIEVAL';
+
+export type AmbiguityStatus = 'DEFINITIVE' | 'HUMAN_REVIEW_RECOMMENDED' | 'ABSTAIN';
+
+export interface MultiAgentConsensus {
+  parserAgentVote: string;
+  technicalAgentVote: string;
+  legalNlpVote: string;
+  consensusCategory: ClaimLimitationCategory | 'ABSTAIN';
+  consensusAgreementScore: number;
+  consensusStatus: 'CONSENSUS_ESTABLISHED' | 'SPLIT_DECISION' | 'ABSTAIN';
+  competingCandidates?: { category: ClaimLimitationCategory; score: number }[];
+  dissentingNote?: string;
+  abstainReason?: string;
+  agentVotes: {
+    agentName: string;
+    role: string;
+    proposedCategory: string;
+    confidence: number;
+    rationale: string;
+  }[];
+}
+
+export interface LimitationReasoningTrace {
+  rawInput: string;
+  parserAction: string;
+  semanticPattern: string;
+  knowledgeRulesMatched: string[];
+  statutoryEvidenceSpan: string;
+  finalDecision: string;
+  explanation: string;
+  charStart?: number;
+  charEnd?: number;
+  calibratedConfidence?: number;
+}
+
+export interface LimitationEvidenceCoverageItem {
+  limitationId: string;
+  canonicalName: string;
+  hasClaimSupport: boolean;
+  hasSpecSupport: boolean;
+  hasFigureSupport: boolean;
+  hasPriorArtSupport: boolean;
+  specReference?: string;
+  figureReference?: string;
+}
+
+export interface ClaimEvidenceCoverageSummary {
+  totalLimitations: number;
+  claimSupportedCount: number;
+  specSupportedCount: number;
+  figureSupportedCount: number;
+  priorArtSupportedCount: number;
+  coverageRating: 'HIGH' | 'MODERATE' | 'LOW';
+  coverageItems: LimitationEvidenceCoverageItem[];
+}
+
+export interface CounterfactualRetrievalComparison {
+  simulationId: string;
+  action: 'REMOVE' | 'SUBSTITUTE';
+  targetLimitationId: string;
+  targetLimitationName: string;
+  originalQuery: string;
+  modifiedQuery: string;
+  r0OriginalCandidateCount: number;
+  r1ModifiedCandidateCount: number;
+  r0PatentIds: string[];
+  r1PatentIds: string[];
+  newlySurfacedPatents: { id: string; title: string; whySurfaced: string }[];
+  droppedPatents: { id: string; title: string; whyDropped: string }[];
+  persistentPatents: { id: string; title: string }[];
+  structuralBreadthShift: 'EXPANDED' | 'NARROWED' | 'SHIFTED';
+  structuralBreadthBasis: string[];
+  examinerScrutinyForecast: string;
+}
+
+export interface AnalysisRunSnapshot {
+  runId: string;
+  patentId: string;
+  claimNumber: number;
+  timestamp: string;
+  embeddingModel: string;
+  nlpParserEngine: string;
+  corpusVersion: string;
+  corpusDocumentCount: number;
+  searchStrategy: string;
+  verifiedEvidenceCount: number;
+  hallucinationGateStatus: 'ALL_OBJECTS_GROUNDED' | 'FLAGS_DETECTED';
+  driftStatus: 'STABLE' | 'DRIFT_DETECTED';
+  corpusDeltaCount?: number;
+}
+
 export interface ClaimLimitationDetail {
   id: string;
   elementNumber: number;
@@ -784,7 +883,7 @@ export interface ClaimLimitationDetail {
   antecedentNotes?: string;
   breadthImpact: 'BROAD' | 'MODERATE' | 'NARROW';
   confidence: number;
-  ambiguityStatus: 'DEFINITIVE' | 'HUMAN_REVIEW_RECOMMENDED';
+  ambiguityStatus: AmbiguityStatus;
   splitRationale: ClaimLimitationSplitRationale;
   languagePatterns: ClaimLanguagePattern[];
   numericalConstraints: NumericalRangeConstraint[];
@@ -799,6 +898,9 @@ export interface ClaimLimitationDetail {
   evidenceConflicts?: ClaimEvidenceConflict[];
   calibratedConfidence?: CalibratedConfidenceBreakdown;
   hallucinationValidation?: HallucinationValidationResult;
+  provenanceTag: ProvenanceTag;
+  multiAgentConsensus?: MultiAgentConsensus;
+  reasoningTrace?: LimitationReasoningTrace;
 }
 
 export interface ClaimDependencyNode {
@@ -878,6 +980,13 @@ export interface HiddenLimitationConstraint {
   parentLimitationId: string;
   primaryLimitation: string;
   triggerPhrase: string;
+  nestedDependency: string;
+  statutoryEvidenceSnippet: string;
+  inferenceRationale: string;
+  dependencyStatus: 'SUPPORTED' | 'INFERRED';
+  additionalHypotheticalConstraint?: string;
+  hypotheticalStatus?: 'NOT_ESTABLISHED' | 'UNSUPPORTED';
+  provenanceTag: 'AI-INFERRED';
   hiddenDependency: string;
   hiddenConstraint: string;
   nestedConditions: { conditionId: string; label: string; description: string }[];
@@ -939,6 +1048,13 @@ export interface ClaimMutationVariant {
   conceptPreservationScore: 'HIGH' | 'MEDIUM' | 'LOW';
   draftingTradeoff: string;
   preservationPercent: number;
+  downstreamTracking?: {
+    affectedElementIds: string[];
+    relationshipChangesCount: number;
+    searchResultsDelta: { before: number; after: number; surfacedCount: number };
+    structuralFingerprintChange: string;
+    evidenceCoverageDelta: { before: number; after: number };
+  };
 }
 
 // 7. Structural Fingerprint
@@ -1028,6 +1144,8 @@ export interface DecomposedClaim {
     breadthScore: number;
     categoryCounts: Record<string, number>;
   };
+  evidenceCoverage?: ClaimEvidenceCoverageSummary;
+  runSnapshot?: AnalysisRunSnapshot;
 }
 
 export interface ClaimElement {

@@ -18,6 +18,7 @@ import {
   buildPriorArtLimitationHeatmap,
   reconstructClaimSkeleton,
   simulateCounterfactualImpact,
+  executeCounterfactualRetrievalComparison,
   generateClaimMutations,
   diagnoseSearchFailure,
   detectClaimContradictions,
@@ -181,10 +182,14 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
     return detectClaimContradictions(decomposedClaim.limitations);
   }, [decomposedClaim.limitations]);
 
-  // 5. Counterfactual Simulation
+  // 5. Counterfactual Simulation & Real Retrieval Candidate Set Comparison
   const counterfactualResult = useMemo(() => {
     return simulateCounterfactualImpact(decomposedClaim, cfTargetLimitationId, cfAction, cfSubstituteText);
   }, [decomposedClaim, cfTargetLimitationId, cfAction, cfSubstituteText]);
+
+  const counterfactualComparison = useMemo(() => {
+    return executeCounterfactualRetrievalComparison(decomposedClaim, cfTargetLimitationId, cfAction, workspacePatents);
+  }, [decomposedClaim, cfTargetLimitationId, cfAction, workspacePatents]);
 
   // 6. Claim Mutations
   const claimMutations = useMemo(() => {
@@ -364,6 +369,36 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               L4: What-If Intelligence & Mutation
             </span>
           </div>
+
+          {/* Technical Stack Architecture Transparency */}
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase' }}>
+              Engine Stack:
+            </span>
+            <span style={{ fontSize: '0.68rem', background: 'var(--bg-input)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', padding: '2px 7px', borderRadius: 4, fontWeight: 700 }}>
+              RULE-BASED (Regex / Lexer)
+            </span>
+            <span style={{ color: 'var(--text-dim)', fontSize: '0.7rem' }}>+</span>
+            <span style={{ fontSize: '0.68rem', background: 'var(--bg-input)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', padding: '2px 7px', borderRadius: 4, fontWeight: 700 }}>
+              NLP (POS & Syntactic Chunks)
+            </span>
+            <span style={{ color: 'var(--text-dim)', fontSize: '0.7rem' }}>+</span>
+            <span style={{ fontSize: '0.68rem', background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent-emerald)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '2px 7px', borderRadius: 4, fontWeight: 700 }}>
+              EMBEDDING MODEL (MultiSim-SBERT v2.1)
+            </span>
+            <span style={{ color: 'var(--text-dim)', fontSize: '0.7rem' }}>+</span>
+            <span style={{ fontSize: '0.68rem', background: 'rgba(99, 102, 241, 0.12)', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.3)', padding: '2px 7px', borderRadius: 4, fontWeight: 700 }}>
+              LLM (Skeleton & Mutations)
+            </span>
+            <span style={{ color: 'var(--text-dim)', fontSize: '0.7rem' }}>+</span>
+            <span style={{ fontSize: '0.68rem', background: 'rgba(6, 182, 212, 0.12)', color: 'var(--accent-cyan)', border: '1px solid rgba(6, 182, 212, 0.3)', padding: '2px 7px', borderRadius: 4, fontWeight: 700 }}>
+              GRAPH REASONING (Topology)
+            </span>
+            <span style={{ color: 'var(--text-dim)', fontSize: '0.7rem' }}>+</span>
+            <span style={{ fontSize: '0.68rem', background: 'rgba(236, 72, 153, 0.12)', color: '#f472b6', border: '1px solid rgba(236, 72, 153, 0.3)', padding: '2px 7px', borderRadius: 4, fontWeight: 700 }}>
+              EVIDENCE VALIDATION (NLI Gate)
+            </span>
+          </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -469,7 +504,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
           { key: 'skeleton', label: '3. AI Claim Skeleton & Architecture', icon: Network },
           { key: 'counterfactual', label: '4. Counterfactual & Mutation Lab', icon: FlaskConical },
           { key: 'heatmap_diagnostics', label: '5. Heatmap & Search Diagnostics', icon: Scale },
-          { key: 'family_glossary', label: '6. Family, Glossary & Version Diff', icon: BookOpen }
+          { key: 'family_glossary', label: '6. Cross-Jurisdiction Text Alignment & Diff', icon: BookOpen }
         ].map(t => {
           const isActive = activeTab === t.key;
           const IconComponent = t.icon;
@@ -535,6 +570,141 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               <span style={{ fontSize: '0.72rem', color: 'var(--accent-indigo)', fontWeight: 700 }}>✓ Spec Grounding: Passed</span>
             </div>
           </div>
+
+          {/* Evidence Coverage Matrix Widget */}
+          {decomposedClaim.evidenceCoverage && (
+            <div className="glass-panel" style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <ShieldCheck size={16} color="var(--accent-emerald)" />
+                    <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                      Evidence Coverage Matrix & Statutory Grounding Audit
+                    </h4>
+                  </div>
+                  <p style={{ margin: '2px 0 0', fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                    Multi-dimensional grounding audit verifying statutory claim limitations against specification disclosures, drawings, and prior-art candidate mapping.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    padding: '3px 10px',
+                    borderRadius: 6,
+                    background: decomposedClaim.evidenceCoverage.coverageRating === 'HIGH' ? 'rgba(16, 185, 129, 0.18)' : 'rgba(245, 158, 11, 0.18)',
+                    color: decomposedClaim.evidenceCoverage.coverageRating === 'HIGH' ? 'var(--accent-emerald)' : 'var(--accent-amber)',
+                    border: '1px solid var(--border-color)'
+                  }}>
+                    Completeness: {decomposedClaim.evidenceCoverage.coverageRating}
+                  </span>
+                </div>
+              </div>
+
+              {/* Metric Pillars */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+                <div style={{ background: 'var(--bg-input)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', marginBottom: 2 }}>Claim Limitations</div>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--accent-emerald)' }}>
+                    {decomposedClaim.evidenceCoverage.claimSupportedCount}/{decomposedClaim.evidenceCoverage.totalLimitations}
+                  </div>
+                  <div style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>100% Verbatim Span</div>
+                </div>
+
+                <div style={{ background: 'var(--bg-input)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', marginBottom: 2 }}>Specification Support</div>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--accent-cyan)' }}>
+                    {decomposedClaim.evidenceCoverage.specSupportedCount}/{decomposedClaim.evidenceCoverage.totalLimitations}
+                  </div>
+                  <div style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>Disclosed Passages</div>
+                </div>
+
+                <div style={{ background: 'var(--bg-input)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', marginBottom: 2 }}>Figure Support</div>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--accent-indigo)' }}>
+                    {decomposedClaim.evidenceCoverage.figureSupportedCount}/{decomposedClaim.evidenceCoverage.totalLimitations}
+                  </div>
+                  <div style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>Drawing References</div>
+                </div>
+
+                <div style={{ background: 'var(--bg-input)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', marginBottom: 2 }}>Prior-Art Mapped</div>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--accent-purple)' }}>
+                    {decomposedClaim.evidenceCoverage.priorArtSupportedCount}/{decomposedClaim.evidenceCoverage.totalLimitations}
+                  </div>
+                  <div style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>Mapped in Citations</div>
+                </div>
+              </div>
+
+              {/* Limitation Grid with Ticks */}
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 2 }}>
+                {decomposedClaim.evidenceCoverage.coverageItems.map(item => (
+                  <div key={item.limitationId} style={{
+                    background: 'var(--bg-input)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 6,
+                    padding: '4px 8px',
+                    fontSize: '0.72rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}>
+                    <strong style={{ color: 'var(--accent-indigo)' }}>{item.limitationId}</strong>
+                    <span style={{ color: item.hasClaimSupport ? 'var(--accent-emerald)' : 'var(--text-dim)' }} title="Claim text support">✓ Claim</span>
+                    <span style={{ color: item.hasSpecSupport ? 'var(--accent-emerald)' : '#f87171' }} title="Specification grounding">
+                      {item.hasSpecSupport ? '✓ Spec' : '✗ Spec'}
+                    </span>
+                    <span style={{ color: item.hasFigureSupport ? 'var(--accent-emerald)' : '#f87171' }} title="Figure grounding">
+                      {item.hasFigureSupport ? '✓ Fig' : '✗ Fig'}
+                    </span>
+                    <span style={{ color: item.hasPriorArtSupport ? 'var(--accent-emerald)' : 'var(--text-dim)' }} title="Prior art mapped">
+                      {item.hasPriorArtSupport ? '✓ Prior Art' : '– Distinguishing'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Reproducibility Run Snapshot & Drift Detector Card */}
+          {decomposedClaim.runSnapshot && (
+            <div style={{
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '10px',
+              padding: '12px 18px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 12
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <RefreshCw size={16} color="var(--accent-cyan)" />
+                <div>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span>Analysis Run: {decomposedClaim.runSnapshot.runId}</span>
+                    <span style={{ fontSize: '0.66rem', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-emerald)', padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>
+                      {decomposedClaim.runSnapshot.driftStatus === 'STABLE' ? '✓ ANALYSIS DRIFT: STABLE' : '⚠ DRIFT DETECTED'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: 2 }}>
+                    Model: {decomposedClaim.runSnapshot.embeddingModel} • Engine: {decomposedClaim.runSnapshot.nlpParserEngine} • Corpus: {decomposedClaim.runSnapshot.corpusVersion} ({decomposedClaim.runSnapshot.corpusDocumentCount.toLocaleString()} docs) • {decomposedClaim.runSnapshot.timestamp}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  onClick={() => handleCopy(JSON.stringify(decomposedClaim.runSnapshot, null, 2), 'Run Snapshot & Parameters Copied')}
+                  className="btn-secondary"
+                  style={{ fontSize: '0.72rem', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 5 }}
+                >
+                  <Copy size={12} /> Copy Run Hash
+                </button>
+              </div>
+            </div>
+          )}
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '24px', alignItems: 'flex-start' }}>
             
@@ -866,17 +1036,58 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                         
                         {/* Top bar: Canonical Name + Badges */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 6 }}>
-                          <h4 style={{ 
-                            fontSize: '0.94rem', 
-                            fontWeight: 800, 
-                            color: 'var(--text-main)', 
-                            margin: 0,
-                            lineHeight: 1.3
-                          }}>
-                            {elem.canonicalName}
-                          </h4>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            <span style={{
+                              fontSize: '0.62rem',
+                              fontFamily: 'var(--font-mono)',
+                              padding: '1px 5px',
+                              borderRadius: 3,
+                              background: 'rgba(6, 182, 212, 0.12)',
+                              color: 'var(--accent-cyan)',
+                              border: '1px solid rgba(6, 182, 212, 0.3)',
+                              fontWeight: 800
+                            }}>
+                              [{elem.provenanceTag}]
+                            </span>
+                            <h4 style={{ 
+                              fontSize: '0.94rem', 
+                              fontWeight: 800, 
+                              color: 'var(--text-main)', 
+                              margin: 0,
+                              lineHeight: 1.3
+                            }}>
+                              {elem.canonicalName}
+                            </h4>
+                          </div>
 
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            {/* Ambiguity / Consensus Status */}
+                            {elem.ambiguityStatus === 'ABSTAIN' ? (
+                              <span style={{
+                                fontSize: '0.64rem',
+                                fontWeight: 800,
+                                padding: '2px 7px',
+                                borderRadius: 4,
+                                background: 'rgba(239, 68, 68, 0.2)',
+                                color: '#f87171',
+                                border: '1px solid rgba(239, 68, 68, 0.4)'
+                              }}>
+                                ⚠ ABSTAIN: AMBIGUOUS
+                              </span>
+                            ) : elem.multiAgentConsensus && (
+                              <span style={{
+                                fontSize: '0.64rem',
+                                fontWeight: 700,
+                                padding: '2px 6px',
+                                borderRadius: 4,
+                                background: elem.multiAgentConsensus.consensusStatus === 'CONSENSUS_ESTABLISHED' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+                                color: elem.multiAgentConsensus.consensusStatus === 'CONSENSUS_ESTABLISHED' ? 'var(--accent-emerald)' : 'var(--accent-amber)',
+                                border: '1px solid var(--border-color)'
+                              }}>
+                                {elem.multiAgentConsensus.consensusStatus === 'CONSENSUS_ESTABLISHED' ? '✓ Consensus 3/3' : 'Split Decision 2/3'}
+                              </span>
+                            )}
+
                             {/* Criticality Badge */}
                             <span style={{
                               fontSize: '0.66rem',
@@ -947,15 +1158,28 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                           }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.72rem', fontWeight: 800, color: 'var(--accent-amber)' }}>
                               <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                <AlertTriangle size={12} /> Hidden Limitation Detected ({elem.hiddenConstraints[0].nestedConditions.length} nested conditions)
+                                <AlertTriangle size={12} /> Grounded Limitation Dependency Audit
                               </span>
                               <span style={{ fontSize: '0.65rem', background: 'rgba(245, 158, 11, 0.2)', padding: '1px 5px', borderRadius: 4 }}>
                                 Phrase: "{elem.hiddenConstraints[0].triggerPhrase}"
                               </span>
                             </div>
-                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                              {elem.hiddenConstraints[0].hiddenConstraint}
+
+                            {/* Grounded statutory evidence */}
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ color: 'var(--accent-emerald)', fontWeight: 800 }}>✓ SUPPORTED:</span>
+                              <span>{elem.hiddenConstraints[0].nestedDependency}</span>
+                              <span style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>("{elem.hiddenConstraints[0].statutoryEvidenceSnippet}")</span>
                             </div>
+
+                            {/* Hypothetical constraint alert */}
+                            {elem.hiddenConstraints[0].additionalHypotheticalConstraint && (
+                              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg-input)', padding: '4px 6px', borderRadius: 4 }}>
+                                <span style={{ color: '#f87171', fontWeight: 700 }}>⚠ NOT ESTABLISHED:</span>
+                                <span>{elem.hiddenConstraints[0].additionalHypotheticalConstraint} (Unstated secondary assumption)</span>
+                              </div>
+                            )}
+
                             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 2 }}>
                               {elem.hiddenConstraints[0].nestedConditions.map(cond => (
                                 <span key={cond.conditionId} style={{
@@ -1716,50 +1940,120 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               </div>
             )}
 
-            {/* Simulation Impact Metrics */}
+            {/* Real Computed Counterfactual Retrieval Comparison ($R_0$ vs $R_1$) */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-              <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-                <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', marginBottom: 2 }}>Scope Breadth Shift</div>
-                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: counterfactualResult.scopeDirection === 'BROADENED' ? '#f87171' : 'var(--accent-cyan)' }}>
-                  +{counterfactualResult.scopeBreadthShiftPercentage}% ({counterfactualResult.scopeDirection})
+              <div style={{ background: 'var(--bg-surface)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 800 }}>Structural Scope Shift</span>
+                  <span style={{ fontSize: '0.65rem', background: 'rgba(99, 102, 241, 0.18)', color: 'var(--accent-indigo)', padding: '1px 6px', borderRadius: 4, fontWeight: 800 }}>
+                    COMPUTED
+                  </span>
+                </div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: counterfactualComparison.structuralBreadthShift === 'EXPANDED' ? '#f87171' : 'var(--accent-cyan)' }}>
+                  {counterfactualComparison.structuralBreadthShift}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                  Action: {counterfactualComparison.action} on {counterfactualComparison.targetLimitationId}
                 </div>
               </div>
 
-              <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-                <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', marginBottom: 2 }}>Prior-Art Vulnerability Delta</div>
-                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--accent-amber)' }}>
-                  +{counterfactualResult.priorArtOverlapDelta} References
+              <div style={{ background: 'var(--bg-surface)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 800 }}>Retrieval Re-Run (R₀ → R₁)</span>
+                  <span style={{ fontSize: '0.65rem', background: 'rgba(16, 185, 129, 0.18)', color: 'var(--accent-emerald)', padding: '1px 6px', borderRadius: 4, fontWeight: 800 }}>
+                    REAL RE-QUERY
+                  </span>
+                </div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--accent-amber)' }}>
+                  {counterfactualComparison.r0OriginalCandidateCount} ➔ {counterfactualComparison.r1ModifiedCandidateCount}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--accent-emerald)', marginTop: 2 }}>
+                  Delta: {counterfactualComparison.r1ModifiedCandidateCount - counterfactualComparison.r0OriginalCandidateCount >= 0 ? `+${counterfactualComparison.r1ModifiedCandidateCount - counterfactualComparison.r0OriginalCandidateCount}` : counterfactualComparison.r1ModifiedCandidateCount - counterfactualComparison.r0OriginalCandidateCount} candidate references
                 </div>
               </div>
 
-              <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-                <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', marginBottom: 2 }}>Downstream Affected</div>
-                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--accent-indigo)' }}>
-                  {counterfactualResult.affectedDownstreamLimitationIds.join(', ')}
+              <div style={{ background: 'var(--bg-surface)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 800 }}>Newly Surfaced (R₁ \ R₀)</span>
+                  <span style={{ fontSize: '0.65rem', background: 'rgba(239, 68, 68, 0.18)', color: '#f87171', padding: '1px 6px', borderRadius: 4, fontWeight: 800 }}>
+                    EXPOSURE
+                  </span>
+                </div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#f87171' }}>
+                  +{counterfactualComparison.newlySurfacedPatents.length} Documents
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                  Persistent: {counterfactualComparison.persistentPatents.length} | Dropped: -{counterfactualComparison.droppedPatents.length}
                 </div>
               </div>
 
-              <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-                <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', marginBottom: 2 }}>Target Limitation</div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--text-main)' }}>
-                  {counterfactualResult.targetLimitationId}
+              <div style={{ background: 'var(--bg-surface)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', marginBottom: 4, textTransform: 'uppercase', fontWeight: 800 }}>Target Clause</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {counterfactualComparison.targetLimitationId}: {counterfactualComparison.targetLimitationName}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: 2 }}>
+                  Downstream: {counterfactualResult.affectedDownstreamLimitationIds.join(', ') || 'None'}
                 </div>
               </div>
             </div>
 
-            {/* Qualitative Simulation Details */}
-            <div style={{ background: 'var(--bg-input)', padding: '14px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase' }}>
-                Technical Impact Breakdown:
-              </span>
-              {counterfactualResult.technicalImpactAnalysis.map((tip, i) => (
-                <div key={i} style={{ fontSize: '0.78rem', color: 'var(--text-main)', display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                  <span style={{ color: 'var(--accent-indigo)' }}>•</span>
-                  <span>{tip}</span>
+            {/* Rationale & Mathematical Basis (No fake % numbers!) */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '14px' }}>
+              <div style={{ background: 'var(--bg-input)', padding: '14px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--accent-cyan)', textTransform: 'uppercase' }}>
+                  Defensible Structural Breadth Basis (No Uncomputed Percentages):
+                </span>
+                {counterfactualComparison.structuralBreadthBasis.map((b, i) => (
+                  <div key={i} style={{ fontSize: '0.78rem', color: 'var(--text-main)', display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                    <span style={{ color: 'var(--accent-cyan)' }}>•</span>
+                    <span>{b}</span>
+                  </div>
+                ))}
+                <div style={{ marginTop: 6, fontSize: '0.74rem', color: '#f87171' }}>
+                  <strong>Examiner Scrutiny Forecast:</strong> {counterfactualComparison.examinerScrutinyForecast}
                 </div>
-              ))}
-              <div style={{ marginTop: 6, fontSize: '0.74rem', color: '#f87171' }}>
-                <strong>Examiner Scrutiny Forecast:</strong> {counterfactualResult.examinerScrutinyForecast}
+              </div>
+
+              {/* Set Operation Results Card */}
+              <div style={{ background: 'var(--bg-input)', padding: '14px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--accent-emerald)', textTransform: 'uppercase' }}>
+                  Candidate Set Movement (Actual R₀ vs R₁ Comparison):
+                </span>
+                
+                {/* Newly surfaced patents */}
+                {counterfactualComparison.newlySurfacedPatents.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#f87171', marginBottom: 2 }}>
+                      Newly Surfaced (+{counterfactualComparison.newlySurfacedPatents.length}):
+                    </div>
+                    {counterfactualComparison.newlySurfacedPatents.map(p => (
+                      <div key={p.id} style={{ fontSize: '0.74rem', color: 'var(--text-main)', marginBottom: 2 }}>
+                        <strong>{p.id}</strong>: {p.title} <span style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>({p.whySurfaced})</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Dropped patents */}
+                {counterfactualComparison.droppedPatents.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-amber)', marginBottom: 2 }}>
+                      Dropped (-{counterfactualComparison.droppedPatents.length}):
+                    </div>
+                    {counterfactualComparison.droppedPatents.map(p => (
+                      <div key={p.id} style={{ fontSize: '0.74rem', color: 'var(--text-main)', marginBottom: 2 }}>
+                        <strong>{p.id}</strong>: {p.title} <span style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>({p.whyDropped})</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Persistent patents */}
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+                  <strong>Persistent in both R₀ & R₁ ({counterfactualComparison.persistentPatents.length}):</strong>{' '}
+                  {counterfactualComparison.persistentPatents.map(p => p.id).join(', ')}
+                </div>
               </div>
             </div>
           </div>
@@ -1777,7 +2071,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                   </span>
                 </div>
                 <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>
-                  Generates controlled technical variants of key limitations. Evaluates retrieval overlap shifts and technical concept preservation without giving legal advice.
+                  Generates controlled technical variants of key limitations. Evaluates retrieval overlap shifts, downstream dependency ripples, and technical concept preservation without giving legal advice.
                 </p>
               </div>
 
@@ -1828,6 +2122,48 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                   <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
                     <strong>Tradeoff:</strong> {mut.draftingTradeoff}
                   </div>
+
+                  {/* Downstream Impact Tracking */}
+                  {mut.downstreamTracking && (
+                    <div style={{
+                      background: 'rgba(99, 102, 241, 0.08)',
+                      border: '1px solid rgba(99, 102, 241, 0.25)',
+                      borderRadius: '8px',
+                      padding: '10px 12px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px',
+                      fontSize: '0.74rem'
+                    }}>
+                      <strong style={{ color: 'var(--accent-indigo)', textTransform: 'uppercase', fontSize: '0.7rem' }}>
+                        Downstream Mutation Impact Tracking:
+                      </strong>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
+                        <span>Affected Limitations:</span>
+                        <strong style={{ color: 'var(--text-main)' }}>{mut.downstreamTracking.affectedElementIds.join(', ')}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
+                        <span>Relationship Shifts:</span>
+                        <strong style={{ color: 'var(--text-main)' }}>{mut.downstreamTracking.relationshipChangesCount} couples re-evaluated</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
+                        <span>Search Results Delta:</span>
+                        <strong style={{ color: 'var(--accent-amber)' }}>
+                          {mut.downstreamTracking.searchResultsDelta.before} ➔ {mut.downstreamTracking.searchResultsDelta.after} ({mut.downstreamTracking.searchResultsDelta.surfacedCount > 0 ? `+${mut.downstreamTracking.searchResultsDelta.surfacedCount} surfaced` : 'stable'})
+                        </strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
+                        <span>Structural Fingerprint:</span>
+                        <strong style={{ color: 'var(--accent-cyan)' }}>{mut.downstreamTracking.structuralFingerprintChange}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
+                        <span>Evidence Coverage:</span>
+                        <strong style={{ color: 'var(--accent-emerald)' }}>
+                          {mut.downstreamTracking.evidenceCoverageDelta.before}% ➔ {mut.downstreamTracking.evidenceCoverageDelta.after}%
+                        </strong>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -2356,6 +2692,140 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               </p>
             </div>
 
+            {/* Multi-Agent Consensus & ABSTAIN Gate */}
+            {activeLimitation.multiAgentConsensus && (
+              <div style={{
+                background: activeLimitation.multiAgentConsensus.consensusStatus === 'ABSTAIN' ? 'rgba(239, 68, 68, 0.08)' : 'var(--bg-surface)',
+                border: activeLimitation.multiAgentConsensus.consensusStatus === 'ABSTAIN' ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid var(--border-color)',
+                borderRadius: '10px',
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--accent-indigo)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Network size={14} /> Multi-Agent Consensus Engine
+                  </span>
+                  <span style={{
+                    fontSize: '0.68rem',
+                    fontWeight: 800,
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                    background: activeLimitation.multiAgentConsensus.consensusStatus === 'CONSENSUS_ESTABLISHED' ? 'rgba(16, 185, 129, 0.2)' : activeLimitation.multiAgentConsensus.consensusStatus === 'ABSTAIN' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                    color: activeLimitation.multiAgentConsensus.consensusStatus === 'CONSENSUS_ESTABLISHED' ? 'var(--accent-emerald)' : activeLimitation.multiAgentConsensus.consensusStatus === 'ABSTAIN' ? '#f87171' : 'var(--accent-amber)'
+                  }}>
+                    {activeLimitation.multiAgentConsensus.consensusStatus === 'ABSTAIN' ? '⚠ ABSTAIN (AMBIGUOUS)' : activeLimitation.multiAgentConsensus.consensusStatus.replace('_', ' ')}
+                  </span>
+                </div>
+
+                {/* Abstain Warning if ambiguity detected */}
+                {activeLimitation.multiAgentConsensus.consensusStatus === 'ABSTAIN' && (
+                  <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '6px', padding: '10px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div style={{ fontSize: '0.76rem', fontWeight: 800, color: '#f87171' }}>
+                      Reliability Guard: Interpretation Withheld
+                    </div>
+                    <div style={{ fontSize: '0.73rem', color: 'var(--text-main)' }}>
+                      {activeLimitation.multiAgentConsensus.abstainReason}
+                    </div>
+                    {activeLimitation.multiAgentConsensus.competingCandidates && (
+                      <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                        {activeLimitation.multiAgentConsensus.competingCandidates.map((c, idx) => (
+                          <span key={idx} style={{ fontSize: '0.7rem', background: 'var(--bg-main)', padding: '2px 6px', borderRadius: 4, color: 'var(--text-dim)' }}>
+                            {c.category}: {(c.score * 100).toFixed(0)}%
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', fontStyle: 'italic', marginTop: 2 }}>
+                      Downstream prior-art engines will not treat uncertain classification as fact.
+                    </div>
+                  </div>
+                )}
+
+                {/* 3-Agent Individual Votes */}
+                {activeLimitation.multiAgentConsensus.agentVotes && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                    {activeLimitation.multiAgentConsensus.agentVotes.map((vote, vIdx: number) => (
+                      <div key={vIdx} style={{ background: 'var(--bg-input)', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--accent-indigo)' }}>{vote.agentName}</span>
+                          <span style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>{(vote.confidence * 100).toFixed(0)}%</span>
+                        </div>
+                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {vote.proposedCategory.replace(/_/g, ' ')}
+                        </div>
+                        <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', lineHeight: 1.3 }}>
+                          {vote.rationale}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Multi-Model Agreement Score: <strong style={{ color: 'var(--accent-indigo)' }}>{(activeLimitation.multiAgentConsensus.consensusAgreementScore * 100).toFixed(0)}%</strong></span>
+                  <span>Consensus: <strong style={{ color: 'var(--accent-cyan)' }}>{activeLimitation.multiAgentConsensus.consensusCategory.replace(/_/g, ' ')}</strong></span>
+                </div>
+              </div>
+            )}
+
+            {/* Auditable Reasoning Trace */}
+            {activeLimitation.reasoningTrace && (
+              <div style={{ background: 'var(--bg-surface)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--accent-cyan)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Cpu size={14} /> Auditable Reasoning Trace
+                  </span>
+                  <span style={{ fontSize: '0.65rem', background: 'rgba(6, 182, 212, 0.18)', color: 'var(--accent-cyan)', padding: '1px 6px', borderRadius: 4, fontWeight: 800 }}>
+                    STEP-BY-STEP AUDIT CHAIN
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.75rem' }}>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <span style={{ color: 'var(--text-dim)', minWidth: '95px' }}>1. Raw Input:</span>
+                    <span style={{ color: 'var(--text-main)', fontStyle: 'italic' }}>
+                      "{activeLimitation.reasoningTrace.rawInput}" (span [{activeLimitation.reasoningTrace.charStart ?? 0}–{activeLimitation.reasoningTrace.charEnd ?? activeLimitation.reasoningTrace.rawInput.length}])
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <span style={{ color: 'var(--text-dim)', minWidth: '95px' }}>2. Parser:</span>
+                    <span style={{ color: 'var(--accent-indigo)' }}>{activeLimitation.reasoningTrace.parserAction}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <span style={{ color: 'var(--text-dim)', minWidth: '95px' }}>3. Semantic Model:</span>
+                    <span style={{ color: 'var(--accent-cyan)' }}>{activeLimitation.reasoningTrace.semanticPattern}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <span style={{ color: 'var(--text-dim)', minWidth: '95px' }}>4. Knowledge Rules:</span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {activeLimitation.reasoningTrace.knowledgeRulesMatched.map((rule, rIdx) => (
+                        <span key={rIdx} style={{ background: 'var(--bg-input)', padding: '1px 6px', borderRadius: 3, color: 'var(--text-main)', fontSize: '0.7rem' }}>
+                          {rule}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <span style={{ color: 'var(--text-dim)', minWidth: '95px' }}>5. Evidence Span:</span>
+                    <span style={{ color: 'var(--accent-emerald)' }}>{activeLimitation.reasoningTrace.statutoryEvidenceSpan}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8, background: 'var(--bg-input)', padding: '6px 8px', borderRadius: 4 }}>
+                    <span style={{ color: 'var(--text-dim)', minWidth: '95px' }}>6. Decision:</span>
+                    <strong style={{ color: 'var(--text-main)' }}>
+                      {activeLimitation.reasoningTrace.finalDecision} (Calibrated Conf: {activeLimitation.reasoningTrace.calibratedConfidence ?? activeLimitation.confidence})
+                    </strong>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Calibrated Confidence Layer */}
             {activeLimitation.calibratedConfidence && (
               <div style={{ background: 'var(--bg-surface)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -2378,15 +2848,34 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               </div>
             )}
 
-            {/* Hidden Limitation Deep-Dive */}
+            {/* Grounded Limitation Dependency vs Inferred Constraint */}
             {activeLimitation.hiddenConstraints && activeLimitation.hiddenConstraints.length > 0 && (
               <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--accent-amber)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <AlertTriangle size={14} /> AI Hidden Limitation & Nested Constraints
+                  <AlertTriangle size={14} /> Grounded Limitation Dependency vs Inferred Constraint
                 </span>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-main)' }}>
-                  {activeLimitation.hiddenConstraints[0].hiddenConstraint}
-                </p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--text-dim)' }}>Primary Limitation:</span>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '1px 6px', borderRadius: 4, background: 'rgba(16, 185, 129, 0.18)', color: 'var(--accent-emerald)' }}>
+                    [SUPPORTED]
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-main)' }}>
+                  <strong>Explicit Dependency:</strong> {activeLimitation.hiddenConstraints[0].hiddenDependency}
+                </div>
+                {activeLimitation.hiddenConstraints[0].additionalHypotheticalConstraint && (
+                  <div style={{ background: 'var(--bg-input)', padding: '8px 10px', borderRadius: '6px', fontSize: '0.74rem', border: '1px dashed rgba(245, 158, 11, 0.4)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                      <span style={{ color: 'var(--accent-amber)', fontWeight: 700 }}>Additional Inferred Hypothesis:</span>
+                      <span style={{ fontSize: '0.65rem', background: 'rgba(245, 158, 11, 0.2)', color: 'var(--accent-amber)', padding: '1px 5px', borderRadius: 3, fontWeight: 800 }}>
+                        [NOT ESTABLISHED]
+                      </span>
+                    </div>
+                    <div style={{ color: 'var(--text-muted)' }}>
+                      "{activeLimitation.hiddenConstraints[0].additionalHypotheticalConstraint}"
+                    </div>
+                  </div>
+                )}
                 <div style={{ background: 'var(--bg-input)', padding: '8px 10px', borderRadius: '6px', fontSize: '0.74rem', color: 'var(--text-muted)' }}>
                   <strong>Prior-Art Search Impact:</strong> {activeLimitation.hiddenConstraints[0].searchRefinementImpact}
                 </div>

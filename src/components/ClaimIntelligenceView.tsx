@@ -151,8 +151,18 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
 
   // Decompose current claim
   const decomposedClaim = useMemo(() => {
-    return decomposePatentClaim(currentClaim.text, currentClaim.number, activeDoc?.cpcCodes || activeDoc?.cpc, activeDoc?.id);
-  }, [currentClaim, activeDoc]);
+    return decomposePatentClaim(
+      currentClaim.text, 
+      currentClaim.number, 
+      activeDoc?.cpcCodes || activeDoc?.cpc, 
+      activeDoc?.id,
+      {
+        corpusDocuments: workspacePatents,
+        simulateContentDrift: simulatedCorpusDrift,
+        specificationText: activeDoc?.abstract || activeDoc?.claims?.map(c => c.text).join(' ') || ''
+      }
+    );
+  }, [currentClaim, activeDoc, workspacePatents, simulatedCorpusDrift]);
 
   // Selected limitation object
   const activeLimitation = useMemo(() => {
@@ -217,9 +227,16 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
 
   // 10. Version Diff
   const versionDiff = useMemo(() => {
-    const amendedText = currentClaim.text.replace('power telemetry interface', 'redundant power telemetry bus interface').replace('50°C and 80°C', '45°C and 85°C');
+    let amendedText = currentClaim.text;
+    if (decomposedClaim.limitations.length >= 2) {
+      const target = decomposedClaim.limitations[1];
+      amendedText = currentClaim.text.replace(target.cleanedText, `redundant ${target.cleanedText}`);
+    }
+    if (amendedText === currentClaim.text) {
+      amendedText = currentClaim.text.replace(/\b(system|apparatus|method|processor|circuit|module)\b/i, 'high-efficiency $1');
+    }
     return generateClaimVersionDiff(currentClaim.text, amendedText, currentClaim.number);
-  }, [currentClaim]);
+  }, [currentClaim, decomposedClaim.limitations]);
 
   // 11. Family Comparison
   const familyComparison = useMemo(() => {
@@ -569,9 +586,15 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               </div>
             </div>
             <div style={{ display: 'flex', gap: 14 }}>
-              <span style={{ fontSize: '0.72rem', color: 'var(--accent-emerald)', fontWeight: 700 }}>✓ 0 Ungrounded Terms</span>
-              <span style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', fontWeight: 700 }}>✓ Entailment Score: 94.2%</span>
-              <span style={{ fontSize: '0.72rem', color: 'var(--accent-indigo)', fontWeight: 700 }}>✓ Spec Grounding: Passed</span>
+              <span style={{ fontSize: '0.72rem', color: 'var(--accent-emerald)', fontWeight: 700 }}>
+                ✓ {decomposedClaim.limitations.filter(l => l.hallucinationValidation && !l.hallucinationValidation.isGrounded).length} Ungrounded Terms
+              </span>
+              <span style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', fontWeight: 700 }}>
+                ✓ Entailment Score: {(decomposedClaim.limitations.reduce((acc, l) => acc + (l.hallucinationValidation?.confidence || 0.94), 0) / (decomposedClaim.limitations.length || 1) * 100).toFixed(1)}%
+              </span>
+              <span style={{ fontSize: '0.72rem', color: 'var(--accent-indigo)', fontWeight: 700 }}>
+                ✓ Spec Grounding: {decomposedClaim.limitations.every(l => !!l.specEvidence?.specificationExcerpt) ? 'Passed' : 'Partial'}
+              </span>
             </div>
           </div>
 
@@ -923,7 +946,9 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                   <div style={{ background: 'var(--bg-input)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
                     <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', marginBottom: 2 }}>Calibrated Conf.</div>
                     <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--accent-emerald)' }}>
-                      94.2%
+                      {decomposedClaim.limitations.length > 0
+                        ? `${(decomposedClaim.limitations.reduce((acc, l) => acc + (l.calibratedConfidence?.compositeScore || l.confidence * 100), 0) / decomposedClaim.limitations.length).toFixed(1)}%`
+                        : '100%'}
                     </div>
                   </div>
                 </div>
@@ -931,7 +956,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
 
               {/* Universal Reproducibility Run Snapshot & Evidence Freshness */}
               {decomposedClaim.runSnapshot && (
-                <div className="glass-panel" style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '14px', border: simulatedCorpusDrift ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid var(--border-color)' }}>
+                <div className="glass-panel" style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '14px', border: decomposedClaim.runSnapshot.evidenceFreshness.overallStatus !== 'CURRENT' ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid var(--border-color)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -951,11 +976,11 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                         fontWeight: 800,
                         padding: '3px 8px',
                         borderRadius: 4,
-                        background: simulatedCorpusDrift ? 'rgba(245, 158, 11, 0.18)' : 'rgba(16, 185, 129, 0.18)',
-                        color: simulatedCorpusDrift ? 'var(--accent-amber)' : 'var(--accent-emerald)',
-                        border: simulatedCorpusDrift ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid rgba(16, 185, 129, 0.4)'
+                        background: decomposedClaim.runSnapshot.evidenceFreshness.overallStatus === 'CURRENT' ? 'rgba(16, 185, 129, 0.18)' : 'rgba(245, 158, 11, 0.18)',
+                        color: decomposedClaim.runSnapshot.evidenceFreshness.overallStatus === 'CURRENT' ? 'var(--accent-emerald)' : 'var(--accent-amber)',
+                        border: decomposedClaim.runSnapshot.evidenceFreshness.overallStatus === 'CURRENT' ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(245, 158, 11, 0.4)'
                       }}>
-                        {simulatedCorpusDrift ? '⚠ STALE — RE-RUN RECOMMENDED' : '✓ CURRENT (RUN #102)'}
+                        {decomposedClaim.runSnapshot.evidenceFreshness.overallStatus === 'CURRENT' ? `✓ CURRENT (${decomposedClaim.runSnapshot.runId})` : '⚠ STALE — RE-RUN RECOMMENDED'}
                       </span>
                     </div>
                   </div>
@@ -1008,42 +1033,44 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px', fontSize: '0.7rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)' }}>
-                        <span style={{ color: 'var(--accent-emerald)', fontWeight: 800 }}>✓</span>
-                        <span>Patent Metadata:</span>
-                        <strong style={{ color: 'var(--text-main)' }}>Current</strong>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)' }}>
-                        <span style={{ color: simulatedCorpusDrift ? 'var(--accent-amber)' : 'var(--accent-emerald)', fontWeight: 800 }}>
-                          {simulatedCorpusDrift ? '⚠' : '✓'}
+                        <span style={{ color: decomposedClaim.runSnapshot.evidenceFreshness.patentMetadataStatus === 'CURRENT' ? 'var(--accent-emerald)' : 'var(--accent-amber)', fontWeight: 800 }}>
+                          {decomposedClaim.runSnapshot.evidenceFreshness.patentMetadataStatus === 'CURRENT' ? '✓' : '⚠'}
                         </span>
-                        <span>Claim Text Hash:</span>
-                        <strong style={{ color: simulatedCorpusDrift ? 'var(--accent-amber)' : 'var(--text-main)' }}>
-                          {simulatedCorpusDrift ? 'Modified (Hash Drift)' : 'Current'}
+                        <span>Patent Metadata:</span>
+                        <strong style={{ color: 'var(--text-main)' }}>
+                          {decomposedClaim.runSnapshot.evidenceFreshness.patentMetadataStatus === 'CURRENT' ? 'Current' : 'Outdated'}
                         </strong>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)' }}>
-                        <span style={{ color: 'var(--accent-emerald)', fontWeight: 800 }}>✓</span>
-                        <span>Specification Grounding:</span>
-                        <strong style={{ color: 'var(--text-main)' }}>Current</strong>
+                        <span style={{ color: decomposedClaim.runSnapshot.evidenceFreshness.claimTextStatus === 'CURRENT' ? 'var(--accent-emerald)' : 'var(--accent-amber)', fontWeight: 800 }}>
+                          {decomposedClaim.runSnapshot.evidenceFreshness.claimTextStatus === 'CURRENT' ? '✓' : '⚠'}
+                        </span>
+                        <span>Claim Text Hash:</span>
+                        <strong style={{ color: decomposedClaim.runSnapshot.evidenceFreshness.claimTextStatus === 'CURRENT' ? 'var(--text-main)' : 'var(--accent-amber)' }}>
+                          {decomposedClaim.runSnapshot.evidenceFreshness.claimTextStatus === 'CURRENT' ? 'Current' : 'Modified (Hash Drift)'}
+                        </strong>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)' }}>
-                        {simulatedCorpusDrift ? (
-                          <>
-                            <span style={{ color: 'var(--accent-amber)', fontWeight: 800 }}>⚠</span>
-                            <span>Prior-Art Retrieval:</span>
-                            <strong style={{ color: 'var(--accent-amber)' }}>Corpus updated (+4 docs)</strong>
-                          </>
-                        ) : (
-                          <>
-                            <span style={{ color: 'var(--accent-emerald)', fontWeight: 800 }}>✓</span>
-                            <span>Prior-Art Retrieval:</span>
-                            <strong style={{ color: 'var(--text-main)' }}>Current</strong>
-                          </>
-                        )}
+                        <span style={{ color: decomposedClaim.runSnapshot.evidenceFreshness.specEvidenceStatus === 'CURRENT' ? 'var(--accent-emerald)' : 'var(--accent-amber)', fontWeight: 800 }}>
+                          {decomposedClaim.runSnapshot.evidenceFreshness.specEvidenceStatus === 'CURRENT' ? '✓' : '⚠'}
+                        </span>
+                        <span>Specification Grounding:</span>
+                        <strong style={{ color: 'var(--text-main)' }}>
+                          {decomposedClaim.runSnapshot.evidenceFreshness.specEvidenceStatus === 'CURRENT' ? 'Current' : 'Stale'}
+                        </strong>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)' }}>
+                        <span style={{ color: decomposedClaim.runSnapshot.evidenceFreshness.priorArtRetrievalStatus === 'CURRENT' ? 'var(--accent-emerald)' : 'var(--accent-amber)', fontWeight: 800 }}>
+                          {decomposedClaim.runSnapshot.evidenceFreshness.priorArtRetrievalStatus === 'CURRENT' ? '✓' : '⚠'}
+                        </span>
+                        <span>Prior-Art Retrieval:</span>
+                        <strong style={{ color: decomposedClaim.runSnapshot.evidenceFreshness.priorArtRetrievalStatus === 'CURRENT' ? 'var(--text-main)' : 'var(--accent-amber)' }}>
+                          {decomposedClaim.runSnapshot.evidenceFreshness.priorArtRetrievalStatus === 'CURRENT' ? 'Current' : `Corpus updated (+${decomposedClaim.runSnapshot.corpusDeltaCount || 2} docs)`}
+                        </strong>
                       </div>
                     </div>
 
-                    {simulatedCorpusDrift && (
+                    {decomposedClaim.runSnapshot.evidenceFreshness.overallStatus !== 'CURRENT' && (
                       <div style={{
                         marginTop: 4,
                         padding: '8px 10px',
@@ -1053,7 +1080,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                         fontSize: '0.68rem',
                         color: 'var(--accent-amber)'
                       }}>
-                        <div><strong>⚠ CONTENT DRIFT DETECTED:</strong> Document count unchanged ({decomposedClaim.runSnapshot.corpusDocumentCount} docs), but 2 document/claim text hashes changed since snapshot.</div>
+                        <div><strong>⚠ CONTENT DRIFT DETECTED:</strong> Document count unchanged ({decomposedClaim.runSnapshot.corpusDocumentCount} docs), but document/claim text hashes changed since snapshot.</div>
                         <div style={{ fontSize: '0.64rem', color: 'var(--text-dim)', marginTop: 2, fontFamily: 'var(--font-mono)' }}>
                           Baseline: {decomposedClaim.runSnapshot.corpusSnapshot?.contentHash || '0x811c9dc5'} ➔ Modified Hash: 0x9b43d1a0
                         </div>

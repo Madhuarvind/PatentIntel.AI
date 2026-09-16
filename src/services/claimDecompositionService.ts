@@ -785,40 +785,60 @@ export function generateAnalysisRunSnapshot(
   patentId: string = 'US11954112B2',
   claimNumber: number = 1,
   limitationsCount: number = 5,
-  corpusDocumentCount: number = 14820,
+  corpusDocumentCount: number = 24,
   options?: {
+    claimText?: string;
+    specificationText?: string;
+    corpusDocuments?: Array<{ id: string; title?: string; abstract?: string; claims?: any[] }>;
     simulateContentDrift?: boolean;
     actualTopK?: number;
+    retrievalProvider?: string;
+    rankingConfiguration?: string;
+    corpusVersion?: string;
+    timestamp?: string;
   }
 ): AnalysisRunSnapshot {
   const isContentDrift = options?.simulateContentDrift || false;
-  const contentHash = isContentDrift 
-    ? computeDeterministicHash(`corpus-${patentId}-MODIFIED-CONTENT-${corpusDocumentCount}`)
-    : computeDeterministicHash(`corpus-${patentId}-${corpusDocumentCount}`);
+  const docCount = options?.corpusDocuments?.length || corpusDocumentCount || 24;
+  const docIds = options?.corpusDocuments && options.corpusDocuments.length > 0 
+    ? options.corpusDocuments.map(d => d.id) 
+    : [patentId, 'US10846201B2', 'US11294822B1', 'US9876543B2'];
+
+  const claimText = options?.claimText || `claim-${patentId}-${claimNumber}`;
+  const specText = options?.specificationText || `spec-${patentId}`;
+
   const claimTextHash = isContentDrift
-    ? computeDeterministicHash(`claim-${patentId}-${claimNumber}-MODIFIED-REV2`)
-    : computeDeterministicHash(`claim-${patentId}-${claimNumber}-ORIGINAL`);
-  const specificationHash = computeDeterministicHash(`spec-${patentId}`);
-  const retrievalConfigHash = computeDeterministicHash(`retrieval-cfg-hybrid-top${options?.actualTopK || 20}`);
+    ? computeDeterministicHash(`${claimText}-MODIFIED-REV2`)
+    : computeDeterministicHash(claimText);
+  const specificationHash = computeDeterministicHash(specText);
+  const retrievalConfigHash = computeDeterministicHash(
+    `retrieval-${options?.retrievalProvider || 'hybrid'}-top${options?.actualTopK || 20}-${options?.rankingConfiguration || 'rrf'}`
+  );
+  const contentHash = isContentDrift 
+    ? computeDeterministicHash(`corpus-${docIds.join(',')}-MODIFIED-HASH-${docCount}`)
+    : computeDeterministicHash(`corpus-${docIds.join(',')}-${claimTextHash}-${specificationHash}`);
+
+  const currentUtcTime = options?.timestamp || new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
+  const currentQuarter = `USPTO-Bulk-Snapshot-${new Date().getFullYear()}Q${Math.floor(new Date().getMonth() / 3) + 1}`;
 
   return {
     runId: `RUN-${patentId.replace(/[^A-Z0-9]/gi, '')}-CLM${claimNumber}`,
     patentId,
     claimNumber,
-    timestamp: '2026-09-15 09:42 UTC',
+    timestamp: currentUtcTime,
     embeddingModel: 'PatentIntel-MultiSim-SBERT (v2.1)',
     nlpParserEngine: 'MPEP-ClauseParser v1.4.2',
-    corpusVersion: 'USPTO-Bulk-Snapshot-2026Q3',
-    corpusDocumentCount,
+    corpusVersion: options?.corpusVersion || currentQuarter,
+    corpusDocumentCount: docCount,
     corpusSnapshot: {
-      documentCount: corpusDocumentCount,
-      documentIds: ['US11954112B2', 'US10846201B2', 'US11294822B1', 'US9876543B2'],
+      documentCount: docCount,
+      documentIds: docIds,
       contentHash,
       claimTextHash,
       specificationHash,
       retrievalConfigHash
     },
-    searchStrategy: 'Exact Token + Syntactic Phrase + Semantic Dense (k=50)',
+    searchStrategy: `Exact Token + Syntactic Phrase + Semantic Dense (k=${options?.actualTopK || 50})`,
     verifiedEvidenceCount: limitationsCount * 4,
     hallucinationGateStatus: 'ALL_OBJECTS_GROUNDED',
     driftStatus: isContentDrift ? 'DRIFT_DETECTED' : 'STABLE',
@@ -831,7 +851,7 @@ export function generateAnalysisRunSnapshot(
       priorArtRetrievalStatus: isContentDrift ? 'STALE_CORPUS_UPDATED' : 'CURRENT',
       overallStatus: isContentDrift ? 'STALE_RERUN_RECOMMENDED' : 'CURRENT',
       stalenessReason: isContentDrift 
-        ? 'Content drift detected: Document count is unchanged (24 docs), but 2 document/claim text hashes changed since snapshot.'
+        ? `Content drift detected: Document count is unchanged (${docCount} docs), but 2 document/claim text hashes changed since snapshot.`
         : 'Corpus and statutory specification are fully synchronized with analysis snapshot.'
     }
   };
@@ -844,7 +864,13 @@ export function decomposePatentClaim(
   claimText: string, 
   claimNumber: number = 1, 
   cpcCodes: string[] = [],
-  documentId: string = 'US11954112B2'
+  documentId: string = 'US11954112B2',
+  options?: {
+    corpusDocuments?: Array<{ id: string; title?: string; abstract?: string; claims?: any[] }>;
+    simulateContentDrift?: boolean;
+    actualTopK?: number;
+    specificationText?: string;
+  }
 ): DecomposedClaim {
   const fullText = (claimText || '').trim();
   const cpcFallback = cpcCodes?.[0] || 'G06F 1/3206';
@@ -1043,7 +1069,19 @@ export function decomposePatentClaim(
                       fullText.toLowerCase().includes('according to claim');
 
   const evidenceCoverage = computeClaimEvidenceCoverage(limitations, documentId);
-  const runSnapshot = generateAnalysisRunSnapshot(documentId, claimNumber, limitations.length);
+  const runSnapshot = generateAnalysisRunSnapshot(
+    documentId, 
+    claimNumber, 
+    limitations.length,
+    options?.corpusDocuments?.length || 24,
+    {
+      claimText: fullText,
+      specificationText: options?.specificationText,
+      corpusDocuments: options?.corpusDocuments,
+      simulateContentDrift: options?.simulateContentDrift,
+      actualTopK: options?.actualTopK
+    }
+  );
 
   return {
     claimNumber,
@@ -1236,6 +1274,18 @@ export function generateFamilyClaimComparison(
   _title?: string, 
   primaryClaim: string = ''
 ): FamilyClaimComparison {
+  const epClaimText = primaryClaim ? (
+    primaryClaim
+      .replace(/,\s*comprising:\s*/i, ', characterized in that the system comprises: ')
+      .replace(/;\s*and\s+/i, '; and further comprising: ')
+  ) : `1. Apparatus according to ${patentId}, characterized in that it comprises corresponding structural elements.`;
+
+  const woClaimText = primaryClaim ? (
+    primaryClaim
+      .replace(/^(\d+\.\s*)?(An?\s+)?/i, '$1A method and apparatus for ')
+      .replace(/,\s*comprising:\s*/i, ', comprising: ')
+  ) : `1. A method and apparatus for implementation of ${patentId} disclosure.`;
+
   return {
     primaryPatentId: patentId,
     primaryJurisdiction: 'US',
@@ -1253,7 +1303,7 @@ export function generateFamilyClaimComparison(
         patentId: 'EP4123984A1',
         jurisdiction: 'EP',
         claimNumber: 1,
-        claimText: `1. An intelligent power distribution system for autonomous edge compute nodes, characterized in that the system comprises: a power telemetry interface coupled to sensor arrays; and a thermal processor configured to throttle workload.`,
+        claimText: epClaimText,
         keyDifferences: ['Uses European Patent Convention two-part form with "characterized in that" transitional delimiter under EPC Rule 43(1).'],
         addedLimitations: ['Two-part characterizing portion'],
         removedLimitations: ['Generic comprising intro']
@@ -1262,7 +1312,7 @@ export function generateFamilyClaimComparison(
         patentId: 'WO2022/192831A1',
         jurisdiction: 'WO',
         claimNumber: 1,
-        claimText: `1. A method and apparatus for dynamic edge compute thermal control comprising sensory telemetry and voltage scaling.`,
+        claimText: woClaimText,
         keyDifferences: ['PCT international phase omnibus apparatus-and-method claim format.'],
         addedLimitations: ['Method step alternatives'],
         removedLimitations: ['Detailed junction sensor arrays']
@@ -1289,10 +1339,10 @@ export function buildPriorArtLimitationHeatmap(
     };
   });
 
-  limitations.forEach((lim, idx) => {
+  limitations.forEach((lim) => {
     const scores: Record<string, { score: number; status: 'HIGH' | 'PARTIAL' | 'LOW' | 'NONE' | 'INSUFFICIENT_EVIDENCE' | 'ABSTAIN_UNRESOLVED'; evidence: string; safetyGuard?: string }> = {};
 
-    candidatePatents.forEach((cand, candIdx) => {
+    candidatePatents.forEach((cand) => {
       // Change 4: Downstream safety rule for ABSTAIN
       // ABSTAIN != NONE, ABSTAIN != NOT RELEVANT, ABSTAIN != LOW SIMILARITY
       // The engine could not reliably determine the structure. Presumption withheld.
@@ -1306,25 +1356,40 @@ export function buildPriorArtLimitationHeatmap(
         return;
       }
 
-      // Deterministic calculation based on feature correspondence
-      const rawScore = Math.max(30, Math.min(95, 94 - ((idx * 13 + candIdx * 17) % 55)));
+      // Dynamic calculation based on actual feature correspondence between limitation and candidate patent
+      const limTokens = lim.cleanedText.toLowerCase().split(/\W+/).filter(w => w.length > 3 && !['with', 'from', 'that', 'this', 'wherein', 'comprising', 'coupled', 'configured', 'based'].includes(w));
+      const candText = ((cand.title || '') + ' ' + (cand.claims?.map(c => c.text).join(' ') || '')).toLowerCase();
+      const matchedTokens = limTokens.filter(t => candText.includes(t));
+      const matchRatio = limTokens.length > 0 ? (matchedTokens.length / limTokens.length) : 0.4;
+      
+      const exactPhraseMatch = candText.includes(lim.canonicalName.toLowerCase());
+      const rawScore = exactPhraseMatch 
+        ? 94 
+        : Math.max(25, Math.min(92, Math.round(35 + (matchRatio * 55))));
+
       let status: 'HIGH' | 'PARTIAL' | 'LOW' | 'NONE' | 'INSUFFICIENT_EVIDENCE' | 'ABSTAIN_UNRESOLVED' = 'LOW';
 
-      if (rawScore >= 85) {
+      if (rawScore >= 80) {
         status = 'HIGH';
         coverageSummary[cand.id].coveredCount++;
-      } else if (rawScore >= 70) {
+      } else if (rawScore >= 65) {
         status = 'PARTIAL';
-      } else if (rawScore >= 50) {
+      } else if (rawScore >= 45) {
         status = 'LOW';
       } else {
         status = 'NONE';
       }
 
+      const evidenceText = exactPhraseMatch
+        ? `Direct textual correspondence: "${lim.canonicalName}" explicitly disclosed in ${cand.id} claims.`
+        : matchedTokens.length > 0
+          ? `Disclosed in ${cand.id}: corresponding concepts (${matchedTokens.slice(0, 3).join(', ')}) mapped to ${lim.canonicalName}.`
+          : `Distinguishing element: ${cand.id} lacks affirmative disclosure of "${lim.canonicalName}".`;
+
       scores[cand.id] = {
         score: rawScore,
         status,
-        evidence: `Disclosed in ${cand.id} Claim 1: corresponding disclosure for ${lim.canonicalName.toLowerCase()}.`
+        evidence: evidenceText
       };
     });
 
@@ -1804,9 +1869,12 @@ export function executeCounterfactualRetrievalComparison(
   _candidatePatents?: any[],
   runtimeOptions?: {
     topK?: number;
+    defaultTopK?: number;
     retrievalProvider?: string;
     rankingConfiguration?: string;
     filtersApplied?: string[];
+    corpusSnapshot?: string;
+    timestamp?: string;
   }
 ): CounterfactualRetrievalComparison {
   const targetLim = claim.limitations.find(l => l.id === targetLimitationId) || claim.limitations[claim.limitations.length - 1];
@@ -1832,23 +1900,37 @@ export function executeCounterfactualRetrievalComparison(
     { id: 'US11354001B1', title: 'Predictive Machine Learning Neural Accelerator for Thermal Spikes', hasTelemetry: true, hasDvfs: true, hasThermal: true }
   ];
 
-  // R0: Documents matching complete original limitation set
-  const r0Patents = defaultCorpus.filter(p => p.hasTelemetry && p.hasDvfs && p.hasThermal);
+  const candidatePool = (_candidatePatents && _candidatePatents.length >= 3)
+    ? _candidatePatents.map((p: any) => ({
+        id: p.id,
+        title: p.title || p.id,
+        text: ((p.title || '') + ' ' + (p.abstract || '') + ' ' + (p.claims?.map((c: any) => c.text).join(' ') || '')).toLowerCase(),
+        hasTelemetry: p.hasTelemetry,
+        hasDvfs: p.hasDvfs,
+        hasThermal: p.hasThermal
+      }))
+    : defaultCorpus.map(p => ({
+        ...p,
+        text: p.title.toLowerCase()
+      }));
 
-  // R1: Documents matching when target limitation is omitted or substituted
-  let r1Patents = defaultCorpus;
-  if (action === 'REMOVE') {
-    if (targetLim.canonicalName.toLowerCase().includes('telemetry') || targetLim.canonicalName.toLowerCase().includes('interface')) {
-      r1Patents = defaultCorpus.filter(p => p.hasDvfs && p.hasThermal);
-    } else if (targetLim.canonicalName.toLowerCase().includes('voltage') || targetLim.canonicalName.toLowerCase().includes('scaling')) {
-      r1Patents = defaultCorpus.filter(p => p.hasTelemetry && p.hasThermal);
-    } else {
-      r1Patents = defaultCorpus.filter(p => p.hasTelemetry && p.hasDvfs);
-    }
-  } else {
-    // SUBSTITUTE
-    r1Patents = defaultCorpus.filter(p => p.hasDvfs || p.hasThermal);
-  }
+  const checkMatchesLim = (doc: any, lim: ClaimLimitationDetail) => {
+    if (doc.hasTelemetry !== undefined && lim.canonicalName.toLowerCase().includes('telemetry')) return !!doc.hasTelemetry;
+    if (doc.hasDvfs !== undefined && (lim.canonicalName.toLowerCase().includes('voltage') || lim.canonicalName.toLowerCase().includes('scaling') || lim.canonicalName.toLowerCase().includes('dvfs'))) return !!doc.hasDvfs;
+    if (doc.hasThermal !== undefined && (lim.canonicalName.toLowerCase().includes('thermal') || lim.canonicalName.toLowerCase().includes('temperature'))) return !!doc.hasThermal;
+    const tokens = lim.canonicalName.toLowerCase().split(/\W+/).filter(w => w.length > 3);
+    return tokens.some(t => doc.text.includes(t));
+  };
+
+  const matchedR0 = candidatePool.filter(p => claim.limitations.every(l => checkMatchesLim(p, l)));
+  const r0Patents = matchedR0.length > 0 ? matchedR0 : candidatePool.slice(0, 3);
+
+  const remainingLims = claim.limitations.filter(l => l.id !== targetLim.id);
+  const matchedR1 = candidatePool.filter(p => remainingLims.every(l => checkMatchesLim(p, l)));
+  const r1Patents = (action === 'REMOVE' 
+    ? (matchedR1.length > r0Patents.length ? matchedR1 : candidatePool.slice(0, Math.min(candidatePool.length, r0Patents.length + 4)))
+    : candidatePool.slice(1, Math.min(candidatePool.length, r0Patents.length + 3))
+  );
 
   const r0Ids = new Set(r0Patents.map(p => p.id));
   const r1Ids = new Set(r1Patents.map(p => p.id));
@@ -1912,13 +1994,13 @@ export function executeCounterfactualRetrievalComparison(
     parityControls: {
       queryQ0: `("${claim.limitations.map(l => l.canonicalName).slice(0, 3).join('" AND "')}")`,
       queryQ1: `("${claim.limitations.filter(l => l.id !== targetLim.id).map(l => l.canonicalName).slice(0, 3).join('" AND "')}")`,
-      corpusSnapshot: 'USPTO Patent Corpus Snapshot 2026-09-15',
+      corpusSnapshot: runtimeOptions?.corpusSnapshot || `Corpus Snapshot (${new Date().toISOString().slice(0, 10)})`,
       retrievalProvider: runtimeOptions?.retrievalProvider || 'PatentIntel-Vector-BM25-Hybrid (v2.1)',
       topK: actualTopK,
-      defaultTopK: 25,
+      defaultTopK: runtimeOptions?.defaultTopK ?? 25,
       actualTopK,
-      filtersApplied: runtimeOptions?.filtersApplied || ['Jurisdiction: US', 'Classification: G06F 1/3206', 'Status: Active Grants'],
-      timestamp: '2026-09-15 09:42 UTC',
+      filtersApplied: runtimeOptions?.filtersApplied || ['Jurisdiction: US', `Classification: ${claim.limitations[0]?.cpcCategory || 'G06F 1/3206'}`, 'Status: Active Grants'],
+      timestamp: runtimeOptions?.timestamp || new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC',
       rankingConfiguration: runtimeOptions?.rankingConfiguration || 'Cosine (0.6) + BM25 (0.4) Reciprocal Rank Fusion'
     }
   };
@@ -1930,9 +2012,11 @@ export function executeCounterfactualRetrievalComparison(
  * overlap shifts, technical concept preservation, and downstream cascade tracking.
  */
 export function generateClaimMutations(claim: DecomposedClaim): ClaimMutationVariant[] {
-  const targetLim = claim.limitations.find(l => l.category === 'FUNCTIONAL_LIMITATION' || l.category === 'HARDWARE_COMPONENT') || claim.limitations[1];
+  const targetLim = claim.limitations.find(l => l.category === 'FUNCTIONAL_LIMITATION' || l.category === 'HARDWARE_COMPONENT') || claim.limitations[1] || claim.limitations[0];
   const elemId = targetLim.id;
   const original = targetLim.cleanedText;
+  const totalLims = Math.max(1, claim.limitations.length);
+  const otherIds = claim.limitations.filter(l => l.id !== elemId).map(l => l.id);
 
   return [
     {
@@ -1940,21 +2024,21 @@ export function generateClaimMutations(claim: DecomposedClaim): ClaimMutationVar
       variantLabel: 'Variant A: Genus Scope Broadening',
       targetElementId: elemId,
       originalClause: original,
-      mutatedClause: `local processing node configured to dynamically allocate compute resources responsive to measured thermal telemetry`,
+      mutatedClause: `processing circuit configured to execute ${targetLim.canonicalName.toLowerCase()} across distributed compute nodes`,
       mutationStrategy: 'GENUS_EXPANSION',
       retrievalOverlapShift: 'INCREASED_OVERLAP',
       retrievalOverlapDeltaCount: 14,
       conceptPreservationScore: 'HIGH',
       preservationPercent: 88,
-      draftingTradeoff: 'Wider defensive perimeter across generic edge hardware, but higher vulnerability to 35 U.S.C. § 102 anticipation.',
+      draftingTradeoff: 'Wider defensive perimeter across generic hardware, but higher vulnerability to 35 U.S.C. § 102 anticipation.',
       downstreamTracking: {
-        affectedElementIds: ['E3', 'E4', 'E5'],
+        affectedElementIds: otherIds.slice(0, 3),
         relationshipChangesCount: 2,
         searchResultsDelta: { before: 18, after: 32, surfacedCount: 14 },
-        structuralFingerprintChange: 'Shifted from specialized coprocessor to generic edge node',
+        structuralFingerprintChange: `Shifted from specialized ${targetLim.canonicalName.toLowerCase()} to generic processing circuit`,
         evidenceCoverageDelta: {
-          beforeFraction: '7/7',
-          afterFraction: '6/7',
+          beforeFraction: `${totalLims}/${totalLims}`,
+          afterFraction: `${Math.max(1, totalLims - 1)}/${totalLims}`,
           deltaCount: -1,
           isGrounded: true
         }
@@ -1965,7 +2049,7 @@ export function generateClaimMutations(claim: DecomposedClaim): ClaimMutationVar
       variantLabel: 'Variant B: Defensive Narrowing',
       targetElementId: elemId,
       originalClause: original,
-      mutatedClause: `dedicated on-chip thermal coprocessor configured to calculate junction temperature gradients within 500 microseconds using integrated SRAM look-up registers`,
+      mutatedClause: `dedicated on-chip ${targetLim.canonicalName.toLowerCase()} configured to operate within predefined clock thresholds using integrated hardware registers`,
       mutationStrategy: 'DEFENSIVE_NARROWING',
       retrievalOverlapShift: 'DECREASED_OVERLAP',
       retrievalOverlapDeltaCount: -9,
@@ -1973,13 +2057,13 @@ export function generateClaimMutations(claim: DecomposedClaim): ClaimMutationVar
       preservationPercent: 95,
       draftingTradeoff: 'Maximum patentability defensibility and clean 35 U.S.C. § 103 traversal, with narrower competitor design-around scope.',
       downstreamTracking: {
-        affectedElementIds: ['E4', 'E5'],
+        affectedElementIds: otherIds.slice(0, 2),
         relationshipChangesCount: 1,
         searchResultsDelta: { before: 18, after: 9, surfacedCount: 0 },
-        structuralFingerprintChange: 'Hardened on-chip microcode timing constraint',
+        structuralFingerprintChange: 'Hardened operational microcode timing constraint',
         evidenceCoverageDelta: {
-          beforeFraction: '7/7',
-          afterFraction: '7/7',
+          beforeFraction: `${totalLims}/${totalLims}`,
+          afterFraction: `${totalLims}/${totalLims}`,
           deltaCount: 0,
           isGrounded: true
         }
@@ -1990,7 +2074,7 @@ export function generateClaimMutations(claim: DecomposedClaim): ClaimMutationVar
       variantLabel: 'Variant C: Alternative Physical Architecture',
       targetElementId: elemId,
       originalClause: original,
-      mutatedClause: `distributed FPGA hardware acceleration array communicatively coupled to an isolated serial sensor ring`,
+      mutatedClause: `distributed hardware logic array communicatively coupled to execute ${targetLim.canonicalName.toLowerCase()} via isolated interconnects`,
       mutationStrategy: 'ALTERNATIVE_PHYSICAL_MECHANISM',
       retrievalOverlapShift: 'BALANCED',
       retrievalOverlapDeltaCount: 2,
@@ -1998,13 +2082,13 @@ export function generateClaimMutations(claim: DecomposedClaim): ClaimMutationVar
       preservationPercent: 79,
       draftingTradeoff: 'Protects reconfigurable hardware deployments against competitor design-arounds; requires explicit specification enablement (§ 112(a)).',
       downstreamTracking: {
-        affectedElementIds: ['E2', 'E3', 'E4'],
+        affectedElementIds: otherIds.slice(0, 3),
         relationshipChangesCount: 3,
         searchResultsDelta: { before: 18, after: 20, surfacedCount: 6 },
-        structuralFingerprintChange: 'Swapped bus topology to serial sensor ring',
+        structuralFingerprintChange: 'Swapped bus topology to isolated interconnect array',
         evidenceCoverageDelta: {
-          beforeFraction: '7/7',
-          afterFraction: '5/7',
+          beforeFraction: `${totalLims}/${totalLims}`,
+          afterFraction: `${Math.max(1, totalLims - 2)}/${totalLims}`,
           deltaCount: -2,
           isGrounded: false
         }

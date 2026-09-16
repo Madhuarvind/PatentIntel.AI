@@ -7,6 +7,7 @@ import type {
 } from '../types';
 import { workspaceStore } from '../services/workspaceStore';
 import { PatentSelector } from './PatentSelector';
+import { ClaimNavigator } from './ClaimNavigator';
 import { 
   decomposePatentClaim, 
   exportClaimChartMarkdown, 
@@ -28,7 +29,6 @@ import {
 import { 
   GitBranch, 
   ArrowRight, 
-  Languages, 
   CheckCircle2, 
   AlertTriangle, 
   Info, 
@@ -103,15 +103,62 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
     return workspacePatents.find(p => p.id === selectedPatentId) || workspacePatents[0];
   }, [workspacePatents, selectedPatentId]);
 
-  // Available claims for active patent
+  // Available claims for active patent with deduplication, parent tracking, and ascending numerical sorting
   const availableClaims = useMemo(() => {
     if (activeDoc?.claims && activeDoc.claims.length > 0) {
-      return activeDoc.claims.map((c, idx) => ({
-        number: c.number || c.claimNumber || idx + 1,
-        text: c.text,
-        type: c.type || (c.isIndependent ? 'independent' : 'dependent'),
-        isIndependent: c.isIndependent ?? (c.type === 'independent' || idx === 0)
-      }));
+      const seen = new Set<number>();
+      const list: Array<{
+        number: number;
+        text: string;
+        type: string;
+        isIndependent: boolean;
+        parentClaimNumber?: number;
+      }> = [];
+
+      activeDoc.claims.forEach((c, idx) => {
+        // Try parsing number from c.number, c.claimNumber, or from text pattern
+        let num: number = typeof c.number === 'number' && !isNaN(c.number) ? c.number : 0;
+        if (!num && c.claimNumber) {
+          num = typeof c.claimNumber === 'number' ? c.claimNumber : parseInt(String(c.claimNumber).replace(/\D/g, ''), 10);
+        }
+        if (!num && c.text) {
+          const matchNum = c.text.match(/^\s*(?:Claim\s*)?(\d+)[\.\:]?/i);
+          if (matchNum) {
+            num = parseInt(matchNum[1], 10);
+          }
+        }
+        if (!num || isNaN(num) || num <= 0) {
+          num = idx + 1;
+        }
+
+        // Avoid duplicate claim number collisions from noisy API responses
+        if (seen.has(num)) {
+          let candidate = num + 1;
+          while (seen.has(candidate)) candidate++;
+          num = candidate;
+        }
+        seen.add(num);
+
+        const text = c.text || '';
+        // Detect dependency and parent claim reference
+        const depMatch = text.match(/(?:as claimed in|according to|of)\s+claim\s+(\d+)/i);
+        const parentClaimNumber = depMatch ? parseInt(depMatch[1], 10) : undefined;
+        const isIndependent = c.isIndependent !== undefined 
+          ? c.isIndependent 
+          : (c.type === 'independent' || (!parentClaimNumber && (idx === 0 || !text.toLowerCase().includes('claim'))));
+
+        list.push({
+          number: num,
+          text,
+          type: isIndependent ? 'independent' : 'dependent',
+          isIndependent,
+          parentClaimNumber
+        });
+      });
+
+      // Sort in strict ascending order: 1, 2, 3, 4, ...
+      list.sort((a, b) => a.number - b.number);
+      return list;
     }
     return [
       {
@@ -124,13 +171,15 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
         number: 2,
         text: '2. The intelligent power distribution system as claimed in claim 1, wherein the dynamic voltage frequency scaling controller operates over a high-speed PCIe system bus between 50°C and 80°C.',
         type: 'dependent',
-        isIndependent: false
+        isIndependent: false,
+        parentClaimNumber: 1
       },
       {
         number: 3,
         text: '3. The intelligent power distribution system as claimed in claim 1, further comprising a predictive neural network model trained to forecast thermal spikes within 5 seconds.',
         type: 'dependent',
-        isIndependent: false
+        isIndependent: false,
+        parentClaimNumber: 1
       }
     ];
   }, [activeDoc]);
@@ -333,7 +382,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', paddingBottom: '40px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', paddingBottom: '50px' }}>
       {/* Toast Notification */}
       {copyFeedback && (
         <div style={{
@@ -342,9 +391,9 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
           right: 24,
           background: 'var(--accent-indigo)',
           color: '#fff',
-          padding: '10px 18px',
+          padding: '12px 20px',
           borderRadius: 8,
-          fontSize: '0.85rem',
+          fontSize: '0.88rem',
           fontWeight: 700,
           boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
           zIndex: 9999,
@@ -352,169 +401,219 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
           alignItems: 'center',
           gap: 8
         }}>
-          <CheckCircle2 size={16} /> {copyFeedback}
+          <CheckCircle2 size={18} /> {copyFeedback}
         </div>
       )}
 
       {/* Header Section */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <h1 style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-              AI-Powered Claim Structure & Reasoning Engine
-            </h1>
-            <span style={{ fontSize: '0.72rem', background: 'rgba(6, 182, 212, 0.15)', color: 'var(--accent-cyan)', border: '1px solid rgba(6, 182, 212, 0.3)', padding: '2px 8px', borderRadius: 6, fontWeight: 700 }}>
-              35 U.S.C. § 112 & EPC ART. 84 COMPLIANT
-            </span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '18px' }}>
+          <div style={{ flex: 1, minWidth: '320px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
+              <h1 style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.02em' }}>
+                AI-Powered Claim Structure & Reasoning Engine
+              </h1>
+              <span style={{ fontSize: '0.78rem', background: 'rgba(6, 182, 212, 0.15)', color: 'var(--accent-cyan)', border: '1px solid rgba(6, 182, 212, 0.3)', padding: '4px 10px', borderRadius: 6, fontWeight: 700 }}>
+                35 U.S.C. § 112 & EPC ART. 84 COMPLIANT
+              </span>
+            </div>
+
+            <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', margin: 0, maxWidth: '1000px', lineHeight: 1.6 }}>
+              Research-grade claim intelligence: builds evidence-grounded structural representations, reconstructs technical system skeletons, detects hidden constraints & evidence conflicts, prevents hallucinations via source-span checks, and executes counterfactual scope simulations.
+            </p>
           </div>
 
-          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', margin: 0, maxWidth: '900px', lineHeight: 1.5 }}>
-            Research-grade claim intelligence: builds evidence-grounded structural representations, reconstructs technical system skeletons, detects hidden constraints & evidence conflicts, prevents hallucinations via source-span checks, and executes counterfactual scope simulations.
-          </p>
-
-          {/* 4-Layer Architecture Indicators */}
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.72rem', background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.3)', padding: '2px 8px', borderRadius: 6, fontWeight: 700 }}>
-              L1: Decomposition (E1...En)
-            </span>
-            <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>→</span>
-            <span style={{ fontSize: '0.72rem', background: 'rgba(6, 182, 212, 0.15)', color: 'var(--accent-cyan)', border: '1px solid rgba(6, 182, 212, 0.3)', padding: '2px 8px', borderRadius: 6, fontWeight: 700 }}>
-              L2: Structural Reasoning & Logic
-            </span>
-            <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>→</span>
-            <span style={{ fontSize: '0.72rem', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-emerald)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '2px 8px', borderRadius: 6, fontWeight: 700 }}>
-              L3: Grounding & Verification Guard
-            </span>
-            <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>→</span>
-            <span style={{ fontSize: '0.72rem', background: 'rgba(245, 158, 11, 0.15)', color: 'var(--accent-amber)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '2px 8px', borderRadius: 6, fontWeight: 700 }}>
-              L4: What-If Intelligence & Mutation
-            </span>
-          </div>
-
-          {/* Technical Stack Architecture Transparency */}
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '8px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase' }}>
-              Engine Stack:
-            </span>
-            <span style={{ fontSize: '0.68rem', background: 'var(--bg-input)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', padding: '2px 7px', borderRadius: 4, fontWeight: 700 }}>
-              RULE-BASED (Regex / Lexer)
-            </span>
-            <span style={{ color: 'var(--text-dim)', fontSize: '0.7rem' }}>+</span>
-            <span style={{ fontSize: '0.68rem', background: 'var(--bg-input)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', padding: '2px 7px', borderRadius: 4, fontWeight: 700 }}>
-              NLP (POS & Syntactic Chunks)
-            </span>
-            <span style={{ color: 'var(--text-dim)', fontSize: '0.7rem' }}>+</span>
-            <span style={{ fontSize: '0.68rem', background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent-emerald)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '2px 7px', borderRadius: 4, fontWeight: 700 }}>
-              EMBEDDING MODEL (MultiSim-SBERT v2.1)
-            </span>
-            <span style={{ color: 'var(--text-dim)', fontSize: '0.7rem' }}>+</span>
-            <span style={{ fontSize: '0.68rem', background: 'rgba(99, 102, 241, 0.12)', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.3)', padding: '2px 7px', borderRadius: 4, fontWeight: 700 }}>
-              LLM (Skeleton & Mutations)
-            </span>
-            <span style={{ color: 'var(--text-dim)', fontSize: '0.7rem' }}>+</span>
-            <span style={{ fontSize: '0.68rem', background: 'rgba(6, 182, 212, 0.12)', color: 'var(--accent-cyan)', border: '1px solid rgba(6, 182, 212, 0.3)', padding: '2px 7px', borderRadius: 4, fontWeight: 700 }}>
-              GRAPH REASONING (Topology)
-            </span>
-            <span style={{ color: 'var(--text-dim)', fontSize: '0.7rem' }}>+</span>
-            <span style={{ fontSize: '0.68rem', background: 'rgba(236, 72, 153, 0.12)', color: '#f472b6', border: '1px solid rgba(236, 72, 153, 0.3)', padding: '2px 7px', borderRadius: 4, fontWeight: 700 }}>
-              EVIDENCE VALIDATION (NLI Gate)
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+            <button 
+              className="btn-secondary" 
+              onClick={handleDownloadMarkdown}
+              style={{ fontSize: '0.88rem', padding: '10px 18px', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}
+            >
+              <Download size={16} /> Export Claim Chart
+            </button>
+            <button 
+              className="btn-primary" 
+              onClick={() => onNavigate('mapping')}
+              style={{ fontSize: '0.88rem', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}
+            >
+              <GitBranch size={16} /> Map to Target Claims <ArrowRight size={15} />
+            </button>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <button 
-            className="btn-secondary" 
-            onClick={handleDownloadMarkdown}
-            style={{ fontSize: '0.82rem', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            <Download size={14} /> Export Claim Chart
-          </button>
-          <button 
-            className="btn-primary" 
-            onClick={() => onNavigate('mapping')}
-            style={{ fontSize: '0.82rem', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            <GitBranch size={15} /> Map to Target Claims <ArrowRight size={14} />
-          </button>
+        {/* 4-Layer Architecture Spacious Strip */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          gap: '14px',
+          width: '100%'
+        }}>
+          {/* L1 Card */}
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(99, 102, 241, 0.03) 100%)',
+            border: '1px solid rgba(99, 102, 241, 0.3)',
+            borderRadius: '10px',
+            padding: '14px 18px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--accent-indigo)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                Stage L1
+              </span>
+              <span style={{ color: 'var(--accent-indigo)', opacity: 0.6, fontSize: '0.85rem', fontWeight: 800 }}>→</span>
+            </div>
+            <div style={{ fontSize: '1.02rem', fontWeight: 800, color: 'var(--text-main)' }}>
+              Decomposition (E1...En)
+            </div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+              Statutory preamble, apparatus elements & functional limitations
+            </div>
+          </div>
+
+          {/* L2 Card */}
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.12) 0%, rgba(6, 182, 212, 0.03) 100%)',
+            border: '1px solid rgba(6, 182, 212, 0.3)',
+            borderRadius: '10px',
+            padding: '14px 18px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--accent-cyan)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                Stage L2
+              </span>
+              <span style={{ color: 'var(--accent-cyan)', opacity: 0.6, fontSize: '0.85rem', fontWeight: 800 }}>→</span>
+            </div>
+            <div style={{ fontSize: '1.02rem', fontWeight: 800, color: 'var(--text-main)' }}>
+              Structural Reasoning & Logic
+            </div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+              Antecedent basis verification, DAG dependencies & scope breadth
+            </div>
+          </div>
+
+          {/* L3 Card */}
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(16, 185, 129, 0.03) 100%)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            borderRadius: '10px',
+            padding: '14px 18px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--accent-emerald)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                Stage L3
+              </span>
+              <span style={{ color: 'var(--accent-emerald)', opacity: 0.6, fontSize: '0.85rem', fontWeight: 800 }}>→</span>
+            </div>
+            <div style={{ fontSize: '1.02rem', fontWeight: 800, color: 'var(--text-main)' }}>
+              Grounding & Verification Guard
+            </div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+              Source-span alignment, spec disclosures & NLI anti-hallucination gate
+            </div>
+          </div>
+
+          {/* L4 Card */}
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(245, 158, 11, 0.03) 100%)',
+            border: '1px solid rgba(245, 158, 11, 0.3)',
+            borderRadius: '10px',
+            padding: '14px 18px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--accent-amber)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                Stage L4
+              </span>
+              <span style={{ color: 'var(--accent-amber)', opacity: 0.6, fontSize: '0.85rem', fontWeight: 800 }}>✓</span>
+            </div>
+            <div style={{ fontSize: '1.02rem', fontWeight: 800, color: 'var(--text-main)' }}>
+              What-If Intelligence & Mutation
+            </div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+              Amendment blast radius, claim mutations & prior art collision tests
+            </div>
+          </div>
+        </div>
+
+        {/* Technical Stack Architecture Transparency */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', paddingTop: '2px' }}>
+          <span style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em', marginRight: 4 }}>
+            Engine Stack:
+          </span>
+          <span style={{ fontSize: '0.76rem', background: 'var(--bg-input)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', padding: '3px 9px', borderRadius: 5, fontWeight: 700 }}>
+            RULE-BASED (Regex / Lexer)
+          </span>
+          <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>+</span>
+          <span style={{ fontSize: '0.76rem', background: 'var(--bg-input)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', padding: '3px 9px', borderRadius: 5, fontWeight: 700 }}>
+            NLP (POS & Syntactic Chunks)
+          </span>
+          <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>+</span>
+          <span style={{ fontSize: '0.76rem', background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent-emerald)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '3px 9px', borderRadius: 5, fontWeight: 700 }}>
+            EMBEDDING MODEL (MultiSim-SBERT v2.1)
+          </span>
+          <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>+</span>
+          <span style={{ fontSize: '0.76rem', background: 'rgba(99, 102, 241, 0.12)', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.3)', padding: '3px 9px', borderRadius: 5, fontWeight: 700 }}>
+            LLM (Skeleton & Mutations)
+          </span>
+          <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>+</span>
+          <span style={{ fontSize: '0.76rem', background: 'rgba(6, 182, 212, 0.12)', color: 'var(--accent-cyan)', border: '1px solid rgba(6, 182, 212, 0.3)', padding: '3px 9px', borderRadius: 5, fontWeight: 700 }}>
+            GRAPH REASONING (Topology)
+          </span>
+          <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>+</span>
+          <span style={{ fontSize: '0.76rem', background: 'rgba(236, 72, 153, 0.12)', color: '#f472b6', border: '1px solid rgba(236, 72, 153, 0.3)', padding: '3px 9px', borderRadius: 5, fontWeight: 700 }}>
+            EVIDENCE VALIDATION (NLI Gate)
+          </span>
         </div>
       </div>
 
       {/* Patent Selector Bar */}
-      <div className="glass-panel" style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '14px', position: 'relative', zIndex: 40 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '320px' }}>
-            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <div className="glass-panel" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative', zIndex: 40 }}>
+        {/* Full-width Active Patent Selector Row */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', width: '100%' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>
               Active Patent:
             </span>
-            <PatentSelector 
-              patents={workspacePatents}
-              selectedPatentId={selectedPatentId}
-              onSelect={setSelectedPatentId}
-            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <PatentSelector 
+                patents={workspacePatents}
+                selectedPatentId={selectedPatentId}
+                onSelect={setSelectedPatentId}
+              />
+            </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-            <span>CPC: <strong style={{ color: 'var(--text-main)' }}>{activeDoc?.cpcCodes?.[0] || 'G06F 1/3206'}</strong></span>
-            <span>•</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '0.86rem', color: 'var(--text-muted)', flexWrap: 'wrap', paddingLeft: '2px' }}>
+            <span>CPC: <strong style={{ color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>{activeDoc?.cpcCodes?.[0] || 'G08G 1/087'}</strong></span>
+            <span style={{ color: 'var(--text-dim)' }}>•</span>
             <span>Jurisdiction: <strong style={{ color: 'var(--accent-cyan)' }}>US Grant</strong></span>
-            <span>•</span>
+            <span style={{ color: 'var(--text-dim)' }}>•</span>
             <span>Total Claims: <strong style={{ color: 'var(--text-main)' }}>{availableClaims.length}</strong></span>
           </div>
         </div>
 
-        {/* Claim Selector Pills */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '12px', flexWrap: 'wrap', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-dim)' }}>Select Claim:</span>
-            {availableClaims.map((clm) => {
-              const isSelected = clm.number === selectedClaimNumber;
-              return (
-                <button
-                  key={clm.number}
-                  onClick={() => setSelectedClaimNumber(clm.number)}
-                  style={{
-                    padding: '4px 10px',
-                    borderRadius: '6px',
-                    fontSize: '0.76rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    border: isSelected ? '1px solid var(--accent-indigo)' : '1px solid var(--border-color)',
-                    background: isSelected ? 'rgba(99, 102, 241, 0.25)' : 'var(--bg-input)',
-                    color: isSelected ? '#fff' : 'var(--text-muted)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <span>Claim {clm.number}</span>
-                  <span style={{ 
-                    fontSize: '0.65rem', 
-                    padding: '1px 5px', 
-                    borderRadius: 4, 
-                    background: clm.isIndependent ? 'rgba(6, 182, 212, 0.2)' : 'rgba(139, 92, 246, 0.2)',
-                    color: clm.isIndependent ? 'var(--accent-cyan)' : 'var(--accent-purple)'
-                  }}>
-                    {clm.isIndependent ? 'Indep' : 'Dep'}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+        {/* Sleek Studio Divider */}
+        <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.07)', margin: '2px 0' }} />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {onOpenClaimTranslator && (
-              <button
-                className="btn-secondary"
-                onClick={() => onOpenClaimTranslator(activeDoc?.id || 'US11954112B2', decomposedClaim.claimNumber, decomposedClaim.fullText)}
-                style={{ padding: '4px 10px', fontSize: '0.76rem', display: 'flex', alignItems: 'center', gap: 5 }}
-              >
-                <Languages size={13} /> Plain-English Translate
-              </button>
-            )}
-          </div>
-        </div>
+        {/* Modern Claim Intelligence Navigator (Elevated Layout & Theme) */}
+        <ClaimNavigator
+          claims={availableClaims}
+          selectedClaimNumber={selectedClaimNumber}
+          onSelectClaim={setSelectedClaimNumber}
+          limitationCount={decomposedClaim.limitations.length}
+          onOpenTranslator={onOpenClaimTranslator ? () => onOpenClaimTranslator(activeDoc?.id || 'US11954112B2', decomposedClaim.claimNumber, decomposedClaim.fullText) : undefined}
+          patentId={activeDoc?.id}
+        />
       </div>
 
       {/* 6 Modular Navigation Tabs */}
@@ -536,20 +635,20 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
-                padding: '9px 16px',
+                gap: 9,
+                padding: '12px 18px',
                 borderRadius: '8px 8px 0 0',
                 border: 'none',
                 borderBottom: isActive ? '3px solid var(--accent-indigo)' : '3px solid transparent',
                 background: isActive ? 'rgba(99, 102, 241, 0.12)' : 'transparent',
                 color: isActive ? 'var(--text-main)' : 'var(--text-muted)',
                 fontWeight: isActive ? 800 : 600,
-                fontSize: '0.84rem',
+                fontSize: '0.90rem',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease'
               }}
             >
-              <IconComponent size={15} color={isActive ? 'var(--accent-indigo)' : 'var(--text-dim)'} />
+              <IconComponent size={16} color={isActive ? 'var(--accent-indigo)' : 'var(--text-dim)'} />
               {t.label}
             </button>
           );
@@ -560,131 +659,184 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
       {/* TAB 1: LIMITATION BREAKDOWN & ANNOTATED TEXT */}
       {/* ========================================================================= */}
       {activeTab === 'limitations' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
-          {/* AI Hallucination Guard Banner */}
+          {/* AI Hallucination Guard 3-Tier Spacious Panel */}
           <div style={{
-            background: 'linear-gradient(90deg, rgba(16, 185, 129, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%)',
-            border: '1px solid rgba(16, 185, 129, 0.3)',
-            borderRadius: '10px',
-            padding: '12px 18px',
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(6, 182, 212, 0.06) 100%)',
+            border: '1px solid rgba(16, 185, 129, 0.35)',
+            borderRadius: '12px',
+            padding: '20px 24px',
             display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: 12
+            flexDirection: 'column',
+            gap: '12px'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <ShieldCheck size={20} color="var(--accent-emerald)" />
-              <div>
-                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                  AI Hallucination Guard: Active & Verified
-                </div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                  100% of canonical titles, ranges, and patterns are verified against statutory character spans and specification disclosures.
-                </div>
+            {/* Header Row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <ShieldCheck size={22} color="var(--accent-emerald)" />
+                <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>
+                  AI Hallucination Guard
+                </span>
               </div>
+              <span style={{
+                fontSize: '0.76rem',
+                fontWeight: 800,
+                background: 'rgba(16, 185, 129, 0.2)',
+                color: 'var(--accent-emerald)',
+                border: '1px solid rgba(16, 185, 129, 0.4)',
+                padding: '4px 12px',
+                borderRadius: 6,
+                letterSpacing: '0.05em'
+              }}>
+                ACTIVE & VERIFIED
+              </span>
             </div>
-            <div style={{ display: 'flex', gap: 14 }}>
-              <span style={{ fontSize: '0.72rem', color: 'var(--accent-emerald)', fontWeight: 700 }}>
+
+            {/* Description Row */}
+            <div style={{ fontSize: '0.92rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              Source-grounding and statutory evidence validation are active. 100% of canonical titles, character ranges, and structural patterns are verified against statutory character spans and specification disclosures.
+            </div>
+
+            {/* Metrics Row */}
+            <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap', paddingTop: '4px' }}>
+              <div style={{
+                background: 'rgba(16, 185, 129, 0.15)',
+                border: '1px solid rgba(16, 185, 129, 0.35)',
+                borderRadius: '8px',
+                padding: '7px 14px',
+                fontSize: '0.84rem',
+                fontWeight: 700,
+                color: 'var(--accent-emerald)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}>
                 ✓ {decomposedClaim.limitations.filter(l => l.hallucinationValidation && !l.hallucinationValidation.isGrounded).length} Ungrounded Terms
-              </span>
-              <span style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', fontWeight: 700 }}>
+              </div>
+              <div style={{
+                background: 'rgba(6, 182, 212, 0.15)',
+                border: '1px solid rgba(6, 182, 212, 0.35)',
+                borderRadius: '8px',
+                padding: '7px 14px',
+                fontSize: '0.84rem',
+                fontWeight: 700,
+                color: 'var(--accent-cyan)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}>
                 ✓ Entailment Score: {(decomposedClaim.limitations.reduce((acc, l) => acc + (l.hallucinationValidation?.confidence || 0.94), 0) / (decomposedClaim.limitations.length || 1) * 100).toFixed(1)}%
-              </span>
-              <span style={{ fontSize: '0.72rem', color: 'var(--accent-indigo)', fontWeight: 700 }}>
+              </div>
+              <div style={{
+                background: 'rgba(99, 102, 241, 0.15)',
+                border: '1px solid rgba(99, 102, 241, 0.35)',
+                borderRadius: '8px',
+                padding: '7px 14px',
+                fontSize: '0.84rem',
+                fontWeight: 700,
+                color: 'var(--accent-indigo)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}>
                 ✓ Spec Grounding: {decomposedClaim.limitations.every(l => !!l.specEvidence?.specificationExcerpt) ? 'Passed' : 'Partial'}
-              </span>
+              </div>
             </div>
           </div>
 
           {/* Evidence Coverage Matrix Widget */}
           {decomposedClaim.evidenceCoverage && (
-            <div className="glass-panel" style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+            <div className="glass-panel" style={{ padding: '22px 26px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <ShieldCheck size={16} color="var(--accent-emerald)" />
-                    <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <ShieldCheck size={20} color="var(--accent-emerald)" />
+                    <h3 style={{ margin: 0, fontSize: '1.18rem', fontWeight: 800, color: 'var(--text-main)' }}>
                       Evidence Coverage Matrix & Statutory Grounding Audit
-                    </h4>
+                    </h3>
                   </div>
-                  <p style={{ margin: '2px 0 0', fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                     Multi-dimensional grounding audit verifying statutory claim limitations against specification disclosures, drawings, and prior-art candidate mapping.
                   </p>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{
-                    fontSize: '0.72rem',
+                    fontSize: '0.80rem',
                     fontWeight: 800,
-                    padding: '3px 10px',
+                    padding: '4px 14px',
                     borderRadius: 6,
                     background: decomposedClaim.evidenceCoverage.coverageRating === 'HIGH' ? 'rgba(16, 185, 129, 0.18)' : 'rgba(245, 158, 11, 0.18)',
                     color: decomposedClaim.evidenceCoverage.coverageRating === 'HIGH' ? 'var(--accent-emerald)' : 'var(--accent-amber)',
-                    border: '1px solid var(--border-color)'
+                    border: '1px solid var(--border-color)',
+                    letterSpacing: '0.04em'
                   }}>
-                    Completeness: {decomposedClaim.evidenceCoverage.coverageRating}
+                    COMPLETENESS: {decomposedClaim.evidenceCoverage.coverageRating}
                   </span>
                 </div>
               </div>
 
               {/* Metric Pillars */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
-                <div style={{ background: 'var(--bg-input)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', marginBottom: 2 }}>Claim Limitations</div>
-                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--accent-emerald)' }}>
-                    {decomposedClaim.evidenceCoverage.claimSupportedCount}/{decomposedClaim.evidenceCoverage.totalLimitations}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
+                <div style={{ background: 'var(--bg-input)', padding: '16px 18px', borderRadius: '10px', border: '1px solid var(--border-color)', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Claim Limitations</div>
+                  <div style={{ fontSize: '1.65rem', fontWeight: 900, color: 'var(--accent-emerald)' }}>
+                    {decomposedClaim.evidenceCoverage.claimSupportedCount} / {decomposedClaim.evidenceCoverage.totalLimitations}
                   </div>
-                  <div style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>100% Verbatim Span</div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-emerald)' }}>100% Verbatim Span</div>
+                  <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)' }}>Direct textual character spans</div>
                 </div>
 
-                <div style={{ background: 'var(--bg-input)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', marginBottom: 2 }}>Specification Support</div>
-                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--accent-cyan)' }}>
-                    {decomposedClaim.evidenceCoverage.specSupportedCount}/{decomposedClaim.evidenceCoverage.totalLimitations}
+                <div style={{ background: 'var(--bg-input)', padding: '16px 18px', borderRadius: '10px', border: '1px solid var(--border-color)', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Specification Support</div>
+                  <div style={{ fontSize: '1.65rem', fontWeight: 900, color: 'var(--accent-cyan)' }}>
+                    {decomposedClaim.evidenceCoverage.specSupportedCount} / {decomposedClaim.evidenceCoverage.totalLimitations}
                   </div>
-                  <div style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>Disclosed Passages</div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-cyan)' }}>Disclosed Passages</div>
+                  <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)' }}>Verified in patent description</div>
                 </div>
 
-                <div style={{ background: 'var(--bg-input)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', marginBottom: 2 }}>Figure Support</div>
-                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--accent-indigo)' }}>
-                    {decomposedClaim.evidenceCoverage.figureSupportedCount}/{decomposedClaim.evidenceCoverage.totalLimitations}
+                <div style={{ background: 'var(--bg-input)', padding: '16px 18px', borderRadius: '10px', border: '1px solid var(--border-color)', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Figure Support</div>
+                  <div style={{ fontSize: '1.65rem', fontWeight: 900, color: 'var(--accent-indigo)' }}>
+                    {decomposedClaim.evidenceCoverage.figureSupportedCount} / {decomposedClaim.evidenceCoverage.totalLimitations}
                   </div>
-                  <div style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>Drawing References</div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-indigo)' }}>Drawing References</div>
+                  <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)' }}>Correlated technical illustrations</div>
                 </div>
 
-                <div style={{ background: 'var(--bg-input)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', marginBottom: 2 }}>Prior-Art Mapped</div>
-                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--accent-purple)' }}>
-                    {decomposedClaim.evidenceCoverage.priorArtSupportedCount}/{decomposedClaim.evidenceCoverage.totalLimitations}
+                <div style={{ background: 'var(--bg-input)', padding: '16px 18px', borderRadius: '10px', border: '1px solid var(--border-color)', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prior-Art Mapped</div>
+                  <div style={{ fontSize: '1.65rem', fontWeight: 900, color: 'var(--accent-purple)' }}>
+                    {decomposedClaim.evidenceCoverage.priorArtSupportedCount} / {decomposedClaim.evidenceCoverage.totalLimitations}
                   </div>
-                  <div style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>Mapped in Citations</div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-purple)' }}>Mapped in Citations</div>
+                  <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)' }}>Cross-referenced reference art</div>
                 </div>
               </div>
 
               {/* Limitation Grid with Ticks */}
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 2 }}>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: 4 }}>
                 {decomposedClaim.evidenceCoverage.coverageItems.map(item => (
                   <div key={item.limitationId} style={{
                     background: 'var(--bg-input)',
                     border: '1px solid var(--border-color)',
-                    borderRadius: 6,
-                    padding: '4px 8px',
-                    fontSize: '0.72rem',
+                    borderRadius: 8,
+                    padding: '6px 12px',
+                    fontSize: '0.80rem',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 6
+                    gap: 8
                   }}>
-                    <strong style={{ color: 'var(--accent-indigo)' }}>{item.limitationId}</strong>
-                    <span style={{ color: item.hasClaimSupport ? 'var(--accent-emerald)' : 'var(--text-dim)' }} title="Claim text support">✓ Claim</span>
-                    <span style={{ color: item.hasSpecSupport ? 'var(--accent-emerald)' : '#f87171' }} title="Specification grounding">
+                    <strong style={{ color: 'var(--accent-indigo)', fontSize: '0.86rem' }}>{item.limitationId}</strong>
+                    <span style={{ color: item.hasClaimSupport ? 'var(--accent-emerald)' : 'var(--text-dim)', fontWeight: 600 }} title="Claim text support">✓ Claim</span>
+                    <span style={{ color: item.hasSpecSupport ? 'var(--accent-emerald)' : '#f87171', fontWeight: 600 }} title="Specification grounding">
                       {item.hasSpecSupport ? '✓ Spec' : '✗ Spec'}
                     </span>
-                    <span style={{ color: item.hasFigureSupport ? 'var(--accent-emerald)' : '#f87171' }} title="Figure grounding">
+                    <span style={{ color: item.hasFigureSupport ? 'var(--accent-emerald)' : '#f87171', fontWeight: 600 }} title="Figure grounding">
                       {item.hasFigureSupport ? '✓ Fig' : '✗ Fig'}
                     </span>
-                    <span style={{ color: item.hasPriorArtSupport ? 'var(--accent-emerald)' : 'var(--text-dim)' }} title="Prior art mapped">
+                    <span style={{ color: item.hasPriorArtSupport ? 'var(--accent-emerald)' : 'var(--text-dim)', fontWeight: 600 }} title="Prior art mapped">
                       {item.hasPriorArtSupport ? '✓ Prior Art' : '– Distinguishing'}
                     </span>
                   </div>
@@ -699,35 +851,35 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-color)',
               borderRadius: '10px',
-              padding: '12px 18px',
+              padding: '16px 20px',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
               flexWrap: 'wrap',
-              gap: 12
+              gap: 14
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <RefreshCw size={16} color="var(--accent-cyan)" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <RefreshCw size={18} color="var(--accent-cyan)" />
                 <div>
-                  <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span>Analysis Run: {decomposedClaim.runSnapshot.runId}</span>
-                    <span style={{ fontSize: '0.66rem', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-emerald)', padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>
+                    <span style={{ fontSize: '0.72rem', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-emerald)', padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>
                       {decomposedClaim.runSnapshot.driftStatus === 'STABLE' ? '✓ ANALYSIS DRIFT: STABLE' : '⚠ DRIFT DETECTED'}
                     </span>
                   </div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: 2 }}>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: 4, lineHeight: 1.5 }}>
                     Model: {decomposedClaim.runSnapshot.embeddingModel} • Engine: {decomposedClaim.runSnapshot.nlpParserEngine} • Corpus: {decomposedClaim.runSnapshot.corpusVersion} ({decomposedClaim.runSnapshot.corpusDocumentCount.toLocaleString()} docs) • {decomposedClaim.runSnapshot.timestamp}
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <button
                   onClick={() => handleCopy(JSON.stringify(decomposedClaim.runSnapshot, null, 2), 'Run Snapshot & Parameters Copied')}
                   className="btn-secondary"
-                  style={{ fontSize: '0.72rem', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 5 }}
+                  style={{ fontSize: '0.78rem', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
                 >
-                  <Copy size={12} /> Copy Run Hash
+                  <Copy size={13} /> Copy Run Hash
                 </button>
               </div>
             </div>
@@ -1136,40 +1288,40 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
             </div>
 
             {/* Right Column: Decomposed Limitation Cards */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
               
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
                 <div>
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 2px' }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 4px' }}>
                     Decomposed Limitations ({filteredLimitations.length})
                   </h3>
-                  <span style={{ fontSize: '0.74rem', color: 'var(--text-dim)' }}>
+                  <span style={{ fontSize: '0.84rem', color: 'var(--text-dim)' }}>
                     Click card to drill down into exact limitation scope & hidden constraints
                   </span>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <button
                     onClick={handleDownloadCSV}
                     className="btn-secondary"
-                    style={{ padding: '4px 10px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: 4 }}
+                    style={{ padding: '6px 14px', fontSize: '0.80rem', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
                   >
-                    <Download size={12} /> CSV
+                    <Download size={14} /> CSV
                   </button>
                   <button
                     onClick={() => handleCopy(exportClaimChartMarkdown(activeDoc?.id || 'PATENT', decomposedClaim), 'Claim Chart Copied to Clipboard')}
                     className="btn-secondary"
-                    style={{ padding: '4px 10px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: 4 }}
+                    style={{ padding: '6px 14px', fontSize: '0.80rem', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
                   >
-                    <Copy size={12} /> Copy Chart
+                    <Copy size={14} /> Copy Chart
                   </button>
                 </div>
               </div>
 
               {/* Category Filter Pills */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-dim)', marginRight: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
-                  <ListFilter size={11} /> Filter:
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-dim)', marginRight: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <ListFilter size={13} /> Filter:
                 </span>
                 {[
                   { key: 'ALL', label: `All (${decomposedClaim.limitations.length})` },
@@ -1184,14 +1336,15 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                       key={cat.key}
                       onClick={() => setActiveCategoryFilter(cat.key)}
                       style={{
-                        padding: '3px 8px',
+                        padding: '5px 12px',
                         borderRadius: 6,
-                        fontSize: '0.68rem',
+                        fontSize: '0.78rem',
                         fontWeight: 700,
                         cursor: 'pointer',
                         border: isSelected ? '1px solid var(--accent-indigo)' : '1px solid var(--border-color)',
-                        background: isSelected ? 'rgba(99, 102, 241, 0.2)' : 'var(--bg-input)',
-                        color: isSelected ? 'var(--text-main)' : 'var(--text-muted)'
+                        background: isSelected ? 'rgba(99, 102, 241, 0.25)' : 'var(--bg-input)',
+                        color: isSelected ? '#fff' : 'var(--text-muted)',
+                        transition: 'all 0.15s ease'
                       }}
                     >
                       {cat.label}
@@ -1201,7 +1354,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               </div>
 
               {/* Limitations Card List */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {filteredLimitations.map((elem) => {
                   const isSelected = selectedLimitationId === elem.id;
                   const styles = getCategoryStyles(elem.category);
@@ -1212,13 +1365,13 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                       key={elem.id}
                       onClick={() => handleSelectLimitation(elem.id)}
                       style={{
-                        padding: '16px',
+                        padding: '18px 20px',
                         borderRadius: '12px',
                         background: isSelected ? 'rgba(99, 102, 241, 0.12)' : 'var(--bg-surface)',
                         border: isSelected ? `2px solid ${styles.color}` : '1px solid var(--border-color)',
-                        boxShadow: isSelected ? `0 0 16px ${styles.color}33` : 'none',
+                        boxShadow: isSelected ? `0 0 18px ${styles.color}33` : 'none',
                         display: 'flex',
-                        gap: '14px',
+                        gap: '16px',
                         alignItems: 'flex-start',
                         cursor: 'pointer',
                         transition: 'all 0.18s ease'
@@ -1230,8 +1383,8 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                         color: '#0B0F19',
                         fontWeight: 900,
                         fontFamily: 'var(--font-mono)',
-                        fontSize: '0.82rem',
-                        padding: '5px 9px',
+                        fontSize: '0.90rem',
+                        padding: '6px 11px',
                         borderRadius: '8px',
                         lineHeight: 1,
                         marginTop: 2
@@ -1240,16 +1393,16 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                       </div>
 
                       {/* Content */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         
                         {/* Top bar: Canonical Name + Badges */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 6 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                             <span style={{
-                              fontSize: '0.62rem',
+                              fontSize: '0.72rem',
                               fontFamily: 'var(--font-mono)',
-                              padding: '1px 5px',
-                              borderRadius: 3,
+                              padding: '2px 7px',
+                              borderRadius: 4,
                               background: 'rgba(6, 182, 212, 0.12)',
                               color: 'var(--accent-cyan)',
                               border: '1px solid rgba(6, 182, 212, 0.3)',
@@ -1259,10 +1412,10 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                             </span>
                             {elem.provenanceSourceId && (
                               <span style={{
-                                fontSize: '0.62rem',
+                                fontSize: '0.72rem',
                                 fontFamily: 'var(--font-mono)',
-                                padding: '1px 5px',
-                                borderRadius: 3,
+                                padding: '2px 7px',
+                                borderRadius: 4,
                                 background: 'rgba(99, 102, 241, 0.12)',
                                 color: 'var(--accent-indigo)',
                                 border: '1px solid rgba(99, 102, 241, 0.3)',
@@ -1272,26 +1425,26 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                               </span>
                             )}
                             <h4 style={{ 
-                              fontSize: '0.94rem', 
+                              fontSize: '1.12rem', 
                               fontWeight: 800, 
                               color: 'var(--text-main)', 
                               margin: 0,
-                              lineHeight: 1.3
+                              lineHeight: 1.35
                             }}>
                               {elem.canonicalName}
                             </h4>
                           </div>
 
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                             {/* Ambiguity / Consensus Status */}
                             {elem.ambiguityStatus === 'ABSTAIN' ? (
                               <span 
                                 title="Safety Guard: The engine could not reliably determine the structure. Presumption withheld (ABSTAIN ≠ NONE, ABSTAIN ≠ NOT RELEVANT, ABSTAIN ≠ LOW SIMILARITY). Manual review required."
                                 style={{
-                                  fontSize: '0.64rem',
+                                  fontSize: '0.74rem',
                                   fontWeight: 800,
-                                  padding: '2px 7px',
-                                  borderRadius: 4,
+                                  padding: '3px 8px',
+                                  borderRadius: 5,
                                   background: 'rgba(239, 68, 68, 0.2)',
                                   color: '#f87171',
                                   border: '1px solid rgba(239, 68, 68, 0.4)'
@@ -1303,10 +1456,10 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                               <span 
                                 title="Review Recommended: Multi-model split decision or validation gate requires human verification."
                                 style={{
-                                  fontSize: '0.64rem',
+                                  fontSize: '0.74rem',
                                   fontWeight: 800,
-                                  padding: '2px 7px',
-                                  borderRadius: 4,
+                                  padding: '3px 8px',
+                                  borderRadius: 5,
                                   background: 'rgba(245, 158, 11, 0.18)',
                                   color: 'var(--accent-amber)',
                                   border: '1px solid rgba(245, 158, 11, 0.4)'
@@ -1318,10 +1471,10 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                               <span 
                                 title="Supported: Result is grounded in the source text/evidence, passes validation, and has sufficient independent model agreement."
                                 style={{
-                                  fontSize: '0.64rem',
+                                  fontSize: '0.74rem',
                                   fontWeight: 800,
-                                  padding: '2px 7px',
-                                  borderRadius: 4,
+                                  padding: '3px 8px',
+                                  borderRadius: 5,
                                   background: 'rgba(16, 185, 129, 0.18)',
                                   color: 'var(--accent-emerald)',
                                   border: '1px solid rgba(16, 185, 129, 0.4)'
@@ -1333,10 +1486,10 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
 
                             {elem.multiAgentConsensus && (
                               <span style={{
-                                fontSize: '0.64rem',
+                                fontSize: '0.74rem',
                                 fontWeight: 700,
-                                padding: '2px 6px',
-                                borderRadius: 4,
+                                padding: '3px 8px',
+                                borderRadius: 5,
                                 background: elem.multiAgentConsensus.consensusStatus === 'CONSENSUS_ESTABLISHED' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
                                 color: elem.multiAgentConsensus.consensusStatus === 'CONSENSUS_ESTABLISHED' ? 'var(--accent-emerald)' : 'var(--accent-amber)',
                                 border: '1px solid var(--border-color)'
@@ -1347,10 +1500,10 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
 
                             {/* Criticality Badge */}
                             <span style={{
-                              fontSize: '0.66rem',
+                              fontSize: '0.74rem',
                               fontWeight: 800,
-                              padding: '2px 7px',
-                              borderRadius: 4,
+                              padding: '3px 8px',
+                              borderRadius: 5,
                               background: critStyles.bg,
                               color: critStyles.color,
                               border: `1px solid ${critStyles.border}`
@@ -1360,10 +1513,10 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
 
                             {/* Category Badge */}
                             <span style={{
-                              fontSize: '0.66rem',
+                              fontSize: '0.74rem',
                               fontWeight: 700,
-                              padding: '2px 7px',
-                              borderRadius: 4,
+                              padding: '3px 8px',
+                              borderRadius: 5,
                               background: styles.bg,
                               color: styles.color,
                               border: `1px solid ${styles.border}`
@@ -1374,18 +1527,18 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                             {/* Calibrated Confidence Pill */}
                             {elem.calibratedConfidence && (
                               <span style={{
-                                fontSize: '0.66rem',
+                                fontSize: '0.74rem',
                                 fontWeight: 700,
-                                padding: '2px 6px',
-                                borderRadius: 4,
+                                padding: '3px 8px',
+                                borderRadius: 5,
                                 background: 'rgba(16, 185, 129, 0.12)',
                                 color: 'var(--accent-emerald)',
                                 border: '1px solid rgba(16, 185, 129, 0.3)',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 3
+                                gap: 4
                               }}>
-                                <ShieldCheck size={10} /> {elem.calibratedConfidence.compositeScore}%
+                                <ShieldCheck size={12} /> {elem.calibratedConfidence.compositeScore}%
                               </span>
                             )}
                           </div>
@@ -1393,10 +1546,10 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
 
                         {/* Raw Limitation Text Excerpt */}
                         <p style={{ 
-                          fontSize: '0.82rem', 
+                          fontSize: '0.94rem', 
                           color: 'var(--text-muted)', 
-                          margin: 0,
-                          lineHeight: 1.45
+                          margin: '2px 0 0',
+                          lineHeight: 1.6
                         }}>
                           {elem.cleanedText}
                         </p>
@@ -1406,24 +1559,24 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                           <div style={{
                             background: 'rgba(245, 158, 11, 0.08)',
                             border: '1px solid rgba(245, 158, 11, 0.3)',
-                            borderRadius: '6px',
-                            padding: '8px 10px',
-                            marginTop: '4px',
+                            borderRadius: '8px',
+                            padding: '10px 14px',
+                            marginTop: '6px',
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: 4
+                            gap: 6
                           }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.72rem', fontWeight: 800, color: 'var(--accent-amber)' }}>
-                              <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                <AlertTriangle size={12} /> Grounded Limitation Dependency Audit
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.80rem', fontWeight: 800, color: 'var(--accent-amber)' }}>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <AlertTriangle size={14} /> Grounded Limitation Dependency Audit
                               </span>
-                              <span style={{ fontSize: '0.65rem', background: 'rgba(245, 158, 11, 0.2)', padding: '1px 5px', borderRadius: 4 }}>
+                              <span style={{ fontSize: '0.72rem', background: 'rgba(245, 158, 11, 0.2)', padding: '2px 7px', borderRadius: 4 }}>
                                 Phrase: "{elem.hiddenConstraints[0].triggerPhrase}"
                               </span>
                             </div>
 
                             {/* Grounded statutory evidence */}
-                            <div style={{ fontSize: '0.72rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ fontSize: '0.80rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 6 }}>
                               <span style={{ color: 'var(--accent-emerald)', fontWeight: 800 }}>✓ SUPPORTED:</span>
                               <span>{elem.hiddenConstraints[0].nestedDependency}</span>
                               <span style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>("{elem.hiddenConstraints[0].statutoryEvidenceSnippet}")</span>
@@ -1431,21 +1584,21 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
 
                             {/* Hypothetical constraint alert */}
                             {elem.hiddenConstraints[0].additionalHypotheticalConstraint && (
-                              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg-input)', padding: '4px 6px', borderRadius: 4 }}>
+                              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg-input)', padding: '6px 8px', borderRadius: 5 }}>
                                 <span style={{ color: '#f87171', fontWeight: 700 }}>⚠ NOT ESTABLISHED:</span>
                                 <span>{elem.hiddenConstraints[0].additionalHypotheticalConstraint} (Unstated secondary assumption)</span>
                               </div>
                             )}
 
-                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 2 }}>
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
                               {elem.hiddenConstraints[0].nestedConditions.map(cond => (
                                 <span key={cond.conditionId} style={{
-                                  fontSize: '0.65rem',
+                                  fontSize: '0.72rem',
                                   background: 'var(--bg-input)',
                                   border: '1px solid rgba(245, 158, 11, 0.3)',
                                   color: 'var(--text-main)',
-                                  padding: '2px 6px',
-                                  borderRadius: 4
+                                  padding: '3px 8px',
+                                  borderRadius: 5
                                 }}>
                                   <strong>{cond.label}:</strong> {cond.description}
                                 </span>
@@ -1459,45 +1612,45 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                           <div style={{
                             background: 'rgba(239, 68, 68, 0.08)',
                             border: '1px solid rgba(239, 68, 68, 0.3)',
-                            borderRadius: '6px',
-                            padding: '8px 10px',
-                            marginTop: '4px',
+                            borderRadius: '8px',
+                            padding: '10px 14px',
+                            marginTop: '6px',
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: 3
+                            gap: 4
                           }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.72rem', fontWeight: 800, color: '#f87171' }}>
-                              <AlertTriangle size={12} /> Potential Evidence Tension ({elem.evidenceConflicts[0].specParagraphRef})
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.80rem', fontWeight: 800, color: '#f87171' }}>
+                              <AlertTriangle size={14} /> Potential Evidence Tension ({elem.evidenceConflicts[0].specParagraphRef})
                             </div>
-                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                            <div style={{ fontSize: '0.80rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                               {elem.evidenceConflicts[0].explanation}
                             </div>
                           </div>
                         )}
 
                         {/* Bottom Metadata Badges */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '6px', marginTop: '2px', fontSize: '0.72rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '10px', marginTop: '4px', fontSize: '0.80rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             {elem.antecedentStatus === 'VERIFIED' ? (
-                              <span style={{ color: 'var(--accent-emerald)', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
-                                <CheckCircle2 size={12} /> Antecedent Verified
+                              <span style={{ color: 'var(--accent-emerald)', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 700 }}>
+                                <CheckCircle2 size={14} /> Antecedent Verified
                               </span>
                             ) : elem.antecedentStatus === 'MISSING_ANTECEDENT' ? (
-                              <span style={{ color: 'var(--accent-amber)', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 700 }}>
-                                <AlertTriangle size={12} /> §112(b) Antecedent Check
+                              <span style={{ color: 'var(--accent-amber)', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 700 }}>
+                                <AlertTriangle size={14} /> §112(b) Antecedent Check
                               </span>
                             ) : (
-                              <span style={{ color: 'var(--text-dim)' }}>
+                              <span style={{ color: 'var(--text-dim)', fontWeight: 600 }}>
                                 {elem.antecedentStatus === 'NEW_INTRODUCTION' ? 'Introduces Element' : 'Statutory Preamble'}
                               </span>
                             )}
                           </div>
 
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ color: 'var(--accent-cyan)', fontWeight: 600 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <span style={{ color: 'var(--accent-cyan)', fontWeight: 700 }}>
                               {elem.scopeTag}
                             </span>
-                            <span style={{ color: 'var(--accent-indigo)', fontWeight: 700 }}>
+                            <span style={{ color: 'var(--accent-indigo)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
                               Inspect Scope ➔
                             </span>
                           </div>
@@ -1520,64 +1673,73 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
       {/* TAB 2: CLAIM DEPENDENCY & IMPACT PROPAGATION SIMULATOR */}
       {/* ========================================================================= */}
       {activeTab === 'dependency' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
           
           {/* Claim Dependency Tree Section */}
-          <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="glass-panel" style={{ padding: '26px 28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 4px' }}>
+              <h3 style={{ fontSize: '1.28rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 6px' }}>
                 Claim Dependency Hierarchy & Limitation Inheritance Tree
               </h3>
-              <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: 0 }}>
+              <p style={{ fontSize: '0.92rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.6 }}>
                 A dependent claim incorporates all limitations of the claims to which it refers. This graph tracks inherited limitations ($E_parent$) alongside newly added limitation features ($E_child$).
               </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '20px' }}>
               {dependencyTree.map(node => (
                 <div 
                   key={node.claimNumber} 
                   style={{
                     background: 'var(--bg-surface)',
-                    borderRadius: '12px',
+                    borderRadius: '14px',
                     border: '1px solid var(--border-color)',
-                    padding: '18px',
+                    padding: '22px 24px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '12px'
+                    gap: '16px'
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <span style={{
                         background: node.claimType === 'independent' ? 'var(--accent-cyan)' : 'var(--accent-purple)',
                         color: '#0B0F19',
-                        fontWeight: 800,
-                        fontSize: '0.8rem',
-                        padding: '3px 8px',
+                        fontWeight: 900,
+                        fontSize: '0.88rem',
+                        padding: '5px 12px',
                         borderRadius: 6
                       }}>
                         Claim {node.claimNumber}
                       </span>
-                      <span style={{ fontSize: '0.74rem', color: 'var(--text-dim)', fontWeight: 700 }}>
+                      <span style={{ fontSize: '0.86rem', color: 'var(--text-muted)', fontWeight: 700 }}>
                         {node.claimType === 'independent' ? 'Independent Base Claim' : `Depends on Claim ${node.dependsOnClaimNumbers.join(', ')}`}
                       </span>
                     </div>
 
-                    <span style={{ fontSize: '0.72rem', background: 'var(--bg-input)', padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border-color)', color: 'var(--text-dim)' }}>
+                    <span style={{ fontSize: '0.80rem', background: 'var(--bg-input)', padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border-color)', color: 'var(--text-dim)', fontWeight: 700 }}>
                       {node.cumulativeLimitationsCount} Total Limitations
                     </span>
                   </div>
 
-                  {/* Inherited limitations */}
+                  {/* Inherited limitations with natural wrapping */}
                   {node.inheritedLimitations.length > 0 && (
-                    <div style={{ background: 'var(--bg-input)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--accent-indigo)', textTransform: 'uppercase' }}>
+                    <div style={{ background: 'var(--bg-input)', padding: '14px 16px', borderRadius: '10px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent-indigo)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         Inherited Limitations ({node.inheritedLimitations.length}):
                       </span>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                         {node.inheritedLimitations.map((inh, i) => (
-                          <span key={i} style={{ fontSize: '0.68rem', background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-indigo)', padding: '2px 6px', borderRadius: 4 }}>
+                          <span key={i} style={{
+                            fontSize: '0.80rem',
+                            fontWeight: 700,
+                            background: 'rgba(99, 102, 241, 0.15)',
+                            color: 'var(--accent-indigo)',
+                            border: '1px solid rgba(99, 102, 241, 0.3)',
+                            padding: '5px 10px',
+                            borderRadius: 6,
+                            lineHeight: 1.4
+                          }}>
                             {inh.elementId}: {inh.canonicalName}
                           </span>
                         ))}
@@ -1586,14 +1748,14 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                   )}
 
                   {/* Added limitations */}
-                  <div style={{ background: 'var(--bg-input)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--accent-emerald)', textTransform: 'uppercase' }}>
+                  <div style={{ background: 'var(--bg-input)', padding: '14px 16px', borderRadius: '10px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent-emerald)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       {node.claimType === 'independent' ? 'Base Statutory Limitations:' : 'Added Narrowing Limitations:'}
                     </span>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {node.addedLimitations.map((add, i) => (
-                        <div key={i} style={{ fontSize: '0.76rem', color: 'var(--text-main)', display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                          <strong style={{ color: 'var(--accent-emerald)', fontFamily: 'var(--font-mono)' }}>{add.elementId}:</strong>
+                        <div key={i} style={{ fontSize: '0.88rem', color: 'var(--text-main)', display: 'flex', alignItems: 'baseline', gap: 8, lineHeight: 1.5 }}>
+                          <strong style={{ color: 'var(--accent-emerald)', fontFamily: 'var(--font-mono)', fontSize: '0.86rem' }}>{add.elementId}:</strong>
                           <span>{add.canonicalName}</span>
                         </div>
                       ))}
@@ -1605,25 +1767,25 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
           </div>
 
           {/* Interactive Impact Propagation Simulator Panel */}
-          <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+          <div className="glass-panel" style={{ padding: '26px 28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14 }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <h3 style={{ fontSize: '1.28rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
                     Claim Dependency "Impact Propagation" Simulator
                   </h3>
-                  <span style={{ fontSize: '0.68rem', background: 'rgba(245, 158, 11, 0.18)', color: 'var(--accent-amber)', padding: '2px 8px', borderRadius: 4, fontWeight: 800 }}>
+                  <span style={{ fontSize: '0.76rem', background: 'rgba(245, 158, 11, 0.18)', color: 'var(--accent-amber)', padding: '3px 10px', borderRadius: 6, fontWeight: 800, letterSpacing: '0.04em' }}>
                     AMENDMENT BLAST RADIUS
                   </span>
                 </div>
-                <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>
+                <p style={{ fontSize: '0.92rem', color: 'var(--text-muted)', margin: '6px 0 0', lineHeight: 1.6 }}>
                   Simulates what happens across all dependent claims when a parent limitation is amended or removed during patent drafting or prosecution.
                 </p>
               </div>
 
               {/* Target Limitation Selector */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-dim)' }}>Target Limitation:</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-dim)' }}>Target Limitation:</span>
                 <select 
                   value={impactTargetElementId}
                   onChange={(e) => setImpactTargetElementId(e.target.value)}
@@ -1631,9 +1793,9 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                     background: 'var(--bg-input)',
                     border: '1px solid var(--border-color)',
                     color: 'var(--text-main)',
-                    padding: '6px 12px',
-                    borderRadius: '6px',
-                    fontSize: '0.8rem',
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    fontSize: '0.86rem',
                     fontWeight: 700
                   }}
                 >
@@ -1647,81 +1809,84 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
             </div>
 
             {/* Impact Results Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
-              <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '10px', padding: '14px' }}>
-                <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#f87171', textTransform: 'uppercase', marginBottom: 4 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+              <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '12px', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ fontSize: '0.80rem', fontWeight: 800, color: '#f87171', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Direct Amendment Target
                 </div>
-                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--text-main)' }}>
+                <div style={{ fontSize: '1.60rem', fontWeight: 900, color: 'var(--text-main)' }}>
                   Claim 1
                 </div>
-                <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>
+                <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
                   Limitation <strong>{impactSimulation.targetElementId} ({impactSimulation.targetElementName})</strong> modified.
                 </p>
               </div>
 
-              <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '10px', padding: '14px' }}>
-                <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--accent-amber)', textTransform: 'uppercase', marginBottom: 4 }}>
+              <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '12px', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ fontSize: '0.80rem', fontWeight: 800, color: 'var(--accent-amber)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Inherited Impact Cascade
                 </div>
-                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--text-main)' }}>
+                <div style={{ fontSize: '1.60rem', fontWeight: 900, color: 'var(--text-main)' }}>
                   {impactSimulation.affectedClaimNumbers.filter(c => c !== 1).length} Dependent Claims
                 </div>
-                <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>
+                <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
                   Claims: <strong>{impactSimulation.affectedClaimNumbers.filter(c => c !== 1).join(', ') || 'None'}</strong> inherit antecedent loss.
                 </p>
               </div>
 
-              <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '10px', padding: '14px' }}>
-                <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--accent-emerald)', textTransform: 'uppercase', marginBottom: 4 }}>
+              <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '12px', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ fontSize: '0.80rem', fontWeight: 800, color: 'var(--accent-emerald)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Unaffected Decoupled Branches
                 </div>
-                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--text-main)' }}>
+                <div style={{ fontSize: '1.60rem', fontWeight: 900, color: 'var(--text-main)' }}>
                   {impactSimulation.unaffectedClaimNumbers.length} Claims
                 </div>
-                <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>
+                <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
                   Independent / decoupled branches operating unaffected.
                 </p>
               </div>
             </div>
 
             {/* Propagation Path Cards */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <span style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Propagation Cascade Audit:
               </span>
               {impactSimulation.propagationPath.map(p => (
                 <div key={p.claimNumber} style={{
                   background: 'var(--bg-surface)',
                   border: '1px solid var(--border-color)',
-                  borderRadius: '8px',
-                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  padding: '14px 18px',
                   display: 'flex',
                   justifyContent: 'space-between',
-                  alignItems: 'center'
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 12
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: '280px' }}>
                     <span style={{
                       fontWeight: 800,
-                      fontSize: '0.78rem',
+                      fontSize: '0.84rem',
                       color: p.status === 'DIRECTLY_AFFECTED' ? '#f87171' : p.status === 'INHERITED_AFFECTED' ? 'var(--accent-amber)' : 'var(--accent-emerald)',
                       background: 'var(--bg-input)',
-                      padding: '2px 8px',
-                      borderRadius: 4
+                      padding: '4px 10px',
+                      borderRadius: 6
                     }}>
                       Claim {p.claimNumber}
                     </span>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-main)' }}>
+                    <span style={{ fontSize: '0.88rem', color: 'var(--text-main)', lineHeight: 1.5 }}>
                       {p.inheritedImpact}
                     </span>
                   </div>
                   <span style={{
-                    fontSize: '0.68rem',
+                    fontSize: '0.76rem',
                     fontWeight: 800,
-                    padding: '2px 8px',
-                    borderRadius: 4,
+                    padding: '4px 10px',
+                    borderRadius: 6,
                     background: p.status === 'DIRECTLY_AFFECTED' ? 'rgba(239, 68, 68, 0.18)' : p.status === 'INHERITED_AFFECTED' ? 'rgba(245, 158, 11, 0.18)' : 'rgba(16, 185, 129, 0.18)',
-                    color: p.status === 'DIRECTLY_AFFECTED' ? '#f87171' : p.status === 'INHERITED_AFFECTED' ? 'var(--accent-amber)' : 'var(--accent-emerald)'
+                    color: p.status === 'DIRECTLY_AFFECTED' ? '#f87171' : p.status === 'INHERITED_AFFECTED' ? 'var(--accent-amber)' : 'var(--accent-emerald)',
+                    letterSpacing: '0.04em'
                   }}>
                     {p.status}
                   </span>
@@ -1729,11 +1894,10 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               ))}
             </div>
 
-            <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px 14px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-              <strong>Drafting Advisory:</strong> {impactSimulation.draftingAssessment}
+            <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '16px 20px', fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              <strong style={{ color: 'var(--text-main)' }}>Drafting Advisory:</strong> {impactSimulation.draftingAssessment}
             </div>
           </div>
-
         </div>
       )}
 

@@ -977,7 +977,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                       {decomposedClaim.claimNumber}.{' '}
                     </span>
                     
-                    {/* Preamble Span */}
+                    {/* Preamble Span with E1 Badge */}
                     <span 
                       onClick={() => handleSelectLimitation('E1')}
                       style={{
@@ -987,8 +987,21 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                         padding: '2px 4px',
                         borderRadius: 4
                       }}
-                      title="Click to inspect E1 Preamble"
+                      title="Click to inspect E1 Statutory Preamble & Scope"
                     >
+                      <span style={{
+                        fontSize: '0.68rem',
+                        fontWeight: 800,
+                        fontFamily: 'var(--font-mono)',
+                        color: 'var(--accent-indigo)',
+                        background: 'var(--bg-input)',
+                        padding: '1px 4px',
+                        borderRadius: 3,
+                        marginRight: 4,
+                        border: '1px solid rgba(99, 102, 241, 0.4)'
+                      }}>
+                        E1
+                      </span>
                       {decomposedClaim.preamble}
                     </span>
 
@@ -1325,11 +1338,13 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                 </span>
                 {[
                   { key: 'ALL', label: `All (${decomposedClaim.limitations.length})` },
+                  { key: 'PREAMBLE', label: `Preamble (${decomposedClaim.complexityMetrics.categoryCounts['PREAMBLE'] || 0})` },
                   { key: 'HARDWARE_COMPONENT', label: `Components (${decomposedClaim.complexityMetrics.categoryCounts['HARDWARE_COMPONENT'] || 0})` },
                   { key: 'FUNCTIONAL_LIMITATION', label: `Functions (${decomposedClaim.complexityMetrics.categoryCounts['FUNCTIONAL_LIMITATION'] || 0})` },
                   { key: 'DATA_INTERFACE', label: `Interfaces (${decomposedClaim.complexityMetrics.categoryCounts['DATA_INTERFACE'] || 0})` },
-                  { key: 'OPERATIONAL_CONSTRAINT', label: `Constraints (${decomposedClaim.complexityMetrics.categoryCounts['OPERATIONAL_CONSTRAINT'] || 0})` }
-                ].map(cat => {
+                  { key: 'OPERATIONAL_CONSTRAINT', label: `Constraints (${decomposedClaim.complexityMetrics.categoryCounts['OPERATIONAL_CONSTRAINT'] || 0})` },
+                  { key: 'PROCESS_STEP', label: `Process Steps (${decomposedClaim.complexityMetrics.categoryCounts['PROCESS_STEP'] || 0})` }
+                ].filter(cat => cat.key === 'ALL' || (decomposedClaim.complexityMetrics.categoryCounts[cat.key] || 0) > 0).map(cat => {
                   const isSelected = activeCategoryFilter === cat.key;
                   return (
                     <button

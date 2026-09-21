@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import type { ModuleView, Patent } from '../types';
-import { searchLiveUsptoPatents, getPatentSourceUrl } from '../services/usptoApi';
+import React, { useState, useEffect, useRef } from 'react';
+import type { ModuleView, Patent, RealtimeAcademicPaper } from '../types';
+import { getPatentSourceUrl } from '../services/usptoApi';
+import { searchPriorArt } from '../services/priorArtSearch';
 import { workspaceStore } from '../services/workspaceStore';
 import { 
   Search, 
@@ -25,6 +26,9 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
   const [searchTab, setSearchTab] = useState<'uspto-live' | 'workspace-hybrid'>('uspto-live');
   const [query, setQuery] = useState(initialQuery || 'autonomous vehicle collision warning camera neural network');
   const [livePatents, setLivePatents] = useState<Patent[]>([]);
+  const [livePapers, setLivePapers] = useState<RealtimeAcademicPaper[]>([]);
+  const [searchError, setSearchError] = useState('');
+  const requestId = useRef(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Local workspace patents from store
@@ -50,15 +54,35 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
   }, [searchTab]);
 
   const handleRunUsptoSearch = async (queryStr: string) => {
+    const current = ++requestId.current;
     setIsLoading(true);
+    setSearchError('');
+    setLivePatents([]);
+    setLivePapers([]);
     try {
-      const results = await searchLiveUsptoPatents(queryStr);
-      setLivePatents(results);
-    } catch (err) {
-      console.error('USPTO live search error:', err);
+      const results = await searchPriorArt(queryStr);
+      if (current !== requestId.current) return;
+      setLivePatents(results.patents);
+      setLivePapers(results.papers);
+    } catch {
+      if (current === requestId.current) setSearchError('Search could not be completed. Please try again.');
     } finally {
-      setIsLoading(false);
+      if (current === requestId.current) setIsLoading(false);
     }
+  };
+
+  const importPatent = (p: Patent) => {
+    // A search summary must never overwrite a fuller existing specification.
+    if (workspaceStore.findPatent(p.id)) return;
+    workspaceStore.addPatent({
+      id: p.id, title: p.title, assignee: p.assignee, inventors: p.inventors,
+      cpcCodes: p.cpcClass ? [p.cpcClass] : [], filingDate: p.filingDate,
+      publicationDate: p.publicationDate, issueDate: p.grantDate,
+      priorityDate: p.priorityDate, abstract: p.abstract,
+      claims: p.parsedClaims?.map(c => ({ claimNumber: c.claimNumber, text: c.text, type: c.type, elements: [] })) || [],
+      displayNumber: p.patentNumber, rawSourceIdentifier: p.id, sourceIdentifier: p.id,
+      source: p.source, sourceUrl: getPatentSourceUrl(p), importQuality: 'PARTIAL'
+    });
   };
 
   // Dynamically compute similarity scores against workspace store patents
@@ -97,10 +121,10 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 4px' }}>
-            Live USPTO / EPO Patent Search & Semantic Retrieval Engine
+            Patent and academic prior-art search
           </h1>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: 0 }}>
-            Query official USPTO & EPO patent office databases live or run hybrid vector similarity search (BM25 + Multi-Sim SBERT).
+            Search patent sources, local records, and academic literature. Review each result’s source before using it as evidence.
           </p>
         </div>
 
@@ -134,7 +158,7 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
             gap: '8px'
           }}
         >
-          <Globe size={18} /> Live USPTO / EPO Registry Search (PatentsView API)
+          <Globe size={18} /> Patent and academic search
         </button>
 
         <button
@@ -185,7 +209,7 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
             style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', height: '36px', padding: '0 20px' }}
           >
             {isLoading ? <Loader2 size={16} className="spin-animation" /> : <Search size={16} />}
-            {isLoading ? 'Querying API...' : (searchTab === 'uspto-live' ? 'Search USPTO Live' : 'Run Search')}
+            {isLoading ? 'Querying API...' : (searchTab === 'uspto-live' ? 'Search sources' : 'Run Search')}
           </button>
         </form>
 
@@ -287,45 +311,58 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>
           {searchTab === 'uspto-live' 
-            ? `Live Official USPTO Patent Results (${livePatents.length})` 
+            ? `Search results (${livePatents.length} patents, ${livePapers.length} academic papers)` 
             : `Workspace Patent Candidates (${filteredWorkspaceResults.length})`}
         </h2>
         <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
           {searchTab === 'uspto-live' 
-            ? 'API Source: USPTO Open Data & PatentsView API'
+            ? 'Patent sources and local records; academic providers'
             : `Retrieval pool: ${workspacePatents.length} workspace patents`}
         </span>
       </div>
 
+      {searchError && <p role="alert">{searchError}</p>}
       {/* Results Rendering */}
       {searchTab === 'uspto-live' ? (
         isLoading ? (
           <div style={{ textAlign: 'center', padding: '60px', color: 'var(--accent-cyan)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
             <Loader2 size={32} style={{ animation: 'spin 1s linear infinite' }} />
-            <div style={{ fontSize: '1rem', fontWeight: 600 }}>Connecting to USPTO Open Data & PatentsView REST API...</div>
+            <div style={{ fontSize: '1rem', fontWeight: 600 }}>Searching patent and academic sources...</div>
           </div>
-        ) : livePatents.length === 0 ? (
+        ) : livePatents.length === 0 && livePapers.length === 0 ? (
           <div className="glass-panel" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
             <AlertCircle size={32} style={{ color: 'var(--accent-cyan)', marginBottom: '12px' }} />
-            <h3 style={{ color: 'var(--text-main)', margin: '0 0 8px', fontSize: '1.1rem' }}>No Matching USPTO Patent Records</h3>
+            <h3 style={{ color: 'var(--text-main)', margin: '0 0 8px', fontSize: '1.1rem' }}>No results available</h3>
             <p style={{ margin: 0, fontSize: '0.88rem', maxWidth: '540px', marginLeft: 'auto', marginRight: 'auto' }}>
-              No official patent specifications matched your search query "{query}". Try broadening your technical terms or searching by exact patent publication number (e.g. US11455581B2).
+              No results were returned for "{query}". Sources may be unavailable or have no matches. Try again or search by exact publication number.
             </p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {livePapers.map(paper => (
+              <article key={`${paper.source}:${paper.id}`} className="glass-panel" style={{ padding: '24px' }}>
+                <span className="badge badge-indigo">Academic paper · {paper.source}</span>
+                <h3>{paper.title}</h3>
+                <p>{paper.authors.join(', ') || 'Authors unavailable'} · {paper.year || 'Year unavailable'} · {paper.venue || 'Venue unavailable'}</p>
+                <p>{paper.abstract || 'Abstract unavailable'}</p>
+                {paper.doi && <p>DOI: {paper.doi}</p>}
+                {paper.url && /^https?:\/\//i.test(paper.url) && (
+                  <a href={paper.url} target="_blank" rel="noopener noreferrer">View academic source</a>
+                )}
+              </article>
+            ))}
             {livePatents.map((p) => (
               <div key={p.id} className="glass-panel glass-panel-hover" style={{ padding: '24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                       <span className="badge badge-cyan" style={{ fontWeight: 800 }}>{p.patentNumber}</span>
-                      <span className="badge badge-indigo">{p.cpcClass}</span>
-                      <span className="badge badge-emerald">Granted: {p.publicationDate}</span>
-                      <span className="badge badge-purple">Claims: {p.claimsCount}</span>
-                      {p.similarityScore && (
+                      <span className="badge badge-indigo">{p.cpcClass || 'CPC unavailable'}</span>
+                      <span className="badge badge-emerald">Publication: {p.publicationDate || 'Unavailable'}</span>
+                      <span className="badge badge-purple">Claims retrieved: {p.claimsCount}</span>
+                      {typeof p.similarityScore === 'number' && (
                         <span className="badge badge-cyan" style={{ background: 'rgba(0, 242, 254, 0.15)', color: 'var(--accent-cyan)' }}>
-                          Match: {p.similarityScore}%
+                          Heuristic keyword score: {p.similarityScore} / 100
                         </span>
                       )}
                     </div>
@@ -333,7 +370,7 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
                       {p.title}
                     </h3>
                     <div style={{ fontSize: '0.84rem', color: 'var(--text-muted)' }}>
-                      Assignee: <strong>{p.assignee}</strong> • Priority Date: {p.priorityDate}
+                      Assignee: <strong>{p.assignee || 'Unavailable'}</strong> • Priority Date: {p.priorityDate || 'Unavailable'}
                     </div>
                   </div>
 
@@ -341,21 +378,7 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
                     <button 
                       className="btn-primary" 
                       onClick={() => {
-                        workspaceStore.addPatent({
-                          id: p.id,
-                          title: p.title,
-                          assignee: p.assignee,
-                          inventors: p.inventors,
-                          cpcCodes: [p.cpcClass],
-                          filingDate: p.priorityDate,
-                          issueDate: p.publicationDate,
-                          abstract: p.abstract,
-                          displayNumber: p.patentNumber,
-                          rawSourceIdentifier: p.id,
-                          sourceIdentifier: p.id,
-                          source: 'USPTO Live Search',
-                          sourceUrl: getPatentSourceUrl(p)
-                        });
+                        importPatent(p);
                         onNavigate('workspace');
                       }}
                       style={{ padding: '8px 16px', fontSize: '0.84rem', gap: '6px' }}
@@ -371,7 +394,7 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '14px' }}>
                   <div style={{ display: 'flex', gap: '16px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                    <span>Official Registry: <strong style={{ color: 'var(--accent-cyan)' }}>USPTO PatentsView API</strong></span>
+                    <span>Source: <strong style={{ color: 'var(--accent-cyan)' }}>{p.source || 'Unspecified'}</strong></span>
                     <span>Inventors: <strong style={{ color: 'var(--text-main)' }}>{p.inventors.join(', ')}</strong></span>
                   </div>
 
@@ -381,28 +404,14 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
                       className="btn-secondary"
                       style={{ padding: '8px 14px', fontSize: '0.82rem' }}
                     >
-                      <ExternalLink size={14} /> Official Specification
+                      <ExternalLink size={14} /> View source
                     </button>
 
                     <button 
                       className="btn-secondary"
                       onClick={() => {
                         // Ensure record is in workspace before comparing
-                        workspaceStore.addPatent({
-                          id: p.id,
-                          title: p.title,
-                          assignee: p.assignee,
-                          inventors: p.inventors,
-                          cpcCodes: [p.cpcClass],
-                          filingDate: p.priorityDate,
-                          issueDate: p.publicationDate,
-                          abstract: p.abstract,
-                          displayNumber: p.patentNumber,
-                          rawSourceIdentifier: p.id,
-                          sourceIdentifier: p.id,
-                          source: 'USPTO Live Search',
-                          sourceUrl: getPatentSourceUrl(p)
-                        });
+                        importPatent(p);
                         onNavigate('mapping');
                       }}
                       style={{ padding: '8px 14px', fontSize: '0.82rem' }}

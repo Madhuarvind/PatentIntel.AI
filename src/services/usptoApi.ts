@@ -1,8 +1,9 @@
 import type { Patent, NormalizedPatent, PatentDocument, PatentClaim, ImportProgressState, ImportStatus, ImportErrorCode, ImportTimings, PatentImportResult } from '../types';
-import { normalizePatentNumber, parseClaimDependency, validatePatentIdentity } from './patentNormalizer';
+import { normalizePatentNumber, validatePatentIdentity } from './patentNormalizer';
 import { workspaceStore } from './workspaceStore';
 import { resolveSearchDomain } from './sourceRouter';
 import { resolvePatentViaBackend } from './patentBackend';
+import { parseGooglePatentsHtmlServer } from './patentHtmlParser';
 
 export interface ImportProgressStep {
   step: number;
@@ -596,8 +597,8 @@ export async function fetchPatentByNumberWithProgressState(
       console.log(`[${requestId}] Local Cache Match! Returning cached patent ${normalizedInput} immediately.`);
       const isNorm = 'publicationNumber' in cachedPatent;
       const pubNum = isNorm ? (cachedPatent as NormalizedPatent).publicationNumber : cachedPatent.id;
-      const pubDate = isNorm ? (cachedPatent as NormalizedPatent).publicationDate : (cachedPatent as PatentDocument).issueDate;
-      const cpcList = isNorm ? (cachedPatent as NormalizedPatent).cpc : ((cachedPatent as PatentDocument).cpcCodes || []);
+      const pubDate = cachedPatent.publicationDate;
+      const cpcList = cachedPatent.cpc || (cachedPatent as PatentDocument).cpcCodes || [];
       const claimsArr = cachedPatent.claims || [];
 
       rawMetadata = {
@@ -606,15 +607,18 @@ export async function fetchPatentByNumberWithProgressState(
         title: cachedPatent.title,
         abstract: cachedPatent.abstract,
         inventors: cachedPatent.inventors,
-        assignees: [cachedPatent.assignee],
+        assignees: cachedPatent.assignees || (cachedPatent.assignee ? [cachedPatent.assignee] : []),
         filingDate: cachedPatent.filingDate,
         publicationDate: pubDate,
-        grantDate: pubDate,
+        grantDate: cachedPatent.grantDate,
         cpc: cpcList,
+        source: cachedPatent.source,
+        importQuality: cachedPatent.importQuality || 'PARTIAL',
+        priorityDate: cachedPatent.priorityDate,
         claims: claimsArr.map((c: any) => ({
           claimNumber: c.claimNumber || c.number,
           text: c.text,
-          type: c.type || 'independent',
+          type: c.type,
           dependsOn: c.dependsOn || []
         }))
       };
@@ -627,7 +631,7 @@ export async function fetchPatentByNumberWithProgressState(
         const cleanCand = cand.replace(/[^A-Z0-9]/gi, '').toUpperCase();
         for (const [key, record] of Object.entries(MASTER_PATENT_REGISTRY)) {
           const cleanKey = key.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-          if (cleanKey === cleanCand || cleanKey.replace(/[A-Z]\d?$/, '') === cleanCand.replace(/[A-Z]\d?$/, '')) {
+          if (cleanKey === cleanCand || (!kindCode && cleanKey.replace(/[A-Z]\d?$/, '') === cleanCand)) {
             rawMetadata = record;
             resolvedId = key;
             console.log(`[${requestId}] Master Registry Match: ${cand} -> "${rawMetadata.title}"`);
@@ -650,14 +654,16 @@ export async function fetchPatentByNumberWithProgressState(
             patentNumber: p.patentNumber || p.id || normalizedInput,
             title: p.title,
             abstract: p.abstract,
-            inventors: p.inventors || ['Disclosed Inventor'],
-            assignees: p.assignees || (p.assignee ? [p.assignee] : ['Disclosed Assignee']),
-            filingDate: p.filingDate || '2020-01-01',
-            publicationDate: p.publicationDate || p.issueDate || '2024-01-01',
-            grantDate: p.grantDate || p.issueDate || '2024-01-01',
-            cpc: p.cpcCodes || p.cpc || ['G06F 17/00'],
+            inventors: p.inventors || [],
+            assignees: p.assignees || (p.assignee ? [p.assignee] : []),
+            filingDate: p.filingDate,
+            publicationDate: p.publicationDate || p.issueDate,
+            grantDate: p.grantDate,
+            cpc: p.cpcCodes || p.cpc || [],
             claims: p.claims || [],
-            source: p.source || 'USPTO Backend Proxy'
+            source: p.source || 'Google Patents',
+            importQuality: p.importQuality,
+            priorityDate: p.priorityDate
           };
           resolvedId = normalizedInput;
           console.log(`[${requestId}] Backend Proxy Match: ${normalizedInput} -> "${rawMetadata.title}"`);
@@ -705,6 +711,8 @@ export async function fetchPatentByNumberWithProgressState(
     // Verify exact returned record identity (Requirement 25)
     const returnedId = rawMetadata.publicationNumber || rawMetadata.patentNumber || resolvedId;
     validatePatentIdentity(normalizedInput, returnedId);
+    resolvedId = returnedId;
+    const resolvedIdentity = normalizePatentNumber(returnedId);
     metadataMs = performance.now() - metaStart;
 
     checkAborted();
@@ -730,33 +738,33 @@ export async function fetchPatentByNumberWithProgressState(
       id: resolvedId,
       patentNumber: resolvedId,
       publicationNumber: resolvedId,
-      applicationNumber: rawMetadata.applicationNumber || `${country}${documentNumber}/APP`,
+      applicationNumber: rawMetadata.applicationNumber,
       country: country || 'US',
       documentNumber,
-      kindCode: kindCode || 'B2',
-      displayNumber,
+      kindCode: resolvedIdentity.kindCode,
+      displayNumber: resolvedIdentity.displayNumber,
       rawSourceIdentifier: rawInput,
       sourceIdentifier: resolvedId,
-      documentType: rawMetadata.documentType || (kindCode === 'A1' ? 'Patent Application Publication' : 'Utility Patent Grant'),
+      documentType: 'PATENT',
       title: rawMetadata.title,
-      abstract: rawMetadata.abstract || 'Abstract specification retrieved from official filing.',
+      abstract: rawMetadata.abstract || '',
       description: rawMetadata.description || '',
       claims: rawClaims,
       claimsCount: rawClaims.length,
-      inventors: rawMetadata.inventors && rawMetadata.inventors.length > 0 ? rawMetadata.inventors : ['Disclosed Inventor'],
+      inventors: rawMetadata.inventors && rawMetadata.inventors.length > 0 ? rawMetadata.inventors : [],
       applicants: rawMetadata.assignees || [],
-      assignees: rawMetadata.assignees && rawMetadata.assignees.length > 0 ? rawMetadata.assignees : ['Disclosed Assignee'],
-      assignee: (rawMetadata.assignees && rawMetadata.assignees[0]) || 'Disclosed Assignee',
-      priorityDate: rawMetadata.priorityDate || rawMetadata.filingDate || 'N/A',
-      filingDate: rawMetadata.filingDate || 'N/A',
-      publicationDate: rawMetadata.publicationDate || 'N/A',
-      grantDate: rawMetadata.grantDate || rawMetadata.publicationDate || 'N/A',
-      cpc: rawMetadata.cpc && rawMetadata.cpc.length > 0 ? rawMetadata.cpc : ['G08G 1/087'],
+      assignees: rawMetadata.assignees && rawMetadata.assignees.length > 0 ? rawMetadata.assignees : [],
+      assignee: (rawMetadata.assignees && rawMetadata.assignees[0]) || '',
+      priorityDate: rawMetadata.priorityDate,
+      filingDate: rawMetadata.filingDate,
+      publicationDate: rawMetadata.publicationDate,
+      grantDate: rawMetadata.grantDate,
+      cpc: rawMetadata.cpc && rawMetadata.cpc.length > 0 ? rawMetadata.cpc : [],
       ipc: rawMetadata.ipc || [],
-      source: rawMetadata.source || 'USPTO',
+      source: rawMetadata.source || 'Local registry (not live verified)',
       sourceUrl: `https://patents.google.com/patent/${resolvedId}/en`,
       retrievedAt: new Date().toISOString(),
-      importQuality: rawClaims.length > 0 ? 'COMPLETE' : 'PARTIAL'
+      importQuality: rawMetadata.importQuality || 'PARTIAL'
     };
     normalizationMs = performance.now() - normStart;
 
@@ -883,7 +891,7 @@ async function fetchFromGooglePatentsFast(canonicalId: string, parentSignal?: Ab
       if (response.ok) {
         const text = await response.text();
         if (text && text.length > 500 && text.includes('DC.title')) {
-          return parseGooglePatentsHtml(text, canonicalId);
+          return parseGooglePatentsHtmlServer(text, canonicalId);
         }
       }
     } catch (err: any) {
@@ -895,111 +903,6 @@ async function fetchFromGooglePatentsFast(canonicalId: string, parentSignal?: Ab
   }
 
   return null;
-}
-
-
-
-/**
- * Parses raw HTML string from Google Patents
- */
-function parseGooglePatentsHtml(html: string, canonicalId: string): any {
-  const titleMatch = html.match(/<meta name="DC\.title" content="([^"]+)"/i) ||
-                     html.match(/itemprop="title"[^>]*>([\s\S]*?)<\//i) ||
-                     html.match(/<meta name="title" content="([^"]+)"/i) ||
-                     html.match(/<title>([^<]+)<\/title>/i);
-
-  if (!titleMatch) return null;
-
-  let title = (titleMatch[1] || titleMatch[0])
-    .replace(/&#39;/g, "'")
-    .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
-    .replace(/\s*-\s*Google Patents$/i, '')
-    .replace(/<[^>]+>/g, ' ')
-    .trim();
-
-  title = title.replace(/\s*-\s*US\d+.*$/i, '').trim();
-
-  const absMatch = html.match(/<meta name="DC\.description" content="([^"]+)"/i) ||
-                   html.match(/<section[^>]*itemprop="abstract"[^>]*>([\s\S]*?)<\/section>/i);
-
-  let abstractText = '';
-  if (absMatch) {
-    abstractText = absMatch[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-  }
-
-  // Inventors
-  let inventors = [...html.matchAll(/itemprop="inventor"[^>]*>([\s\S]*?)<\//gi)]
-    .map(m => m[1].replace(/<[^>]+>/g, '').trim()).filter(Boolean);
-
-  if (inventors.length === 0) {
-    inventors = [...html.matchAll(/<meta name="DC\.contributor" scheme="inventor" content="([^"]+)"/gi)]
-      .map(m => m[1].trim());
-  }
-
-  // Assignees
-  let assignees = [...html.matchAll(/itemprop="assigneeCurrent"[^>]*>([\s\S]*?)<\//gi)]
-    .map(m => m[1].replace(/<[^>]+>/g, '').trim()).filter(Boolean);
-
-  if (assignees.length === 0) {
-    assignees = [...html.matchAll(/itemprop="assigneeOriginal"[^>]*>([\s\S]*?)<\//gi)]
-      .map(m => m[1].replace(/<[^>]+>/g, '').trim()).filter(Boolean);
-  }
-
-  if (assignees.length === 0) {
-    assignees = [...html.matchAll(/<meta name="DC\.contributor" scheme="assignee" content="([^"]+)"/gi)]
-      .map(m => m[1].trim());
-  }
-
-  const dcDates = [...html.matchAll(/<meta name="DC\.date" content="([^"]+)"/gi)].map(m => m[1].trim());
-  const filingDate = dcDates[0] || '2020-08-26';
-  const grantDate = dcDates[1] || dcDates[0] || '2024-03-26';
-
-  const claims: PatentClaim[] = [];
-  const claimDivs = [...html.matchAll(/<div[^>]*class="claim-text"[^>]*>([\s\S]*?)<\/div>/gi)];
-  
-  claimDivs.forEach((cd, idx) => {
-    const text = cd[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-    if (text) {
-      const numMatch = text.match(/^(\d+)\.\s*/);
-      const claimNum = numMatch ? parseInt(numMatch[1]) : idx + 1;
-      const depInfo = parseClaimDependency(text, claimNum);
-      claims.push({
-        claimNumber: claimNum,
-        text,
-        type: depInfo.type,
-        dependsOn: depInfo.dependsOn
-      });
-    }
-  });
-
-  return {
-    publicationNumber: canonicalId,
-    patentNumber: canonicalId,
-    title,
-    abstract: abstractText,
-    inventors: inventors.length > 0 ? inventors : ['Disclosed Inventor'],
-    assignees: assignees.length > 0 ? assignees : ['Disclosed Assignee'],
-    filingDate,
-    publicationDate: grantDate,
-    grantDate,
-    cpc: ['G08G 1/087', 'G06F 17/00'],
-    claims,
-    source: 'USPTO'
-  };
-}
-
-function reconstructAbstract(invertedIndex: Record<string, number[]>): string {
-  try {
-    const wordPositions: { word: string; pos: number }[] = [];
-    for (const [word, positions] of Object.entries(invertedIndex)) {
-      positions.forEach(pos => wordPositions.push({ word, pos }));
-    }
-    wordPositions.sort((a, b) => a.pos - b.pos);
-    return wordPositions.map(wp => wp.word).join(' ').substring(0, 450) + '...';
-  } catch (e) {
-    return '';
-  }
 }
 
 /**
@@ -1019,27 +922,21 @@ async function fetchUsptoPatentsViewApi(query: string, timeoutMs: number = 4000)
     const data = await res.json();
     if (!data || !Array.isArray(data.patents)) return [];
 
-    return data.patents.map((p: any) => {
-      const rawNum = p.patent_number || '';
-      const canonicalId = rawNum ? (rawNum.startsWith('US') ? rawNum : `US${rawNum}B2`) : 'US10000000B2';
-      const dispNum = normalizePatentNumber(canonicalId).displayNumber;
-      const inventorsList = Array.isArray(p.inventors) ? p.inventors.map((inv: any) => `${inv.inventor_first_name || ''} ${inv.inventor_last_name || ''}`.trim()).filter(Boolean) : [];
-      const assigneeName = Array.isArray(p.assignees) && p.assignees[0]?.assignee_organization ? p.assignees[0].assignee_organization : 'Assigned to Record';
-
-      return {
-        id: canonicalId,
-        patentNumber: dispNum,
-        title: p.patent_title || 'USPTO Patent Document',
-        assignee: assigneeName,
-        inventors: inventorsList.length > 0 ? inventorsList : ['Disclosed Inventor'],
-        publicationDate: p.patent_date || '2024-01-01',
-        priorityDate: p.patent_date || '2022-01-01',
-        cpcClass: 'G06F 17/00',
-        abstract: p.patent_abstract || `Official USPTO Patent Specification for ${p.patent_title}`,
-        claimsCount: 12,
-        similarityScore: 96,
-        sourceUrl: getPatentSourceUrl({ publicationNumber: canonicalId, displayNumber: dispNum })
-      };
+    return data.patents.flatMap((p: any): Patent[] => {
+      const rawNum = String(p.patent_number || '').toUpperCase();
+      if (!/^(US)?\d{6,12}([A-Z]\d?)?$/.test(rawNum) || typeof p.patent_title !== 'string' || !p.patent_title.trim()) return [];
+      // PatentsView can omit kind codes. Keep them absent rather than guessing B2.
+      const canonicalId = rawNum.startsWith('US') ? rawNum : `US${rawNum}`;
+      const inventors = Array.isArray(p.inventors) ? p.inventors.map((inv: any) =>
+        `${inv.inventor_first_name || ''} ${inv.inventor_last_name || ''}`.trim()).filter(Boolean) : [];
+      return [{
+        id: canonicalId, patentNumber: canonicalId, documentType: 'PATENT',
+        title: p.patent_title, assignee: p.assignees?.[0]?.assignee_organization || '', inventors,
+        publicationDate: p.patent_date || '', priorityDate: '', cpcClass: '',
+        abstract: p.patent_abstract || '', claimsCount: 0,
+        source: 'PatentsView', importQuality: 'PARTIAL',
+        sourceUrl: getPatentSourceUrl({ publicationNumber: canonicalId })
+      }];
     });
   } catch (e) {
     return [];
@@ -1047,52 +944,8 @@ async function fetchUsptoPatentsViewApi(query: string, timeoutMs: number = 4000)
 }
 
 /**
- * Real-Time OpenAlex Global Patent & Prior-Art API Fetcher
- */
-async function fetchOpenAlexSearchResults(query: string, timeoutMs: number = 4000): Promise<Patent[]> {
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    const url = `https://api.openalex.org/works?search=${encodeURIComponent(query)}&per-page=10`;
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timer);
-    if (!res.ok) return [];
-    const data = await res.json();
-    if (!data || !Array.isArray(data.results)) return [];
-
-    return data.results.map((item: any) => {
-      const title = item.display_name || item.title;
-      if (!title) return null;
-      const pubYear = item.publication_year || 2023;
-      const cleanIdNum = item.id ? item.id.replace(/[^0-9]/g, '').substring(0, 7) : '1092834';
-      const docId = `US${pubYear}${cleanIdNum}B2`;
-      const dispNum = normalizePatentNumber(docId).displayNumber;
-      const authors = item.authorships ? item.authorships.map((a: any) => a.author?.display_name).filter(Boolean) : ['Disclosed Researcher'];
-      const doi = item.doi || `https://doi.org/10.1016/${cleanIdNum}`;
-
-      return {
-        id: docId,
-        patentNumber: dispNum,
-        title: title.replace(/\s+/g, ' '),
-        assignee: item.primary_location?.source?.display_name || 'Global Patent & Academic Registry',
-        inventors: authors.length > 0 ? authors.slice(0, 4) : ['Disclosed Inventor'],
-        publicationDate: item.publication_date || `${pubYear}-05-15`,
-        priorityDate: `${pubYear - 2}-03-10`,
-        cpcClass: 'G06N 20/00 (Machine Learning)',
-        abstract: item.abstract_inverted_index ? reconstructAbstract(item.abstract_inverted_index) : `Live prior-art disclosure for ${title}. Contains technical claims and algorithmic models.`,
-        claimsCount: 15,
-        similarityScore: Math.floor(84 + Math.random() * 14),
-        sourceUrl: doi
-      };
-    }).filter(Boolean) as Patent[];
-  } catch (e) {
-    return [];
-  }
-}
-
-/**
  * Multi-Source Live Patent & Prior-Art Search Engine
- * Dynamically queries real-time APIs (USPTO PatentsView REST API, OpenAlex REST API, Live Google Scrapers).
+ * Returns only patents; academic sources are handled by priorArtSearch.
  */
 export async function searchLiveUsptoPatents(query: string): Promise<Patent[]> {
   const trimmed = query.trim();
@@ -1112,14 +965,15 @@ export async function searchLiveUsptoPatents(query: string): Promise<Patent[]> {
           id: p.id,
           patentNumber: p.displayNumber || p.id,
           title: p.title,
-          assignee: p.assignee || (p.assignees && p.assignees[0]) || 'Assigned to Record',
-          inventors: p.inventors || ['Disclosed Inventor'],
-          publicationDate: p.publicationDate || p.grantDate || '2024-01-01',
-          priorityDate: p.filingDate || '2022-01-01',
-          cpcClass: p.cpc?.[0] || 'G06F 17/00',
+          assignee: p.assignee || (p.assignees && p.assignees[0]) || '',
+          inventors: p.inventors || [],
+          publicationDate: p.publicationDate || '',
+          priorityDate: p.priorityDate || '',
+          cpcClass: p.cpc?.[0] || '',
           abstract: p.abstract,
-          claimsCount: p.claims ? p.claims.length : 12,
-          similarityScore: 100,
+          claimsCount: p.claims ? p.claims.length : 0,
+          source: p.source,
+          parsedClaims: p.claims,
           sourceUrl: getPatentSourceUrl(p)
         }];
       }
@@ -1133,19 +987,8 @@ export async function searchLiveUsptoPatents(query: string): Promise<Patent[]> {
   // 2. Execute parallel real-time API queries over the network for natural-language prior-art keywords
   const candidateMap = new Map<string, Patent>();
 
-  const [usptoApiResults, openAlexApiResults] = await Promise.all([
-    fetchUsptoPatentsViewApi(trimmed),
-    fetchOpenAlexSearchResults(trimmed)
-  ]);
-
-  console.log(`[DYNAMIC LIVE SEARCH] Network fetched ${usptoApiResults.length} USPTO PatentsView records & ${openAlexApiResults.length} OpenAlex records`);
-
-  // Collect live API results
-  [...usptoApiResults, ...openAlexApiResults].forEach(patent => {
-    if (patent && patent.id) {
-      candidateMap.set(patent.id, patent);
-    }
-  });
+  const usptoApiResults = await fetchUsptoPatentsViewApi(trimmed);
+  usptoApiResults.forEach(patent => candidateMap.set(patent.id, patent));
 
   // 3. Score and merge registry candidates for relevance
   const queryLower = trimmed.toLowerCase();
@@ -1163,6 +1006,7 @@ export async function searchLiveUsptoPatents(query: string): Promise<Patent[]> {
     filingDate?: string;
     grantDate?: string;
     cpc?: string[];
+    source?: string;
     claims?: any[];
     sourceUrl?: string;
   }) => {
@@ -1193,14 +1037,16 @@ export async function searchLiveUsptoPatents(query: string): Promise<Patent[]> {
         id: cleanId,
         patentNumber: cleanDispNum,
         title: rec.title,
-        assignee: rec.assignee || 'Assigned to Record',
-        inventors: rec.inventors && rec.inventors.length > 0 ? rec.inventors : ['Disclosed Inventor'],
-        publicationDate: rec.publicationDate || rec.grantDate || '2024-01-01',
-        priorityDate: rec.filingDate || '2022-01-01',
-        cpcClass: (rec.cpc && rec.cpc[0]) || 'G06F 17/00',
+        assignee: rec.assignee || '',
+        inventors: rec.inventors && rec.inventors.length > 0 ? rec.inventors : [],
+        publicationDate: rec.publicationDate || '',
+        priorityDate: '',
+        cpcClass: (rec.cpc && rec.cpc[0]) || '',
         abstract: rec.abstract,
-        claimsCount: rec.claims ? rec.claims.length : 10,
+        claimsCount: rec.claims ? rec.claims.length : 0,
         similarityScore: finalScore,
+        source: rec.source || 'Local record (not live verified)',
+        parsedClaims: rec.claims,
         sourceUrl: getPatentSourceUrl({ publicationNumber: cleanId, displayNumber: cleanDispNum, sourceUrl: rec.sourceUrl })
       });
     }
@@ -1233,11 +1079,12 @@ export async function searchLiveUsptoPatents(query: string): Promise<Patent[]> {
       abstract: p.abstract,
       assignee: p.assignee,
       inventors: p.inventors,
-      publicationDate: p.issueDate,
+      publicationDate: p.publicationDate,
       filingDate: p.filingDate,
       cpc: p.cpcCodes,
       claims: p.claims,
-      sourceUrl: p.sourceUrl
+      sourceUrl: p.sourceUrl,
+      source: 'Workspace record (not live verified)'
     });
   });
 
@@ -1256,14 +1103,15 @@ export async function fetchPatentByNumber(patentNumber: string): Promise<Patent 
       id: norm.id,
       patentNumber: norm.patentNumber,
       title: norm.title,
-      assignee: norm.assignee || 'Assignee Disclosed in Filing',
+      assignee: norm.assignee || '',
       inventors: norm.inventors,
-      publicationDate: norm.publicationDate || '2024-01-01',
-      priorityDate: norm.priorityDate || '2022-01-01',
-      cpcClass: norm.cpc[0] || 'G06F 17/00',
+      publicationDate: norm.publicationDate || '',
+      priorityDate: norm.priorityDate || '',
+      cpcClass: norm.cpc[0] || '',
       abstract: norm.abstract,
       claimsCount: norm.claimsCount,
-      similarityScore: 95,
+      source: norm.source,
+      parsedClaims: norm.claims,
       sourceUrl: norm.sourceUrl
     };
   } catch (err) {

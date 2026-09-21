@@ -662,7 +662,7 @@ export interface NormalizedPatent {
   uspc?: string[];
   patentFamily?: string[];
   citations?: string[];
-  source: 'USPTO' | 'Google Patents' | 'OpenAlex' | 'EPO' | 'Uploaded PDF Specification';
+  source: 'USPTO' | 'Google Patents' | 'OpenAlex' | 'EPO' | 'Uploaded PDF Specification' | 'Local registry (not live verified)';
   sourceUrl: string;
   fileHash?: string;
   retrievedAt: string;

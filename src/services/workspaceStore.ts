@@ -233,18 +233,18 @@ class WorkspaceStore {
         text: nc.text,
         type: nc.type,
         isIndependent: nc.type === 'independent',
-        elements: elements.length > 0 ? elements : [{ id: `el_${nc.claimNumber}_1`, text: nc.text, cpcCategory: normalized.cpc[0] || 'G06F 17/00' }]
+        elements: elements.length > 0 ? elements : [{ id: `el_${nc.claimNumber}_1`, text: nc.text, cpcCategory: normalized.cpc[0] }]
       };
     });
 
     const doc: PatentDocument = {
       id: normalized.id,
       title: normalized.title,
-      assignee: normalized.assignee || (normalized.assignees && normalized.assignees[0]) || 'Disclosed Assignee',
+      assignee: normalized.assignee || (normalized.assignees && normalized.assignees[0]) || '',
       inventors: normalized.inventors,
       cpcCodes: normalized.cpc,
-      filingDate: normalized.filingDate || normalized.priorityDate || 'N/A',
-      issueDate: normalized.publicationDate || normalized.grantDate || 'N/A',
+      filingDate: normalized.filingDate,
+      issueDate: normalized.grantDate,
       abstract: normalized.abstract,
       claims: docClaims,
       rawSourceIdentifier: normalized.rawSourceIdentifier,
@@ -253,7 +253,13 @@ class WorkspaceStore {
       source: normalized.source || 'USPTO',
       sourceUrl: normalized.sourceUrl,
       fileHash: normalized.fileHash,
-      retrievedAt: normalized.retrievedAt
+      retrievedAt: normalized.retrievedAt,
+      publicationNumber: normalized.publicationNumber,
+      publicationDate: normalized.publicationDate,
+      priorityDate: normalized.priorityDate,
+      grantDate: normalized.grantDate,
+      kindCode: normalized.kindCode,
+      importQuality: normalized.importQuality
     };
 
     this.patents.unshift(doc);

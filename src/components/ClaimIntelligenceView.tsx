@@ -53,7 +53,9 @@ interface Props {
 
 export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaimTranslator }) => {
   const [workspacePatents, setWorkspacePatents] = useState<PatentDocument[]>(workspaceStore.getPatents());
-  const [selectedPatentId, setSelectedPatentId] = useState<string>(workspacePatents[0]?.id || 'US11954112B2');
+  const [selectedPatentId, setSelectedPatentId] = useState<string>(() => {
+    return workspaceStore.getActivePatent()?.id || workspaceStore.getPatents()[0]?.id || 'US11594127B1';
+  });
   const [selectedClaimNumber, setSelectedClaimNumber] = useState<number>(1);
   const [activeTab, setActiveTab] = useState<'limitations' | 'dependency' | 'skeleton' | 'counterfactual' | 'heatmap_diagnostics' | 'family_glossary'>('limitations');
   
@@ -92,7 +94,10 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
     const unsubscribe = workspaceStore.subscribe(() => {
       const updated = workspaceStore.getPatents();
       setWorkspacePatents(updated);
-      if (!updated.some(p => p.id === selectedPatentId) && updated.length > 0) {
+      const active = workspaceStore.getActivePatent();
+      if (active && active.id !== selectedPatentId && updated.some(p => p.id === active.id)) {
+        setSelectedPatentId(active.id);
+      } else if (!updated.some(p => p.id === selectedPatentId) && updated.length > 0) {
         setSelectedPatentId(updated[0].id);
       }
     });

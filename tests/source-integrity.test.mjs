@@ -277,3 +277,22 @@ test('a backend identity mismatch is rejected before workspace storage', async (
   assert.equal(store.findPatent('US12346666B1'), undefined);
   assert.equal(store.findPatent('US12346666B2'), undefined);
 });
+
+test('workspaceStore computes dynamic portfolio metrics without synthetic scores', () => {
+  store.resetToDefault();
+  const metrics = store.getMetrics();
+  assert.ok(metrics.totalPatents >= 3);
+  assert.ok(metrics.totalClaims > 0);
+  assert.ok(metrics.totalElements > 0);
+  assert.equal(metrics.independentClaims + metrics.dependentClaims, metrics.totalClaims);
+  assert.ok(Array.isArray(metrics.cpcDistribution));
+  assert.ok(metrics.cpcDistribution.length > 0);
+  assert.ok(metrics.cpcDistribution.some(c => c.code === 'G08G'));
+  assert.ok(typeof metrics.avgClaimsPerPatent === 'number');
+  assert.ok(typeof metrics.avgElementsPerClaim === 'number');
+
+  const initialPatents = store.getPatents();
+  store.setActivePatent(initialPatents[1].id);
+  assert.equal(store.getActivePatent()?.id, initialPatents[1].id);
+});
+

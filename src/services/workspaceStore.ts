@@ -8,6 +8,42 @@ export interface WorkspaceState {
   activePatent: PatentDocument | null;
 }
 
+export interface WorkspaceMetrics {
+  totalPatents: number;
+  totalClaims: number;
+  totalElements: number;
+  independentClaims: number;
+  dependentClaims: number;
+  avgClaimsPerPatent: number;
+  avgElementsPerClaim: number;
+  grantedCount: number;
+  applicationsCount: number;
+  decompositionCoverage: number;
+  cpcDistribution: Array<{ code: string; count: number; percentage: number; label: string }>;
+  assigneeDistribution: Array<{ name: string; count: number }>;
+  jurisdictionDistribution: Array<{ code: string; count: number }>;
+  accuracy: number;
+}
+
+export const CPC_SUBCLASS_LABELS: Record<string, string> = {
+  'G08G': 'Traffic Control & Vehicle Guidance Systems',
+  'H04W': 'Wireless Communication Networks & 5G/C-V2X',
+  'H04L': 'Digital Data Transmission & Protocols',
+  'G06N': 'Artificial Intelligence & Neural Networks',
+  'G06F': 'Electric Digital Data Processing & Architecture',
+  'G06K': 'Recognition of Data & Biometrics',
+  'G01R': 'Measuring Electrical Properties & Sensor Circuits',
+  'G01N': 'Investigating Chemical/Physical Properties',
+  'G01S': 'Radar, Lidar & Radio Navigation',
+  'B60W': 'Autonomous Vehicles & Conjoint Sub-unit Control',
+  'A61B': 'Medical Diagnosis & Surgical Instruments',
+  'A61K': 'Preparations for Medical Purposes',
+  'H01L': 'Semiconductor Devices & Integrated Circuits',
+  'H02J': 'Circuit Systems for Power Distribution',
+  'B64C': 'Aeroplanes & Helicopters',
+  'B64U': 'Unmanned Aerial Vehicles (UAVs / Drones)'
+};
+
 export const INITIAL_WORKSPACE_PATENTS: PatentDocument[] = [
   {
     id: 'US11594127B1',
@@ -104,6 +140,7 @@ export const INITIAL_WORKSPACE_PATENTS: PatentDocument[] = [
 class WorkspaceStore {
   private patents: PatentDocument[] = [];
   private listeners: (() => void)[] = [];
+  private activePatentId: string | null = null;
 
   constructor() {
     this.loadFromStorage();
@@ -151,6 +188,13 @@ class WorkspaceStore {
         this.patents = [...INITIAL_WORKSPACE_PATENTS];
         this.saveToStorage();
       }
+
+      try {
+        const storedActiveId = localStorage.getItem('patentintel_active_patent_id');
+        if (storedActiveId) {
+          this.activePatentId = storedActiveId;
+        }
+      } catch {}
     } catch (e) {
       console.warn('Failed to load workspace patents from storage:', e);
       this.patents = [...INITIAL_WORKSPACE_PATENTS];
@@ -167,6 +211,24 @@ class WorkspaceStore {
 
   public getPatents(): PatentDocument[] {
     return [...this.patents];
+  }
+
+  public getActivePatent(): PatentDocument | null {
+    if (this.activePatentId) {
+      const found = this.findPatent(this.activePatentId);
+      if (found) return found;
+    }
+    return this.patents[0] || null;
+  }
+
+  public setActivePatent(id: string) {
+    this.activePatentId = id;
+    try {
+      localStorage.setItem('patentintel_active_patent_id', id);
+    } catch (e) {
+      console.warn('Failed to persist active patent id:', e);
+    }
+    this.notify();
   }
 
   /**
@@ -311,6 +373,22 @@ class WorkspaceStore {
     }
   }
 
+  public resetToDefault() {
+    this.patents = [...INITIAL_WORKSPACE_PATENTS];
+    this.activePatentId = this.patents[0]?.id || null;
+    this.saveToStorage();
+    this.logActivity('Reset workspace to standard reference patents', 'SYSTEM');
+    this.notify();
+  }
+
+  public getActivityLog(): Array<{ user: string; action: string; patentId: string; timestamp: string }> {
+    try {
+      return JSON.parse(localStorage.getItem('patentintel_activity_log') || '[]');
+    } catch {
+      return [];
+    }
+  }
+
   public subscribe(listener: () => void) {
     this.listeners.push(listener);
     return () => {
@@ -322,17 +400,104 @@ class WorkspaceStore {
     this.listeners.forEach(l => l());
   }
 
-  public getMetrics() {
+  public getMetrics(): WorkspaceMetrics {
     const totalPatents = this.patents.length;
-    const totalClaims = this.patents.reduce((acc: number, p: PatentDocument) => acc + (p.claims ? p.claims.length : 0), 0);
-    const totalElements = this.patents.reduce((acc: number, p: PatentDocument) => {
-      return acc + (p.claims ? p.claims.reduce((cAcc: number, c: Claim) => cAcc + (c.elements ? c.elements.length : 0), 0) : 0);
-    }, 0);
+    let totalClaims = 0;
+    let independentClaims = 0;
+    let dependentClaims = 0;
+    let totalElements = 0;
+    let claimsWithElements = 0;
+    let grantedCount = 0;
+    let applicationsCount = 0;
+
+    const cpcCounts: Record<string, number> = {};
+    const assigneeCounts: Record<string, number> = {};
+    const jurisdictionCounts: Record<string, number> = {};
+
+    for (const p of this.patents) {
+      const idUpper = (p.id || '').toUpperCase();
+      const kind = (p.kindCode || '').toUpperCase();
+      if (kind.startsWith('B') || idUpper.includes('B1') || idUpper.includes('B2') || p.issueDate || p.grantDate) {
+        grantedCount++;
+      } else if (kind.startsWith('A') || idUpper.includes('A1') || idUpper.includes('A2')) {
+        applicationsCount++;
+      } else {
+        grantedCount++;
+      }
+
+      const jurMatch = idUpper.match(/^([A-Z]{2})/);
+      const jur = jurMatch ? jurMatch[1] : 'US';
+      jurisdictionCounts[jur] = (jurisdictionCounts[jur] || 0) + 1;
+
+      const rawAssignee = p.assignee ? p.assignee.trim() : 'Independent / Unassigned';
+      assigneeCounts[rawAssignee] = (assigneeCounts[rawAssignee] || 0) + 1;
+
+      if (Array.isArray(p.cpcCodes)) {
+        for (const cpc of p.cpcCodes) {
+          const match = cpc.match(/^[A-HY]\d{2}[A-Z]/i);
+          const subclass = match ? match[0].toUpperCase() : cpc.slice(0, 4).toUpperCase();
+          if (subclass && subclass.length >= 3) {
+            cpcCounts[subclass] = (cpcCounts[subclass] || 0) + 1;
+          }
+        }
+      }
+
+      if (Array.isArray(p.claims)) {
+        for (const c of p.claims) {
+          totalClaims++;
+          if (c.isIndependent || c.type === 'independent') {
+            independentClaims++;
+          } else {
+            dependentClaims++;
+          }
+
+          const elemCount = c.elements ? c.elements.length : 0;
+          totalElements += elemCount;
+          if (elemCount > 0) {
+            claimsWithElements++;
+          }
+        }
+      }
+    }
+
+    const totalCpcCount = Object.values(cpcCounts).reduce((a, b) => a + b, 0);
+    const cpcDistribution = Object.entries(cpcCounts)
+      .map(([code, count]) => ({
+        code,
+        count,
+        percentage: totalCpcCount > 0 ? Math.round((count / totalCpcCount) * 100) : 0,
+        label: CPC_SUBCLASS_LABELS[code] || `${code} Technology Subclass`
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6);
+
+    const assigneeDistribution = Object.entries(assigneeCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    const jurisdictionDistribution = Object.entries(jurisdictionCounts)
+      .map(([code, count]) => ({ code, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const avgClaimsPerPatent = totalPatents > 0 ? Number((totalClaims / totalPatents).toFixed(1)) : 0;
+    const avgElementsPerClaim = totalClaims > 0 ? Number((totalElements / totalClaims).toFixed(1)) : 0;
+    const decompositionCoverage = totalClaims > 0 ? Math.round((claimsWithElements / totalClaims) * 100) : (totalPatents > 0 ? 100 : 0);
 
     return {
       totalPatents,
       totalClaims,
       totalElements,
+      independentClaims,
+      dependentClaims,
+      avgClaimsPerPatent,
+      avgElementsPerClaim,
+      grantedCount,
+      applicationsCount,
+      decompositionCoverage,
+      cpcDistribution,
+      assigneeDistribution,
+      jurisdictionDistribution,
       accuracy: totalPatents > 0 ? 100.0 : 0
     };
   }

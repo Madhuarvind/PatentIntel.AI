@@ -164,10 +164,7 @@ export const App: React.FC = () => {
   if (checkingSession) return <main role="status" style={{ padding: 48 }}>Checking your session…</main>;
   if (!isAuthenticated || new URLSearchParams(window.location.search).has('reset')) {
     return (
-      <>
-        {sessionError && <div role="alert">{sessionError}</div>}
-        <AuthScreen onLoginSuccess={handleLoginSuccess} />
-      </>
+      <AuthScreen onLoginSuccess={handleLoginSuccess} serviceError={sessionError} />
     );
   }
 

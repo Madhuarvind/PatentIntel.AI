@@ -86,4 +86,5 @@ function patentBackendPlugin(): Plugin {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), patentBackendPlugin()],
+  server: { proxy: { '/api/auth': 'http://127.0.0.1:3001' } },
 });

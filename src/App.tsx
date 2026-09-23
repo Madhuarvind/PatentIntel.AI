@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { ModuleView } from './types';
-import { dbStore } from './services/dbStore';
+import { authClient } from './services/authClient';
 import { workspaceStore } from './services/workspaceStore';
 import { AuthScreen } from './components/AuthScreen';
 import { Header } from './components/Header';
@@ -20,18 +20,26 @@ import { ClaimTranslatorModal } from './components/ClaimTranslatorModal';
 import { IdeaNoveltyView } from './components/IdeaNoveltyView';
 
 export const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return !!dbStore.getCurrentUser();
-  });
-
-  const [user, setUser] = useState<{ name: string; email: string; role: string }>(() => {
-    const active = dbStore.getCurrentUser();
-    return active ? { name: active.name, email: active.email, role: active.role } : {
-      name: 'Dr. Alex Vance',
-      email: 'alex.vance@uspto-research.gov',
-      role: 'Lead Patent Examiner'
-    };
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+  const [sessionError, setSessionError] = useState('');
+  const [user, setUser] = useState({ name: '', email: '', role: '' });
+  useEffect(() => {
+    let active = true;
+    const restore = () => authClient.session().then(account => {
+      if (!active) return;
+      setIsAuthenticated(!!account);
+      if (account) setUser(account);
+      setSessionError('');
+    }).catch(() => {
+      if (active) { setIsAuthenticated(false); setSessionError('Session service unavailable. Please retry signing in.'); }
+    }).finally(() => { if (active) setCheckingSession(false); });
+    void restore();
+    const onFocus = () => { void restore(); };
+    window.addEventListener('focus', onFocus);
+    const timer = window.setInterval(onFocus, 60000);
+    return () => { active = false; window.removeEventListener('focus', onFocus); window.clearInterval(timer); };
+  }, []);
 
   const [activeView, setActiveView] = useState<ModuleView>(() => {
     const hash = window.location.hash;
@@ -140,23 +148,26 @@ export const App: React.FC = () => {
   const handleLoginSuccess = (userData: { name: string; email: string; role: string }) => {
     setUser(userData);
     setIsAuthenticated(true);
-    setActiveView('dashboard');
+    setSessionError('');
+    handleSelectView('dashboard');
   };
 
-  const handleLogout = () => {
-    dbStore.logoutUser();
-    setIsAuthenticated(false);
+  const handleLogout = async () => {
+    try { await authClient.logout(); setIsAuthenticated(false); setSessionError(''); }
+    catch { setSessionError('Sign-out failed. Please retry to revoke your session.'); }
   };
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };
 
-  if (!isAuthenticated) {
+  if (checkingSession) return <main role="status" style={{ padding: 48 }}>Checking your session…</main>;
+  if (!isAuthenticated || new URLSearchParams(window.location.search).has('reset')) {
     return (
-      <AuthScreen
-        onLoginSuccess={handleLoginSuccess}
-      />
+      <>
+        {sessionError && <div role="alert">{sessionError}</div>}
+        <AuthScreen onLoginSuccess={handleLoginSuccess} />
+      </>
     );
   }
 
@@ -171,6 +182,7 @@ export const App: React.FC = () => {
     }}>
       {/* Header Bar */}
       <div style={{ flexShrink: 0, zIndex: 10 }}>
+        {sessionError && <div role="alert">{sessionError}</div>}
         <Header
           user={user}
           theme={theme}

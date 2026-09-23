@@ -57,7 +57,8 @@ export const INITIAL_WORKSPACE_PATENTS: PatentDocument[] = [
     rawSourceIdentifier: 'US011594127B1',
     sourceIdentifier: 'US11594127B1',
     displayNumber: 'US 11,594,127 B1',
-    source: 'USPTO',
+    source: 'Sample record (not verified)',
+    isSample: true,
     sourceUrl: 'https://patents.google.com/patent/US11594127B1/en',
     claims: [
       {
@@ -94,7 +95,8 @@ export const INITIAL_WORKSPACE_PATENTS: PatentDocument[] = [
     rawSourceIdentifier: 'US12260757B2',
     sourceIdentifier: 'US12260757B2',
     displayNumber: 'US 12,260,757 B2',
-    source: 'USPTO',
+    source: 'Sample record (not verified)',
+    isSample: true,
     sourceUrl: 'https://patents.google.com/patent/US12260757B2/en',
     claims: [
       {
@@ -121,7 +123,8 @@ export const INITIAL_WORKSPACE_PATENTS: PatentDocument[] = [
     rawSourceIdentifier: 'US10928341B2',
     sourceIdentifier: 'US10928341B2',
     displayNumber: 'US 10,928,341 B2',
-    source: 'USPTO',
+    source: 'Sample record (not verified)',
+    isSample: true,
     sourceUrl: 'https://patents.google.com/patent/US10928341B2/en',
     claims: [
       {
@@ -182,10 +185,14 @@ class WorkspaceStore {
           }
           return true;
         });
-        this.patents = loaded;
+        this.patents = loaded.map(p => {
+          const seed = INITIAL_WORKSPACE_PATENTS.find(sample => sample.id === p.id);
+          const sameClaims = seed && JSON.stringify((seed.claims || []).map(c => c.text)) === JSON.stringify((p.claims || []).map(c => c.text));
+          return sameClaims && !p.retrievedAt ? { ...p, isSample: true, source: 'Sample record (not verified)' } : p;
+        });
         this.saveToStorage();
       } else {
-        this.patents = [...INITIAL_WORKSPACE_PATENTS];
+        this.patents = [];
         this.saveToStorage();
       }
 
@@ -197,7 +204,7 @@ class WorkspaceStore {
       } catch {}
     } catch (e) {
       console.warn('Failed to load workspace patents from storage:', e);
-      this.patents = [...INITIAL_WORKSPACE_PATENTS];
+      this.patents = [];
     }
   }
 
@@ -227,6 +234,30 @@ class WorkspaceStore {
       localStorage.setItem('patentintel_active_patent_id', id);
     } catch (e) {
       console.warn('Failed to persist active patent id:', e);
+    }
+    this.notify();
+  }
+
+  public getComparisonPair(): { targetId: string; candidateId: string; targetClaimNumber?: number; candidateClaimNumber?: number } {
+    try {
+      const stored = localStorage.getItem('patentintel_comparison_pair');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && typeof parsed.targetId === 'string' && typeof parsed.candidateId === 'string') {
+          return parsed;
+        }
+      }
+    } catch {}
+    const target = this.getActivePatent()?.id || this.patents[0]?.id || '';
+    const candidate = this.patents.find(p => p.id !== target)?.id || '';
+    return { targetId: target, candidateId: candidate };
+  }
+
+  public setComparisonPair(targetId: string, candidateId: string, targetClaimNumber?: number, candidateClaimNumber?: number) {
+    try {
+      localStorage.setItem('patentintel_comparison_pair', JSON.stringify({ targetId, candidateId, targetClaimNumber, candidateClaimNumber }));
+    } catch (e) {
+      console.warn('Failed to persist comparison pair:', e);
     }
     this.notify();
   }
@@ -269,7 +300,7 @@ class WorkspaceStore {
       this.findPatent(normalized.id) ||
       this.findPatent(normalized.publicationNumber);
 
-    if (existing) {
+    if (existing && !existing.isSample) {
       return { isDuplicate: true, patent: existing };
     }
 
@@ -324,9 +355,7 @@ class WorkspaceStore {
       importQuality: normalized.importQuality
     };
 
-    this.patents.unshift(doc);
-    this.saveToStorage();
-    this.notify();
+    this.addPatent(doc);
 
     return { isDuplicate: false, patent: doc };
   }
@@ -358,6 +387,13 @@ class WorkspaceStore {
     }
   }
 
+  public clearWorkspace() {
+    this.patents = [];
+    this.activePatentId = null;
+    this.saveToStorage();
+    this.notify();
+  }
+
   public logActivity(action: string, patentId: string) {
     try {
       const logs = JSON.parse(localStorage.getItem('patentintel_activity_log') || '[]');
@@ -374,7 +410,8 @@ class WorkspaceStore {
   }
 
   public resetToDefault() {
-    this.patents = [...INITIAL_WORKSPACE_PATENTS];
+    // Opt-in examples are added without replacing imported documents.
+    this.patents = [...this.patents, ...INITIAL_WORKSPACE_PATENTS.filter(p => !this.findPatent(p.id))];
     this.activePatentId = this.patents[0]?.id || null;
     this.saveToStorage();
     this.logActivity('Reset workspace to standard reference patents', 'SYSTEM');

@@ -60,3 +60,6 @@ workspace search tab and downstream claim-mapping views are not validated by
 these tests. Live API success, responsive layout, keyboard interaction, and
 cross-browser behavior still require testing. A passing build and fixture suite
 are not evidence of production readiness or retrieval accuracy.
+## Follow-up validation (23 September 2026)
+
+The combined review now includes Workspace/Search, Mapping/Evidence and Timeline. Run all five tests/*.test.mjs suites: 67 cases pass. Fixtures and server-rendered components cover the reviewed behavior; this does not imply live-provider success, browser/download verification, legal validity or production API deployment.

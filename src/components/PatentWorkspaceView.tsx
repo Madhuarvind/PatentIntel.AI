@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { PatentDocument, ImportProgressState } from '../types';
 import { fetchPatentByNumberWithProgressState } from '../services/usptoApi';
 import { normalizePatentNumber } from '../services/patentNormalizer';
+import { createPdfWorkspaceDocument } from '../services/pdfWorkspaceImport';
 import { parsePatentFile } from '../services/pdfParser';
 import { workspaceStore } from '../services/workspaceStore';
 import { 
@@ -82,7 +83,7 @@ interface Props {
 
 export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) => {
   const [activeTab, setActiveTab] = useState<'library' | 'upload' | 'uspto-import'>('library');
-  const [selectedPatent, setSelectedPatent] = useState<string>('US10928341B2');
+  const [selectedPatent, setSelectedPatent] = useState<string>(workspaceStore.getActivePatent()?.id || '');
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isParsing, setIsParsing] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -97,6 +98,11 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
   
   const abortControllerRef = useRef<AbortController | null>(null);
   const currentRequestIdRef = useRef<string | null>(null);
+
+  useEffect(() => () => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+  }, []);
 
   // Workspace Management State (Search, Filter, Sort, Remove Menu, Confirm Modal, Toast)
   const [storePatents, setStorePatents] = useState<PatentDocument[]>(workspaceStore.getPatents());
@@ -132,8 +138,8 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
   // Filter & Sort Patents
   const filteredPatents = storePatents
     .filter(p => {
-      if (sourceFilter === 'uspto' && p.source !== 'USPTO' && p.source !== 'USPTO API') return false;
-      if (sourceFilter === 'pdf' && p.source !== 'Uploaded PDF Specification' && p.source !== 'PDF_UPLOAD') return false;
+      if (sourceFilter === 'uspto' && (p.isSample || !['USPTO', 'USPTO API', 'Google Patents', 'PatentsView'].includes(p.source || ''))) return false;
+      if (sourceFilter === 'pdf' && p.source !== 'Uploaded PDF Specification' && p.source !== 'PDF_UPLOAD' && !p.fileHash) return false;
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
       const numMatch = (p.displayNumber || p.id || '').toLowerCase().includes(q);
@@ -181,21 +187,24 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
     // Create fresh AbortController & Request ID
     const controller = new AbortController();
     abortControllerRef.current = controller;
+    currentRequestIdRef.current = null;
 
     try {
       const result = await fetchPatentByNumberWithProgressState(
         usptoQuery,
         (progressState) => {
           // Prevent stale responses from older requests (Requirement 20)
-          if (currentRequestIdRef.current && progressState.requestId !== currentRequestIdRef.current) {
+          if (abortControllerRef.current !== controller || controller.signal.aborted) {
             return;
           }
+          currentRequestIdRef.current = progressState.requestId;
           setImportState(progressState);
         },
         controller.signal,
         25000 // 25s hard timeout
       );
 
+      if (abortControllerRef.current !== controller || controller.signal.aborted) return;
       currentRequestIdRef.current = result.requestId;
 
       if (result.success && result.patent) {
@@ -205,16 +214,14 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
 
         const timingText = result.timings ? `(Completed in ${(result.timings.totalMs / 1000).toFixed(1)}s)` : '';
         if (addResult.isDuplicate) {
-          setUsptoSuccessMsg(`Patent ${addResult.patent.displayNumber || addResult.patent.id} already exists in workspace. ${timingText}`);
+          setUsptoSuccessMsg(`Patent ${addResult.patent.displayNumber || addResult.patent.id} is available in workspace. ${timingText}`);
         } else {
           setUsptoSuccessMsg(`Successfully imported ${addResult.patent.displayNumber || addResult.patent.id} into workspace! ${timingText}`);
         }
 
         setUsptoQuery('');
-        setTimeout(() => {
-          setIsFetchingUspto(false);
-          setActiveTab('library');
-        }, 600);
+        workspaceStore.setActivePatent(addResult.patent.id);
+        setActiveTab('library');
       } else {
         const errMsg = result.error?.message || 'Failed to retrieve patent record from official registries.';
         setUsptoErrorMsg(errMsg);
@@ -223,8 +230,10 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
       console.error('USPTO Import Exception:', err);
       setUsptoErrorMsg(err.message || 'Failed to retrieve patent record.');
     } finally {
-      setIsFetchingUspto(false);
-      abortControllerRef.current = null;
+      if (abortControllerRef.current === controller) {
+        setIsFetchingUspto(false);
+        abortControllerRef.current = null;
+      }
     }
   };
 
@@ -251,7 +260,6 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
         }
       }
 
-      const dispNum = parsed.patent.displayNumber || targetPatentId || parsed.patent.publicationNumber;
 
       // Check if patent already exists in workspace by SHA-256 Hash or Patent ID
       const existingByHash = parsed.fileHash ? workspaceStore.findByFileHash(parsed.fileHash) : undefined;
@@ -269,91 +277,17 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
         return;
       }
 
-      let canonicalDoc: PatentDocument | null = null;
-
-      // Step 3 & 4: Pass extracted patent ID to SAME USPTO API pipeline used by direct API importer
-      if (targetPatentId) {
-        setUploadProgress(65);
-        console.log(`[PDF -> USPTO PIPELINE] Querying USPTO registry for extracted ID: "${targetPatentId}"`);
-        try {
-          const apiResult = await fetchPatentByNumberWithProgressState(targetPatentId);
-          if (apiResult.success && apiResult.patent) {
-            const p = apiResult.patent;
-            const docClaims = p.claims.map((c, idx) => ({
-              number: c.claimNumber || idx + 1,
-              text: c.text,
-              type: c.type,
-              isIndependent: c.type === 'independent',
-              elements: [
-                { id: `el_${c.claimNumber}_1`, text: c.text.substring(0, 80) }
-              ]
-            }));
-
-            canonicalDoc = {
-              id: p.publicationNumber || p.id || targetPatentId,
-              title: p.title,
-              assignee: p.assignee || (p.assignees && p.assignees[0]) || 'N/A',
-              inventors: p.inventors && p.inventors.length > 0 ? p.inventors : ['N/A'],
-              cpcCodes: p.cpc && p.cpc.length > 0 ? p.cpc : ['G06F 17/00'],
-              filingDate: p.filingDate || 'N/A',
-              issueDate: p.publicationDate || p.grantDate || 'N/A',
-              abstract: p.abstract,
-              claims: docClaims,
-              rawSourceIdentifier: p.displayNumber || p.id,
-              sourceIdentifier: p.publicationNumber || p.id,
-              displayNumber: p.displayNumber || p.id,
-              source: 'PDF Upload + USPTO Verified',
-              sourceUrl: p.sourceUrl || `https://patents.google.com/patent/${p.publicationNumber || p.id}/en`,
-              fileHash: parsed.fileHash,
-              retrievedAt: new Date().toISOString()
-            };
-            console.log(`[PDF -> USPTO PIPELINE] CANONICAL MATCH SUCCESSFUL:`, canonicalDoc);
-          }
-        } catch (apiErr) {
-          console.warn(`[PDF -> USPTO PIPELINE] Registry lookup unfulfilled for ${targetPatentId}:`, apiErr);
-        }
-      }
-
-      // Step 5: Fallback to structured PDF parsed result only if official registry lookup was unavailable
-      if (!canonicalDoc) {
-        setUploadProgress(85);
-        const docClaims = parsed.claims.map((c, idx) => ({
-          number: c.claimNumber || idx + 1,
-          text: c.text,
-          type: c.type,
-          isIndependent: c.type === 'independent',
-          elements: [
-            { id: `el_${c.claimNumber}_1`, text: c.text.substring(0, 80) }
-          ]
-        }));
-
-        canonicalDoc = {
-          id: parsed.patent.id,
-          title: parsed.patent.title,
-          assignee: parsed.patent.assignee,
-          inventors: parsed.patent.inventors,
-          cpcCodes: parsed.patent.cpc || ['G06F 17/00'],
-          filingDate: parsed.patent.priorityDate || 'N/A',
-          issueDate: parsed.patent.publicationDate || 'N/A',
-          abstract: parsed.patent.abstract,
-          claims: docClaims,
-          rawSourceIdentifier: dispNum,
-          sourceIdentifier: targetPatentId || parsed.patent.publicationNumber,
-          displayNumber: dispNum,
-          source: 'Uploaded PDF Specification',
-          sourceUrl: parsed.patent.sourceUrl || '',
-          fileHash: parsed.fileHash,
-          retrievedAt: new Date().toISOString()
-        };
-      }
+      // Preserve PDF-extracted content; registry enrichment requires a separate source lookup.
+      const canonicalDoc = createPdfWorkspaceDocument(parsed);
 
       setUploadProgress(100);
 
       // Save verified canonical record to workspace
       workspaceStore.addPatent(canonicalDoc);
+      workspaceStore.setActivePatent(canonicalDoc.id);
       setSelectedPatent(canonicalDoc.id);
       setLastImportedPatentId(canonicalDoc.id);
-      setUsptoSuccessMsg(`Successfully imported and verified ${canonicalDoc.displayNumber} (${canonicalDoc.title})!`);
+      setUsptoSuccessMsg(`Imported PDF ${canonicalDoc.displayNumber} (${canonicalDoc.title})!`);
       setTimeout(() => {
         setIsParsing(false);
         setActiveTab('library');
@@ -392,7 +326,7 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
             Patent Document Workspace & Real-Time Parser
           </h1>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-            Import live specifications directly from USPTO Open Data API or upload patent PDFs.
+            Retrieve patent records through the source lookup or import text from patent PDFs. Missing metadata remains unavailable.
           </p>
         </div>
 
@@ -407,7 +341,7 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
             className={activeTab === 'uspto-import' ? 'btn-primary' : 'btn-secondary'}
             onClick={() => setActiveTab('uspto-import')}
           >
-            <Globe size={16} /> Import from USPTO API
+            <Globe size={16} /> Import by Patent Number
           </button>
           <button 
             className={activeTab === 'upload' ? 'btn-primary' : 'btn-secondary'}
@@ -475,10 +409,10 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
       {activeTab === 'uspto-import' && (
         <div className="glass-panel" style={{ padding: '24px' }}>
           <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#FFFFFF', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Globe color="#00F2FE" size={20} /> USPTO Official Patent Data Direct Fetcher
+            <Globe color="#00F2FE" size={20} /> Patent Source Lookup
           </h2>
           <p style={{ fontSize: '0.88rem', color: '#94A3B8', marginBottom: '20px', lineHeight: '1.5' }}>
-            Enter any official USPTO patent number to query public patent data APIs in real time.
+            Enter a publication number to request its Google Patents source record. Source availability and missing fields are reported explicitly.
           </p>
 
           <form onSubmit={handleFetchUspto} style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
@@ -738,7 +672,7 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
               </p>
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
                 <button className="btn-primary" onClick={() => setActiveTab('uspto-import')} style={{ padding: '10px 20px', fontSize: '0.88rem' }}>
-                  <Globe size={16} /> Import from USPTO
+                  <Globe size={16} /> Import by Patent Number
                 </button>
                 <button className="btn-secondary" onClick={() => setActiveTab('upload')} style={{ padding: '10px 20px', fontSize: '0.88rem' }}>
                   <Upload size={16} /> Upload Patent PDF
@@ -814,7 +748,7 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                         }}
                       >
                         <option value="all" style={{ background: '#0F172A' }}>All Sources</option>
-                        <option value="uspto" style={{ background: '#0F172A' }}>USPTO API</option>
+                        <option value="uspto" style={{ background: '#0F172A' }}>External Patent Sources</option>
                         <option value="pdf" style={{ background: '#0F172A' }}>PDF Upload</option>
                       </select>
                     </div>
@@ -888,7 +822,7 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                                 fontSize: '0.68rem',
                                 fontWeight: 700
                               }}>
-                                {isPdf ? 'PDF Upload' : 'USPTO'}
+                                {p.isSample ? 'Sample · not verified' : isPdf ? 'PDF Upload' : p.source || 'Source unavailable'}
                               </span>
 
                               <button
@@ -1084,7 +1018,7 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                           fontSize: '0.76rem',
                           fontWeight: 700
                         }}>
-                          {currentPatentDoc.source || 'USPTO'}
+                          {currentPatentDoc.source || 'Unavailable'}
                         </span>
                       </div>
 
@@ -1221,17 +1155,17 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                         <CheckCircle2 size={16} /> SOURCE VERIFICATION & RECORD INTEGRITY
                       </div>
                       <span style={{ fontSize: '0.72rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10B981', padding: '3px 10px', borderRadius: '6px', fontWeight: 700 }}>
-                        ✓ Exact Match Confirmed
+                        {currentPatentDoc.isSample ? 'Sample · not verified' : 'Review source provenance'}
                       </span>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px 24px', fontSize: '0.82rem', color: '#94A3B8' }}>
                       <div>Requested ID: <strong style={{ color: '#00F2FE' }}>{currentPatentDoc.sourceIdentifier || currentPatentDoc.id}</strong></div>
                       <div>Retrieved Record: <strong style={{ color: '#F8FAFC' }}>{currentPatentDoc.displayNumber || currentPatentDoc.id}</strong></div>
-                      <div>Identity Source: <strong style={{ color: '#F8FAFC' }}>First-page patent header</strong></div>
-                      <div>Source Registry: <strong style={{ color: '#10B981' }}>{currentPatentDoc.source || 'USPTO'}</strong></div>
-                      <div>Identity Confidence: <strong style={{ color: '#10B981' }}>99% (High)</strong></div>
-                      <div>Data Quality: <strong style={{ color: '#10B981' }}>✓ Complete</strong></div>
+                      <div>Identity Source: <strong style={{ color: '#F8FAFC' }}>{currentPatentDoc.fileHash ? 'Uploaded document text' : 'Source record'}</strong></div>
+                      <div>Source Registry: <strong style={{ color: '#10B981' }}>{currentPatentDoc.source || 'Unavailable'}</strong></div>
+                      <div>Retrieved: <strong>{currentPatentDoc.retrievedAt || 'No retrieval timestamp'}</strong></div>
+                      <div>Data Quality: <strong style={{ color: '#10B981' }}>{currentPatentDoc.importQuality || 'Not assessed'}</strong></div>
                     </div>
                   </div>
 

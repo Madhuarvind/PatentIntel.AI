@@ -11,9 +11,13 @@ export const SettingsView: React.FC = () => {
   const [customEndpoint, setCustomEndpoint] = useState(initialSettings.customEndpoint || 'http://localhost:11434/api/generate');
   const [customModelName, setCustomModelName] = useState(initialSettings.customModelName || 'patentintel-llama3');
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    setSaved(false);
+    setSaveError('');
+    try {
     saveStoredSettings({
       provider: llmProvider,
       apiKey: apiKey.trim(),
@@ -24,6 +28,9 @@ export const SettingsView: React.FC = () => {
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
+    } catch {
+      setSaveError('Settings could not be saved. Check browser storage availability and try again.');
+    }
   };
 
   return (
@@ -33,7 +40,7 @@ export const SettingsView: React.FC = () => {
           Platform System & AI Model Settings
         </h1>
         <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-          Configure LLM reasoning provider, custom fine-tuned self-hosted model endpoints, vector retrieval indexing parameters, and candidate filtering thresholds.
+          Configure the reasoning provider and model endpoint. Retrieval and advanced engine controls below are unavailable until their integrations are implemented.
         </p>
       </div>
 
@@ -128,6 +135,7 @@ export const SettingsView: React.FC = () => {
           </div>
           <input 
             type="range"
+            disabled
             min="0.50"
             max="0.95"
             step="0.05"
@@ -135,6 +143,7 @@ export const SettingsView: React.FC = () => {
             onChange={(e) => setSimilarityCutoff(parseFloat(e.target.value))}
             style={{ width: '100%', accentColor: 'var(--accent-cyan)' }}
           />
+          <p>Not connected to retrieval. This setting currently has no effect.</p>
         </div>
 
         <div>
@@ -143,6 +152,7 @@ export const SettingsView: React.FC = () => {
           </label>
           <select
             value={vectorEngine}
+            disabled
             onChange={(e) => setVectorEngine(e.target.value)}
             className="input-field"
             style={{ background: 'var(--bg-input)' }}
@@ -151,6 +161,7 @@ export const SettingsView: React.FC = () => {
             <option value="pgvector">PostgreSQL pgvector Extension</option>
             <option value="chroma">ChromaDB Local Vector Storage</option>
           </select>
+          <p>No vector index backend is connected.</p>
         </div>
 
         {/* Advanced AI Innovations Panel */}
@@ -160,20 +171,21 @@ export const SettingsView: React.FC = () => {
           </h4>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: 'var(--text-main)', cursor: 'pointer' }}>
-              <input type="checkbox" defaultChecked style={{ accentColor: '#10b981' }} />
+              <input type="checkbox" disabled style={{ accentColor: '#10b981' }} />
               DeepSeek-R1 Chain-of-Thought (&lt;think&gt;)
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: 'var(--text-main)', cursor: 'pointer' }}>
-              <input type="checkbox" defaultChecked style={{ accentColor: '#10b981' }} />
+              <input type="checkbox" disabled style={{ accentColor: '#10b981' }} />
               ColPali Multi-Modal Vision AI
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: 'var(--text-main)', cursor: 'pointer' }}>
-              <input type="checkbox" defaultChecked style={{ accentColor: '#10b981' }} />
+              <input type="checkbox" disabled style={{ accentColor: '#10b981' }} />
               Self-Reflective RAG Self-Correction
             </label>
           </div>
         </div>
 
+        {saveError && <p role="alert">{saveError}</p>}
         <button type="submit" className="btn-primary" style={{ width: 'fit-content', padding: '12px 24px', fontSize: '0.92rem' }}>
           <Save size={18} /> {saved ? 'Configuration Saved!' : 'Save System Settings'}
         </button>

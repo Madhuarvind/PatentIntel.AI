@@ -36,6 +36,7 @@ function patentBackendPlugin(): Plugin {
           try {
             const targetUrl = `https://patents.google.com/patent/${normalizedId}/en`;
             const proxyRes = await fetch(targetUrl, {
+              signal: AbortSignal.timeout(15000),
               headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml'
@@ -54,13 +55,13 @@ function patentBackendPlugin(): Plugin {
               }
             }
 
-            res.statusCode = 404;
+            res.statusCode = proxyRes.status === 404 ? 404 : 502;
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify({
               success: false,
               documentType: 'PATENT',
-              errorCode: 'PATENT_NOT_FOUND',
-              message: `Patent record "${identifier}" (${normalizedId}) was not found in official patent registries.`
+              errorCode: proxyRes.status === 404 ? 'PATENT_NOT_FOUND' : 'SOURCE_UNAVAILABLE',
+              message: proxyRes.status === 404 ? `No record was found for ${normalizedId}.` : 'Source unavailable or returned an unverifiable document.'
             }));
             return;
           } catch (err: any) {

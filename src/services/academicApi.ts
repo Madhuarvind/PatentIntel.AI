@@ -201,6 +201,7 @@ export async function searchRealtimeAcademicPapers(
   totalCount: number;
   sourcesUsed: string[];
   resolvedAuthor?: AuthorProfile | null;
+  warnings?: string[];
 }> {
   let filters: AcademicSearchFilters;
 
@@ -269,6 +270,8 @@ export async function searchRealtimeAcademicPapers(
     sourcesUsed.push('CrossRef');
   }
 
+  const warnings = [semResult, alexResult, crossrefResult].flatMap((result, index) =>
+    result.status === 'rejected' ? [`${['Semantic Scholar', 'OpenAlex', 'CrossRef'][index]} unavailable.`] : []);
   // Deduplicate results across providers
   const deduplicated = deduplicateAcademicPapers(allPapers);
 
@@ -278,7 +281,8 @@ export async function searchRealtimeAcademicPapers(
   return {
     papers: filteredAndSorted,
     totalCount: filteredAndSorted.length,
-    sourcesUsed: sourcesUsed.length > 0 ? sourcesUsed : ['No Source Available']
+    sourcesUsed: sourcesUsed.length > 0 ? sourcesUsed : ['No Source Available'],
+    ...(warnings.length ? { warnings } : {})
   };
 }
 
@@ -315,9 +319,9 @@ async function fetchSemanticScholar(query: string, filters: AcademicSearchFilter
       }
     }
   } catch (err) {
-    console.warn('Semantic Scholar fetch warning:', err);
+    throw err;
   }
-  return [];
+  throw new Error('Source unavailable or invalid response.');
 }
 
 /**
@@ -345,9 +349,9 @@ async function fetchOpenAlex(query: string, filters: AcademicSearchFilters): Pro
       }
     }
   } catch (err) {
-    console.warn('OpenAlex fetch warning:', err);
+    throw err;
   }
-  return [];
+  throw new Error('Source unavailable or invalid response.');
 }
 
 /**
@@ -370,9 +374,9 @@ async function fetchCrossref(query: string, filters: AcademicSearchFilters): Pro
       }
     }
   } catch (err) {
-    console.warn('Crossref fetch warning:', err);
+    throw err;
   }
-  return [];
+  throw new Error('Source unavailable or invalid response.');
 }
 
 /**

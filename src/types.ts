@@ -1223,6 +1223,7 @@ export interface Claim {
 }
 
 export interface PatentDocument {
+  isSample?: boolean;
   id: string;
   title: string;
   assignee?: string;

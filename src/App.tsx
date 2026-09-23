@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { ModuleView } from './types';
 import { dbStore } from './services/dbStore';
+import { workspaceStore } from './services/workspaceStore';
 import { AuthScreen } from './components/AuthScreen';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
@@ -22,7 +23,7 @@ export const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return !!dbStore.getCurrentUser();
   });
-  
+
   const [user, setUser] = useState<{ name: string; email: string; role: string }>(() => {
     const active = dbStore.getCurrentUser();
     return active ? { name: active.name, email: active.email, role: active.role } : {
@@ -126,13 +127,14 @@ export const App: React.FC = () => {
   const openClaimTranslator = (patentId?: string, claimNumber?: number, claimText?: string) => {
     if (patentId) setTranslatorPatentId(patentId);
     if (claimNumber) setTranslatorClaimNumber(claimNumber);
-    if (claimText) setTranslatorClaimText(claimText);
+    setTranslatorClaimText(claimText);
     setIsTranslatorOpen(true);
   };
 
   const handleSearchSimilarFromTranslator = (translatedQuery: string) => {
     setTranslatorSearchQuery(translatedQuery);
-    setActiveView('search');
+    setIsTranslatorOpen(false);
+    handleSelectView('search');
   };
 
   const handleLoginSuccess = (userData: { name: string; email: string; role: string }) => {
@@ -152,18 +154,18 @@ export const App: React.FC = () => {
 
   if (!isAuthenticated) {
     return (
-      <AuthScreen 
+      <AuthScreen
         onLoginSuccess={handleLoginSuccess}
       />
     );
   }
 
   return (
-    <div style={{ 
-      height: '100vh', 
+    <div style={{
+      height: '100vh',
       width: '100vw',
-      display: 'flex', 
-      flexDirection: 'column', 
+      display: 'flex',
+      flexDirection: 'column',
       background: 'var(--bg-main)',
       overflow: 'hidden'
     }}>
@@ -189,62 +191,66 @@ export const App: React.FC = () => {
         />
 
         {/* Dynamic View Content Container (Individually Scrollable Main Area) */}
-        <main 
-          className={`app-main-content ${activeView === 'review-queue' ? 'review-queue-main-container' : ''}`} 
-          style={{ 
-            flex: 1, 
-            height: '100%', 
-            width: '100%', 
-            maxWidth: '100%', 
-            minWidth: 0, 
-            padding: activeView === 'review-queue' ? '20px 28px' : '32px', 
-            overflowY: activeView === 'review-queue' ? 'hidden' : 'auto', 
-            boxSizing: 'border-box' 
+        <main
+          className={`app-main-content ${activeView === 'review-queue' ? 'review-queue-main-container' : ''}`}
+          style={{
+            flex: 1,
+            height: '100%',
+            width: '100%',
+            maxWidth: '100%',
+            minWidth: 0,
+            padding: activeView === 'review-queue' ? '20px 28px' : '32px',
+            overflowY: activeView === 'review-queue' ? 'hidden' : 'auto',
+            boxSizing: 'border-box'
           }}
         >
           {activeView === 'dashboard' && (
-            <DashboardView 
-              onNavigate={handleSelectView} 
+            <DashboardView
+              onNavigate={handleSelectView}
               onOpenLiterature={(q) => openLiteratureWithQuery(q)}
             />
           )}
 
           {activeView === 'workspace' && (
-            <PatentWorkspaceView 
+            <PatentWorkspaceView
               onOpenClaimTranslator={openClaimTranslator}
             />
           )}
 
           {activeView === 'search' && (
-            <SearchEngineView 
-              onNavigate={handleSelectView} 
+            <SearchEngineView
+              onNavigate={handleSelectView}
               onOpenPaper={(q) => openLiteratureWithQuery(q)}
               initialQuery={translatorSearchQuery}
             />
           )}
 
           {activeView === 'claims' && (
-            <ClaimIntelligenceView 
+            <ClaimIntelligenceView
               onNavigate={handleSelectView}
               onOpenClaimTranslator={openClaimTranslator}
             />
           )}
 
           {activeView === 'mapping' && (
-            <ClaimMappingView 
-              onNavigate={handleSelectView} 
+            <ClaimMappingView
+              onNavigate={handleSelectView}
               onOpenPaper={(q) => openLiteratureWithQuery(q)}
             />
           )}
 
           {activeView === 'timeline' && (
-            <PriorArtTimelineView 
+            <PriorArtTimelineView
               onOpenPaper={(q) => openLiteratureWithQuery(q)}
+              onNavigateToMapping={(target, candidate) => {
+                workspaceStore.setComparisonPair(target.id, candidate.id);
+                handleSelectView('mapping');
+              }}
             />
           )}
 
           {activeView === 'ai-evidence' && (
-            <AIEvidenceView 
+            <AIEvidenceView
               onOpenPaper={(q) => openLiteratureWithQuery(q)}
             />
           )}
@@ -262,14 +268,14 @@ export const App: React.FC = () => {
           )}
 
           {activeView === 'idea-novelty' && (
-            <IdeaNoveltyView 
+            <IdeaNoveltyView
               selectedProjectId={selectedProjectId}
               onNavigate={handleNavigateWithMetadata}
             />
           )}
 
           {activeView === 'review-queue' && (
-            <IdeaNoveltyView 
+            <IdeaNoveltyView
               initialTab="review_queue"
               onNavigate={handleNavigateWithMetadata}
             />

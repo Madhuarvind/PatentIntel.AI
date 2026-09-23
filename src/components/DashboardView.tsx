@@ -97,7 +97,7 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
               <Zap size={12} /> Claim-Centric Patent Intelligence System
             </span>
             <span className="badge badge-emerald" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600 }}>
-              <CheckCircle2 size={12} /> Official Registries Synced
+              <CheckCircle2 size={12} /> Local Workspace
             </span>
           </div>
           <h1 style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 8px', letterSpacing: '-0.02em' }}>
@@ -110,7 +110,7 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button className="btn-primary" onClick={() => onNavigate('search')} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontSize: '0.88rem' }}>
-            <Search size={16} /> Start Hybrid Search
+            <Search size={16} /> Start Prior-Art Search
           </button>
           <button className="btn-secondary" onClick={() => onNavigate('claims')} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontSize: '0.88rem' }}>
             <FileText size={16} /> Decompose Claims
@@ -214,7 +214,7 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
               <ShieldCheck size={22} />
             </div>
             <span style={{ fontSize: '0.74rem', color: 'var(--accent-amber)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600, background: 'rgba(245, 158, 11, 0.12)', padding: '3px 8px', borderRadius: '6px' }}>
-              Verified
+              Parsed
             </span>
           </div>
           <div style={{ fontSize: '1.9rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: '1.1' }}>
@@ -224,7 +224,7 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
             Decomposition Coverage
           </div>
           <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>
-            Source-grounded limitations
+            Claims with parsed elements; accuracy not assessed
           </div>
         </div>
       </div>
@@ -392,10 +392,10 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
                 <ArrowUpRight size={18} color="var(--accent-cyan)" />
               </div>
               <h3 style={{ fontSize: '1.08rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '6px' }}>
-                Hybrid Search Engine
+                Prior-Art Search
               </h3>
               <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: '1.45', margin: 0 }}>
-                Dual-stage BM25 lexical keyword scoring combined with dense SBERT embedding similarity across live USPTO and EPO databases.
+                Search external patent and academic sources, or match query terms against local workspace records with visible source labels.
               </p>
             </div>
             <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -540,7 +540,7 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
               Live Workspace Patent Repository ({patents.length} Patents In Session)
             </h3>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
-              Real patent documents currently loaded into examination memory.
+              Local records, including any sample records explicitly loaded for demonstration. Review provenance in Patent Workspace.
             </p>
           </div>
 
@@ -577,10 +577,10 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
             <button 
               className="btn-secondary" 
               onClick={handleResetToDefault} 
-              title="Reload reference patents if list was modified"
+              title="Add labeled examples without replacing imported records"
               style={{ fontSize: '0.82rem', padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
-              <RotateCcw size={13} /> Reset Reference Set
+              <RotateCcw size={13} /> Load Sample Records
             </button>
           </div>
         </div>

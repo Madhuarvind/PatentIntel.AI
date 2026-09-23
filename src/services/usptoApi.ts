@@ -3,7 +3,6 @@ import { normalizePatentNumber, validatePatentIdentity } from './patentNormalize
 import { workspaceStore } from './workspaceStore';
 import { resolveSearchDomain } from './sourceRouter';
 import { resolvePatentViaBackend } from './patentBackend';
-import { parseGooglePatentsHtmlServer } from './patentHtmlParser';
 
 export interface ImportProgressStep {
   step: number;
@@ -50,431 +49,6 @@ const PATENT_CACHE = new Map<string, NormalizedPatent>();
 /**
  * Official USPTO Master Patent Registry (Exact Verified Source Records)
  */
-const MASTER_PATENT_REGISTRY: Record<string, any> = {
-  'US11940634B2': {
-    publicationNumber: 'US11940634B2',
-    patentNumber: 'US11940634B2',
-    title: '3D PRINTED ANTENNA',
-    abstract: 'An antenna and a formulation and method for making the antenna are disclosed. The antenna comprises a first phase comprising at least one polymer; a second phase comprising at least one first component; and an interface between the first and second phases having a concentration gradient of the at least one first component.',
-    inventors: [
-      'Bhavana Deore',
-      'Chantal Paquet',
-      'Thomas Lacelle',
-      'Patrick Roland Lucien Malenfant',
-      'Rony Amaya',
-      'Joseph Hyland'
-    ],
-    assignees: ['National Research Council of Canada'],
-    filingDate: '2020-08-26',
-    publicationDate: '2024-03-26',
-    grantDate: '2024-03-26',
-    cpc: ['H01Q 1/38', 'B33Y 10/00', 'C08L 101/12'],
-    claims: [
-      {
-        claimNumber: 1,
-        text: '1. An antenna comprising: a first phase comprising at least one polymer; a second phase comprising at least one first component; and an interface between the first and second phases, wherein the interface has a concentration gradient of the at least one first component, whereby the concentration of the at least one first component decreases with distance away from the second phase towards the first phase.',
-        type: 'independent',
-        dependsOn: []
-      },
-      {
-        claimNumber: 2,
-        text: '2. The antenna as claimed in claim 1, wherein the antenna is a 3D printed antenna produced via additive manufacturing.',
-        type: 'dependent',
-        dependsOn: [1]
-      }
-    ]
-  },
-  'US11455581B2': {
-    publicationNumber: 'US11455581B2',
-    patentNumber: 'US11455581B2',
-    title: 'Methods and systems for providing a user interface for managing parts production and delivery statuses',
-    abstract: 'Methods and systems for providing a user interface to be displayed for management of parts production and delivery statuses are provided. A method includes causing a user interface to be displayed on a computing system. The user interface includes a status list including one or more entries. Each entry corresponds to a parts unit and references one or more parts unit identifying datasets. Each entry indicates a production status including one or more sub-production statuses and a dispatching status, and a delivery status including a requested delivery time window and a forecasted delivery time for the parts unit.',
-    inventors: [
-      'Allen Cai',
-      'Alexander Galimberti',
-      'Jakub Pilch',
-      'Lukas Czypulovski',
-      'William Rhyne',
-      'Mihai Condur',
-      'Tim Zimmermann'
-    ],
-    assignees: ['Palantir Technologies Inc'],
-    filingDate: '2020-12-22',
-    publicationDate: '2022-09-27',
-    grantDate: '2022-09-27',
-    cpc: ['G06Q 10/06', 'G06F 3/0484', 'G06Q 10/08'],
-    claims: [
-      {
-        claimNumber: 1,
-        text: '1. A method for providing a user interface to be displayed for management of parts production and delivery statuses, comprising: causing a user interface to be displayed on a computing system; the user interface including a status list comprising one or more entries, wherein each entry corresponds to a parts unit and references one or more parts unit identifying datasets.',
-        type: 'independent',
-        dependsOn: []
-      },
-      {
-        claimNumber: 2,
-        text: '2. The method as claimed in claim 1, wherein each entry indicates a production status including one or more sub-production statuses and a dispatching status.',
-        type: 'dependent',
-        dependsOn: [1]
-      }
-    ]
-  },
-  'US10255577B1': {
-    publicationNumber: 'US10255577B1',
-    patentNumber: 'US10255577B1',
-    title: 'Smart food inventory management system and method for predictive meal planning and food waste reduction',
-    abstract: 'A smart food inventory management system includes IoT weight sensors, RFID tags, optical food inspection cameras, and an AI recommendation engine configured to monitor food degradation rates, predict ingredient expiration dates, and dynamically generate meal planning vectors to minimize household food waste.',
-    inventors: ['Elena Rostova', 'Dr. Michael C. Hsiung', 'Rachel Vance'],
-    assignees: ['PantrySense AI Technologies Corp'],
-    filingDate: '2017-09-14',
-    publicationDate: '2019-04-09',
-    grantDate: '2019-04-09',
-    cpc: ['G06Q 10/087', 'G06Q 50/12', 'G06N 20/00'],
-    claims: [
-      {
-        claimNumber: 1,
-        text: '1. A smart food inventory management system, comprising: a plurality of IoT weight sensors and camera visual analytics units configured to inspect food items stored within a pantry compartment; an artificial intelligence (AI) recommendation processor configured to calculate ingredient decay vectors and predict expiration timelines; and a meal planning engine configured to generate zero-waste recipe recommendations based on predicted ingredient degradation timelines.',
-        type: 'independent',
-        dependsOn: []
-      },
-      {
-        claimNumber: 2,
-        text: '2. The smart food inventory management system as claimed in claim 1, wherein the meal planning engine dispatches dynamic automated grocery replenishment requests prior to ingredient depletion.',
-        type: 'dependent',
-        dependsOn: [1]
-      }
-    ]
-  },
-  'US10657484B2': {
-    publicationNumber: 'US10657484B2',
-    patentNumber: 'US10657484B2',
-    title: 'Automated smart pantry monitoring device with dynamic recipe generation and automated replenishment',
-    abstract: 'An automated smart pantry monitoring device includes multi-spectral optical sensors, weight sensing pads, and a predictive machine learning processor. The processor analyzes pantry item consumption trends, calculates reorder thresholds, and generates optimized nutritional meal plans based on available pantry inventory.',
-    inventors: ['Seung-Ho Lee', 'Kyung-Min Kim'],
-    assignees: ['Samsung Electronics Co., Ltd.'],
-    filingDate: '2018-05-10',
-    publicationDate: '2020-05-19',
-    grantDate: '2020-05-19',
-    cpc: ['G06Q 10/087', 'A47B 77/02', 'G06F 16/9535'],
-    claims: [
-      {
-        claimNumber: 1,
-        text: '1. An automated pantry monitoring apparatus, comprising: a sensor grid configured to measure mass and volumetric occupancy of food containers; a communication interface; and a predictive processor configured to synthesize meal plans from remaining inventory.',
-        type: 'independent',
-        dependsOn: []
-      }
-    ]
-  },
-  'US10846663B2': {
-    publicationNumber: 'US10846663B2',
-    patentNumber: 'US10846663B2',
-    title: 'Dynamic food container inventory tracking apparatus and notification system',
-    abstract: 'An automated inventory tracking apparatus includes weight sensing pads, optical telemetry sensors, and a network communication interface configured to estimate inventory consumption thresholds and emit automated reorder alerts.',
-    inventors: ['Jonathan K. Miller', 'Sophia Chen', 'David R. Brooks'],
-    assignees: ['KitchenIntelligence Systems Inc'],
-    filingDate: '2018-08-15',
-    publicationDate: '2020-11-24',
-    grantDate: '2020-11-24',
-    cpc: ['G06Q 10/087', 'A47B 77/02', 'G06F 16/9535'],
-    claims: [
-      {
-        claimNumber: 1,
-        text: '1. An automated pantry monitoring apparatus, comprising: a sensor grid configured to measure mass and volumetric occupancy of food containers; a communication interface; and a predictive processor configured to synthesize meal plans from remaining inventory.',
-        type: 'independent',
-        dependsOn: []
-      }
-    ]
-  },
-  'US11893521B2': {
-    publicationNumber: 'US11893521B2',
-    patentNumber: 'US11893521B2',
-    title: 'Deep learning visual food waste tracking and degradation estimation system',
-    abstract: 'A computer-implemented system for tracking food waste and estimating food degradation using deep convolutional neural networks (CNNs). Visual telemetry from refrigerator and pantry cameras is processed to compute freshness decay metrics and adjust inventory notifications.',
-    inventors: ['Dr. Alan Turing', 'Maria Santos', 'Kevin L. Zhang'],
-    assignees: ['EcoFood Tech Solutions LLC'],
-    filingDate: '2021-11-04',
-    publicationDate: '2024-02-06',
-    grantDate: '2024-02-06',
-    cpc: ['G06V 20/68', 'G06N 3/08', 'G06Q 10/08'],
-    claims: [
-      {
-        claimNumber: 1,
-        text: '1. A food waste tracking system comprising an optical sensor and neural network degradation estimator.',
-        type: 'independent',
-        dependsOn: []
-      }
-    ]
-  },
-  'US11954112B2': {
-    publicationNumber: 'US11954112B2',
-    patentNumber: 'US11954112B2',
-    title: 'SYSTEM AND METHOD FOR INTELLIGENT POWER DISTRIBUTION AND THERMAL THROTTLING IN AUTONOMOUS EDGE COMPUTE NODES',
-    abstract: 'A system and method for intelligent power distribution and dynamic thermal throttling in autonomous edge compute nodes. The system includes a power telemetry controller, a dynamic voltage frequency scaling (DVFS) unit, and an edge AI workload scheduling processor.',
-    inventors: ['Marcus Vance', 'Helena Rostova', 'David A. Miller'],
-    assignees: ['Edge Intellect Technologies Inc.'],
-    filingDate: '2022-03-14',
-    publicationDate: '2024-04-09',
-    grantDate: '2024-04-09',
-    cpc: ['G06F 1/3206', 'G06F 1/206', 'H04L 67/12'],
-    claims: [
-      {
-        claimNumber: 1,
-        text: '1. An intelligent power distribution system for autonomous edge compute nodes, comprising: a power telemetry interface coupled to a plurality of sensor arrays; a dynamic voltage frequency scaling (DVFS) controller; and a thermal management processor configured to adjust workload distribution based on real-time junction temperature measurements.',
-        type: 'independent',
-        dependsOn: []
-      },
-      {
-        claimNumber: 2,
-        text: '2. The intelligent power distribution system as claimed in claim 1, wherein the dynamic voltage frequency scaling controller operates over a high-speed PCIe system bus.',
-        type: 'dependent',
-        dependsOn: [1]
-      },
-      {
-        claimNumber: 3,
-        text: '3. The intelligent power distribution system as claimed in claim 1, further comprising a predictive neural network model trained to forecast thermal spikes in edge nodes.',
-        type: 'dependent',
-        dependsOn: [1]
-      }
-    ]
-  },
-  'US12379729B2': {
-    publicationNumber: 'US12379729B2',
-    patentNumber: 'US12379729B2',
-    title: 'Machine-learning-driven supply chain out-of-stock inventory resolution and contract negotiation',
-    abstract: 'A VCN process may receive, by a computing device, information associated with a set of value chain network entities of a value chain network, the information generated by at least one of: a set of sensors of the set of value chain network entities, a set of IoT devices configured to collect data relating to the set of value chain network entities, or a set of APIs configured to publish data relating to the set of value chain network entities. A VCN process may provide the information to a set of Artificial Intelligence (AI)-based learning models. A VCN process may determine a procurement action to be taken in the value chain network based upon, at least in part, an output of the set of AI-based learning models. A VCN process may execute the procurement action.',
-    inventors: [
-      'Charles H. Cella',
-      'Andrew Cardno',
-      'Jenna Parenti',
-      'Andrew S. Locke',
-      'Brad Kell',
-      'Teymour S. EL-TAHRY',
-      'Leon Fortin, Jr.',
-      'Andrew Bunin',
-      'Kunal SHARMA',
-      'Taylor CHARON',
-      'Hristo Malchev',
-      'Eric P. Vetter',
-      'David Stein',
-      'Benjamin D. Goodman'
-    ],
-    assignees: ['Strong Force VCN Portfolio 2019 LLC'],
-    filingDate: '2023-11-30',
-    publicationDate: '2025-08-05',
-    grantDate: '2025-08-05',
-    cpc: ['G05D 1/0297', 'G06Q 10/08', 'G06N 20/00'],
-    claims: [
-      {
-        claimNumber: 1,
-        text: '1. A method for value chain network (VCN) inventory resolution and contract negotiation, comprising: receiving telemetry data associated with value chain network entities from IoT sensors and APIs; supplying the telemetry data to a machine-learning model trained to predict out-of-stock inventory conditions; determining automated procurement actions based on outputs of the machine-learning model; and executing automated contract negotiations with supplier network endpoints.',
-        type: 'independent',
-        dependsOn: []
-      },
-      {
-        claimNumber: 2,
-        text: '2. The method as claimed in claim 1, wherein executing the automated contract negotiation comprises dispatching smart contract execution signals to a distributed ledger node.',
-        type: 'dependent',
-        dependsOn: [1]
-      }
-    ]
-  },
-  'US11990034B2': {
-    publicationNumber: 'US11990034B2',
-    patentNumber: 'US11990034B2',
-    title: 'AUTONOMOUS VEHICLE CONTROL SYSTEM WITH TRAFFIC CONTROL CENTER/TRAFFIC CONTROL UNIT (TCC/TCU) AND ROADSIDE UNIT (RSU) NETWORK',
-    abstract: 'An autonomous vehicle control system includes a traffic control center/traffic control unit (TCC/TCU) and roadside unit (RSU) network for optimizing vehicle trajectory planning, lane assignment, and automated intersection control.',
-    inventors: ['Bin Ran', 'Yang Cheng', 'Tianyi Chen', 'Shen Li', 'Jing Jin', 'Xiaoxuan Chen', 'Fan Ding', 'Zhen Zhang'],
-    assignees: ['CAVH LLC'],
-    filingDate: '2022-01-15',
-    publicationDate: '2024-05-21',
-    grantDate: '2024-05-21',
-    cpc: ['B60W 30/09', 'G08G 1/01', 'G06V 20/58'],
-    claims: [
-      {
-        claimNumber: 1,
-        text: '1. An autonomous vehicle control system comprising: a traffic control center/traffic control unit (TCC/TCU) network; a roadside unit (RSU) wireless transceiver; and an autonomous vehicle navigation processor configured to receive real-time trajectory optimization commands.',
-        type: 'independent',
-        dependsOn: []
-      },
-      {
-        claimNumber: 2,
-        text: '2. The autonomous vehicle control system as claimed in claim 1, wherein the roadside unit communicates over a cellular vehicle-to-everything (C-V2X) wireless protocol.',
-        type: 'dependent',
-        dependsOn: [1]
-      }
-    ]
-  },
-  'US11594127B1': {
-    publicationNumber: 'US11594127B1',
-    patentNumber: 'US11594127B1',
-    title: 'SYSTEMS, METHODS, AND DEVICES FOR COMMUNICATION BETWEEN TRAFFIC CONTROLLER SYSTEMS AND MOBILE TRANSMITTERS AND RECEIVERS',
-    abstract: 'Systems, methods, and devices are disclosed for improving traffic safety and efficiency. The system includes a traffic controller interface, a priority request generator, and a cellular vehicle-to-everything (C-V2X) transceiver for establishing real-time communication with emergency vehicles and transit systems.',
-    inventors: ['Bryan Patrick Mulligan', 'Iain Jeffrey Mulligan'],
-    assignees: ['Applied Information, Inc.'],
-    filingDate: '2021-06-15',
-    publicationDate: '2023-02-28',
-    grantDate: '2023-02-28',
-    cpc: ['G08G 1/087', 'G08G 1/0967', 'H04W 4/40'],
-    claims: [
-      {
-        claimNumber: 1,
-        text: '1. A traffic communication system comprising: a traffic controller interface coupled to a traffic signal cabinet; a wireless transceiver configured to receive priority preempt requests from mobile transmitters; and a processor configured to calculate emergency vehicle arrival vectors and modify traffic signal timing phases in real time.',
-        type: 'independent',
-        dependsOn: []
-      },
-      {
-        claimNumber: 2,
-        text: '2. The traffic communication system as claimed in claim 1, wherein the wireless transceiver communicates over a cellular vehicle-to-everything (C-V2X) network protocol.',
-        type: 'dependent',
-        dependsOn: [1]
-      },
-      {
-        claimNumber: 3,
-        text: '3. The traffic communication system as claimed in claim 1, further comprising a GPS location module configured to track real-time position updates of approaching emergency vehicles.',
-        type: 'dependent',
-        dependsOn: [1]
-      }
-    ]
-  },
-  'US12260757B2': {
-    publicationNumber: 'US12260757B2',
-    patentNumber: 'US12260757B2',
-    title: 'Bidirectional interactive traffic-control management system',
-    abstract: 'A bidirectional interactive traffic-control management system includes a road and traffic network information subsystem, an urban traffic control subsystem and a road-users route guidance subsystem to generate optimal real-time signal timing plans.',
-    inventors: ['Chi-Hong Ho', 'Jun-Shian Lee', 'Hsin-Chia Lin', 'Chih-Che Su', 'Yi-Dar Lin', 'I-Ying Chen'],
-    assignees: ['Thi Consultants Inc.'],
-    filingDate: '2021-10-05',
-    publicationDate: '2025-03-25',
-    grantDate: '2025-03-25',
-    cpc: ['G08G 1/01', 'G08G 1/0968', 'G08G 1/081'],
-    claims: [
-      {
-        claimNumber: 1,
-        text: '1. A bidirectional interactive traffic-control management system, comprising: a server, including a road and traffic network information subsystem storing a vector-type road structure; an urban traffic control subsystem generating real-time optimal signal timing plans; and a route guidance subsystem.',
-        type: 'independent',
-        dependsOn: []
-      },
-      {
-        claimNumber: 2,
-        text: '2. The bidirectional interactive traffic-control management system as claimed in claim 1, wherein the travel information input module receives instant location and destination points from mobile devices.',
-        type: 'dependent',
-        dependsOn: [1]
-      }
-    ]
-  },
-  'US10928341B2': {
-    publicationNumber: 'US10928341B2',
-    patentNumber: 'US10928341B2',
-    title: 'Inductive conductivity sensor and method',
-    abstract: 'The disclosure includes an inductive conductivity sensor for measuring the specific electrical conductivity of a medium with a transmitter coil energized by an oscillator.',
-    inventors: ['Thomas Nagel', 'André Pfeifer', 'Christian Fanselow'],
-    assignees: ['Endress and Hauser Conducta GmbH and Co KG'],
-    filingDate: '2018-10-10',
-    publicationDate: '2021-02-23',
-    grantDate: '2021-02-23',
-    cpc: ['G01R 27/00', 'G01N 27/02'],
-    claims: [
-      {
-        claimNumber: 1,
-        text: '1. A method for manufacturing an inductive conductivity sensor, comprising: manufacturing a first portion of a housing from a magnetic plastic or a magnetic resin material.',
-        type: 'independent',
-        dependsOn: []
-      }
-    ]
-  },
-  'US11048920B2': {
-    publicationNumber: 'US11048920B2',
-    patentNumber: 'US11048920B2',
-    title: 'Real-time modification of presentations based on behavior of participants thereto',
-    abstract: 'A computer system, computer program product, method for modifying a presentation based on a behavior of a plurality of participants includes monitoring behavior information during presentation.',
-    inventors: ['Giuseppe Ciano', 'Gianluca Della Corte', 'Giuseppe Longobardi', 'Antonio Sgro'],
-    assignees: ['International Business Machines Corp.'],
-    filingDate: '2017-11-13',
-    publicationDate: '2021-06-29',
-    grantDate: '2021-06-29',
-    cpc: ['G06V 40/20', 'G06F 3/01'],
-    claims: [
-      {
-        claimNumber: 1,
-        text: '1. A method for manufacturing a presentation system, comprising: monitoring behavior information during presentation and updating slide presentation order.',
-        type: 'independent',
-        dependsOn: []
-      }
-    ]
-  },
-  'US12579500B2': {
-    publicationNumber: 'US12579500B2',
-    patentNumber: 'US12579500B2',
-    title: 'Supply chain good inspection utilizing machine learned robotic process automation',
-    abstract: 'A system and method for automated inspection of goods within a supply chain network utilizing machine-learned robotic process automation (RPA). Sensors and optical cameras mounted on robotic end-effectors collect quality telemetry of inventory items, feeding the telemetry to deep learning neural networks to detect defects and dynamically update warehouse routing instructions.',
-    inventors: ['Charles H. Cella', 'Andrew Cardno', 'Jenna Parenti', 'Andrew S. Locke', 'David Stein'],
-    assignees: ['Strong Force VCN Portfolio 2019 LLC'],
-    filingDate: '2023-10-18',
-    publicationDate: '2026-03-03',
-    grantDate: '2026-03-03',
-    cpc: ['G06N 20/00', 'G06Q 10/08', 'B25J 9/16'],
-    claims: [
-      {
-        claimNumber: 1,
-        text: '1. A system for automated supply chain inspection, comprising: a robotic process automation (RPA) manipulator equipped with optical inspection sensors; a machine-learning processor configured to analyze visual telemetry captured by the sensors; and a control module configured to adjust warehouse routing vectors based on defect classifications output by the machine-learning processor.',
-        type: 'independent',
-        dependsOn: []
-      },
-      {
-        claimNumber: 2,
-        text: '2. The system as claimed in claim 1, wherein the machine-learning processor executes a convolutional neural network (CNN) trained on multi-spectral defect topologies.',
-        type: 'dependent',
-        dependsOn: [1]
-      }
-    ]
-  },
-  'US12147926B2': {
-    publicationNumber: 'US12147926B2',
-    patentNumber: 'US12147926B2',
-    title: 'Orchestrated intelligent supply chain optimizer',
-    abstract: 'An orchestrated intelligent supply chain optimizer system includes IoT sensors distributed across value chain entities, a centralized machine-learning orchestration engine, and automated dispatch modules. The system calculates predictive lead times and resolves material bottlenecks in real time.',
-    inventors: ['Charles H. Cella', 'Andrew Cardno', 'Jenna Parenti', 'David Stein', 'Benjamin D. Goodman'],
-    assignees: ['Strong Force VCN Portfolio 2019 LLC'],
-    filingDate: '2023-08-22',
-    publicationDate: '2024-11-19',
-    grantDate: '2024-11-19',
-    cpc: ['G06Q 10/08', 'G06N 5/02', 'G05D 1/02'],
-    claims: [
-      {
-        claimNumber: 1,
-        text: '1. An intelligent supply chain optimization system, comprising: a plurality of IoT telemetry sensors deployed across value chain nodes; a centralized orchestration processor configured to ingest real-time telemetry from the IoT sensors; and a predictive neural network model configured to calculate inventory replenishment vectors.',
-        type: 'independent',
-        dependsOn: []
-      },
-      {
-        claimNumber: 2,
-        text: '2. The system as claimed in claim 1, wherein the centralized orchestration processor dispatches automated procurement orders via smart contracts.',
-        type: 'dependent',
-        dependsOn: [1]
-      }
-    ]
-  },
-  'US10482391B1': {
-    publicationNumber: 'US10482391B1',
-    patentNumber: 'US10482391B1',
-    title: 'Data-enabled success and progression system',
-    abstract: 'A system and method for dynamic tracking and progression analysis using camera visual sensors and optical frame analytics.',
-    inventors: ['Sarah Jenkins', 'David Kim'],
-    assignees: ['VisionTech Systems Corp'],
-    filingDate: '2017-04-10',
-    publicationDate: '2019-11-19',
-    grantDate: '2019-11-19',
-    cpc: ['B60W 30/09', 'G06F 18/24'],
-    claims: [
-      {
-        claimNumber: 1,
-        text: '1. A data-enabled success and progression system comprising an optical visual sensor and CNN obstacle detector.',
-        type: 'independent',
-        dependsOn: []
-      }
-    ]
-  }
-};
-
 /**
  * Custom Error Class for Patent Import Operations
  */
@@ -543,6 +117,9 @@ export async function fetchPatentByNumberWithProgressState(
     internalController.abort();
   }, timeoutMs);
 
+  const cancel = () => internalController.abort();
+  abortSignal?.addEventListener('abort', cancel, { once: true });
+  if (abortSignal?.aborted) cancel();
   const checkAborted = () => {
     if (abortSignal?.aborted || internalController.signal.aborted) {
       throw new PatentImportError(
@@ -575,7 +152,7 @@ export async function fetchPatentByNumberWithProgressState(
     }
 
     const normalizedId = normalizePatentNumber(patentInput);
-    const { rawInput, normalizedInput, country, documentNumber, kindCode, displayNumber, candidates } = normalizedId;
+    const { rawInput, normalizedInput, country, documentNumber, displayNumber } = normalizedId;
     validationMs = performance.now() - valStart;
 
     console.log(`[${requestId}] Step 1 Complete (Validation: ${validationMs.toFixed(1)}ms). Normalized ID: ${normalizedInput}`);
@@ -592,11 +169,10 @@ export async function fetchPatentByNumberWithProgressState(
     let resolvedId = normalizedInput;
 
     // Check Local Cache First (Requirement 23 & 24)
-    const cachedPatent = PATENT_CACHE.get(normalizedInput) || workspaceStore.findPatent(normalizedInput);
+    const cachedPatent = PATENT_CACHE.get(normalizedInput);
     if (cachedPatent) {
       console.log(`[${requestId}] Local Cache Match! Returning cached patent ${normalizedInput} immediately.`);
-      const isNorm = 'publicationNumber' in cachedPatent;
-      const pubNum = isNorm ? (cachedPatent as NormalizedPatent).publicationNumber : cachedPatent.id;
+      const pubNum = cachedPatent.publicationNumber;
       const pubDate = cachedPatent.publicationDate;
       const cpcList = cachedPatent.cpc || (cachedPatent as PatentDocument).cpcCodes || [];
       const claimsArr = cachedPatent.claims || [];
@@ -625,29 +201,15 @@ export async function fetchPatentByNumberWithProgressState(
       resolvedId = cachedPatent.id;
     }
 
-    // 1st Priority Check: Master Directory Match (Flexible Key Matching)
-    if (!rawMetadata) {
-      for (const cand of candidates) {
-        const cleanCand = cand.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-        for (const [key, record] of Object.entries(MASTER_PATENT_REGISTRY)) {
-          const cleanKey = key.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-          if (cleanKey === cleanCand || (!kindCode && cleanKey.replace(/[A-Z]\d?$/, '') === cleanCand)) {
-            rawMetadata = record;
-            resolvedId = key;
-            console.log(`[${requestId}] Master Registry Match: ${cand} -> "${rawMetadata.title}"`);
-            break;
-          }
-        }
-        if (rawMetadata) break;
-      }
-    }
-
     // 2nd Priority Check: Backend Server Proxy Endpoint (Bypasses Browser CORS Restrictions)
     if (!rawMetadata) {
       console.log(`[${requestId}] Querying Patent Backend Proxy Endpoint for: ${normalizedInput}`);
       try {
-        const backendRes = await resolvePatentViaBackend(normalizedInput);
-        if (backendRes && backendRes.success && backendRes.patent) {
+        const backendRes = await resolvePatentViaBackend(normalizedInput, internalController.signal);
+        if (!backendRes.success) {
+          throw new PatentImportError(backendRes.errorCode === 'PATENT_NOT_FOUND' ? 'PATENT_NOT_FOUND' : 'SOURCE_UNAVAILABLE', backendRes.message || 'Patent source unavailable.', 'Try again later.');
+        }
+        if (backendRes.patent) {
           const p = backendRes.patent;
           rawMetadata = {
             publicationNumber: p.publicationNumber || p.id || normalizedInput,
@@ -669,28 +231,7 @@ export async function fetchPatentByNumberWithProgressState(
           console.log(`[${requestId}] Backend Proxy Match: ${normalizedInput} -> "${rawMetadata.title}"`);
         }
       } catch (err: any) {
-        console.warn(`[${requestId}] Backend Proxy resolution attempt error:`, err);
-      }
-    }
-
-    // 3rd Priority Check: Direct Proxy Fetch Fallback
-    if (!rawMetadata) {
-      console.log(`[${requestId}] Direct Proxy fetch initiated for candidates: ${candidates.join(', ')}`);
-      for (const candidate of candidates) {
-        checkAborted();
-        try {
-          const data = await fetchFromGooglePatentsFast(candidate, abortSignal || internalController.signal, 4000);
-          if (data && data.title) {
-            rawMetadata = data;
-            resolvedId = candidate;
-            console.log(`[${requestId}] Direct Proxy Fetch Match: ${candidate} -> "${data.title}"`);
-            break;
-          }
-        } catch (err: any) {
-          if (err.name === 'AbortError' || abortSignal?.aborted || internalController.signal.aborted) {
-            throw err;
-          }
-        }
+        throw err;
       }
     }
 
@@ -812,7 +353,9 @@ export async function fetchPatentByNumberWithProgressState(
   } catch (err: any) {
     const totalMs = performance.now() - startTime;
     const isAbort = err.name === 'AbortError' || err.code === 'CANCELLED' || abortSignal?.aborted;
-    const errorCode: ImportErrorCode = err.code || (isAbort ? 'CANCELLED' : 'SOURCE_UNAVAILABLE');
+    const errorCode: ImportErrorCode = internalController.signal.aborted
+      ? (abortSignal?.aborted ? 'CANCELLED' : 'SOURCE_TIMEOUT')
+      : (err instanceof PatentImportError ? err.code : (isAbort ? 'CANCELLED' : 'SOURCE_UNAVAILABLE'));
     const errorMessage = err.message || 'An unexpected error occurred during patent fetching.';
 
     const status: ImportStatus = errorCode === 'CANCELLED' ? 'cancelled' : errorCode === 'SOURCE_TIMEOUT' ? 'timeout' : 'failed';
@@ -836,6 +379,7 @@ export async function fetchPatentByNumberWithProgressState(
     };
   } finally {
     clearTimeout(timeoutId);
+    abortSignal?.removeEventListener('abort', cancel);
   }
 }
 
@@ -867,60 +411,21 @@ export async function fetchPatentByNumberWithProgress(
 /**
  * Fast Google Patents fetcher with AbortSignal & per-request timeout
  */
-async function fetchFromGooglePatentsFast(canonicalId: string, parentSignal?: AbortSignal, timeoutMs: number = 3500): Promise<any> {
-  const targetUrl = `https://patents.google.com/patent/${canonicalId}/en`;
-
-  const proxyEndpoints = [
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-    `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
-  ];
-
-  for (const proxyUrl of proxyEndpoints) {
-    if (parentSignal?.aborted) throw new Error('AbortError');
-
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-    try {
-      const response = await fetch(proxyUrl, {
-        signal: controller.signal,
-        headers: { Accept: 'text/html,application/xhtml+xml' }
-      });
-      clearTimeout(timer);
-
-      if (response.ok) {
-        const text = await response.text();
-        if (text && text.length > 500 && text.includes('DC.title')) {
-          return parseGooglePatentsHtmlServer(text, canonicalId);
-        }
-      }
-    } catch (err: any) {
-      clearTimeout(timer);
-      if (err.name === 'AbortError' && parentSignal?.aborted) {
-        throw err;
-      }
-    }
-  }
-
-  return null;
-}
-
 /**
  * Real-Time USPTO PatentsView API Fetcher
  */
-async function fetchUsptoPatentsViewApi(query: string, timeoutMs: number = 4000): Promise<Patent[]> {
+async function fetchUsptoPatentsViewApi(query: string, timeoutMs: number = 4000, strict = false): Promise<Patent[]> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
     const qObj = JSON.stringify({ _text_any: { patent_title: query } });
     const fObj = JSON.stringify(["patent_number", "patent_title", "patent_abstract", "patent_date", "assignee_organization", "inventor_first_name", "inventor_last_name"]);
     const url = `https://api.patentsview.org/patents/query?q=${encodeURIComponent(qObj)}&f=${encodeURIComponent(fObj)}&o=${encodeURIComponent(JSON.stringify({ per_page: 10 }))}`;
 
     const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timer);
-    if (!res.ok) return [];
+    if (!res.ok) throw new Error(`Patent source unavailable (HTTP ${res.status}).`);
     const data = await res.json();
-    if (!data || !Array.isArray(data.patents)) return [];
+    if (!data || !Array.isArray(data.patents)) throw new Error('Patent source returned an invalid response.');
 
     return data.patents.flatMap((p: any): Patent[] => {
       const rawNum = String(p.patent_number || '').toUpperCase();
@@ -939,7 +444,10 @@ async function fetchUsptoPatentsViewApi(query: string, timeoutMs: number = 4000)
       }];
     });
   } catch (e) {
+    if (strict) throw e;
     return [];
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -947,7 +455,7 @@ async function fetchUsptoPatentsViewApi(query: string, timeoutMs: number = 4000)
  * Multi-Source Live Patent & Prior-Art Search Engine
  * Returns only patents; academic sources are handled by priorArtSearch.
  */
-export async function searchLiveUsptoPatents(query: string): Promise<Patent[]> {
+export async function searchLiveUsptoPatents(query: string, strict = false): Promise<Patent[]> {
   const trimmed = query.trim();
   if (!trimmed) return [];
 
@@ -959,6 +467,7 @@ export async function searchLiveUsptoPatents(query: string): Promise<Patent[]> {
   if (routeDecision.isPatentId) {
     try {
       const result = await fetchPatentByNumberWithProgressState(trimmed);
+      if (!result.success && strict) throw new Error(result.error?.message || 'Patent source unavailable.');
       if (result.success && result.patent) {
         const p = result.patent;
         return [{
@@ -978,122 +487,15 @@ export async function searchLiveUsptoPatents(query: string): Promise<Patent[]> {
         }];
       }
     } catch (e) {
+      if (strict) throw e;
       console.warn('[SearchEngine] Patent identifier lookup failed or not found:', e);
     }
     // MANDATORY RULE: Patent identifier MUST NEVER fall back to OpenAlex! Return empty or error.
     return [];
   }
 
-  // 2. Execute parallel real-time API queries over the network for natural-language prior-art keywords
-  const candidateMap = new Map<string, Patent>();
-
-  const usptoApiResults = await fetchUsptoPatentsViewApi(trimmed);
-  usptoApiResults.forEach(patent => candidateMap.set(patent.id, patent));
-
-  // 3. Score and merge registry candidates for relevance
-  const queryLower = trimmed.toLowerCase();
-  const queryTerms = queryLower.split(/\s+/).filter(t => t.length > 2);
-
-  const scoreAndAdd = (rec: {
-    id: string;
-    displayNumber?: string;
-    patentNumber?: string;
-    title: string;
-    abstract: string;
-    assignee?: string;
-    inventors?: string[];
-    publicationDate?: string;
-    filingDate?: string;
-    grantDate?: string;
-    cpc?: string[];
-    source?: string;
-    claims?: any[];
-    sourceUrl?: string;
-  }) => {
-    const textToMatch = `${rec.title} ${rec.abstract} ${(rec.cpc || []).join(' ')} ${rec.assignee || ''}`.toLowerCase();
-    
-    let termMatches = 0;
-    queryTerms.forEach(term => {
-      if (textToMatch.includes(term)) termMatches++;
-    });
-
-    if (queryTerms.length > 0 && termMatches === 0) return;
-
-    const termOverlapRatio = queryTerms.length > 0 ? termMatches / queryTerms.length : 1;
-    let conceptBonus = 0;
-    if (queryLower.includes('pantry') && textToMatch.includes('pantry')) conceptBonus += 25;
-    if (queryLower.includes('food') && textToMatch.includes('food')) conceptBonus += 20;
-    if (queryLower.includes('waste') && textToMatch.includes('waste')) conceptBonus += 20;
-    if (queryLower.includes('vehicle') && textToMatch.includes('vehicle')) conceptBonus += 25;
-
-    const baseScore = Math.round(60 + termOverlapRatio * 35 + conceptBonus);
-    const finalScore = Math.min(99, Math.max(40, baseScore));
-
-    const cleanId = rec.id || rec.patentNumber || '';
-    const cleanDispNum = rec.displayNumber || normalizePatentNumber(cleanId).displayNumber;
-
-    if (!candidateMap.has(cleanId)) {
-      candidateMap.set(cleanId, {
-        id: cleanId,
-        patentNumber: cleanDispNum,
-        title: rec.title,
-        assignee: rec.assignee || '',
-        inventors: rec.inventors && rec.inventors.length > 0 ? rec.inventors : [],
-        publicationDate: rec.publicationDate || '',
-        priorityDate: '',
-        cpcClass: (rec.cpc && rec.cpc[0]) || '',
-        abstract: rec.abstract,
-        claimsCount: rec.claims ? rec.claims.length : 0,
-        similarityScore: finalScore,
-        source: rec.source || 'Local record (not live verified)',
-        parsedClaims: rec.claims,
-        sourceUrl: getPatentSourceUrl({ publicationNumber: cleanId, displayNumber: cleanDispNum, sourceUrl: rec.sourceUrl })
-      });
-    }
-  };
-
-  for (const [key, record] of Object.entries(MASTER_PATENT_REGISTRY)) {
-    scoreAndAdd({
-      id: key,
-      displayNumber: record.displayNumber || normalizePatentNumber(key).displayNumber,
-      patentNumber: key,
-      title: record.title,
-      abstract: record.abstract,
-      assignee: (record.assignees && record.assignees[0]) || record.assignee,
-      inventors: record.inventors,
-      publicationDate: record.publicationDate,
-      filingDate: record.filingDate,
-      grantDate: record.grantDate,
-      cpc: record.cpc,
-      claims: record.claims
-    });
-  }
-
-  const localPatents = workspaceStore.getPatents();
-  localPatents.forEach(p => {
-    scoreAndAdd({
-      id: p.id,
-      displayNumber: p.displayNumber || p.id,
-      patentNumber: p.id,
-      title: p.title,
-      abstract: p.abstract,
-      assignee: p.assignee,
-      inventors: p.inventors,
-      publicationDate: p.publicationDate,
-      filingDate: p.filingDate,
-      cpc: p.cpcCodes,
-      claims: p.claims,
-      sourceUrl: p.sourceUrl,
-      source: 'Workspace record (not live verified)'
-    });
-  });
-
-  const sortedResults = Array.from(candidateMap.values())
-    .sort((a, b) => (b.similarityScore || 0) - (a.similarityScore || 0));
-
-  console.log(`[DYNAMIC LIVE USPTO SEARCH] Returning ${sortedResults.length} real-time scored results for query: "${trimmed}"`);
-
-  return sortedResults;
+  // Bundled examples and workspace records are never merged into source results.
+  return fetchUsptoPatentsViewApi(trimmed, 4000, strict);
 }
 
 export async function fetchPatentByNumber(patentNumber: string): Promise<Patent | null> {

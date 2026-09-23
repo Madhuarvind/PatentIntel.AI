@@ -20,7 +20,7 @@ before(async () => {
     setItem: (key, value) => memory.set(key, value),
     removeItem: key => memory.delete(key)
   } });
-  server = await createServer({ configFile: false, server: { middlewareMode: true }, appType: 'custom',
+  server = await createServer({ configFile: false, optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false }, appType: 'custom',
     esbuild: { jsx: 'automatic' } });
   parse = (await server.ssrLoadModule('/src/services/patentHtmlParser.ts')).parseGooglePatentsHtmlServer;
   normalize = await server.ssrLoadModule('/src/services/patentNormalizer.ts');
@@ -143,7 +143,9 @@ test('failed patent identifier lookups cannot fall back to academic sources', as
   const calls = [];
   globalThis.fetch = async url => { calls.push(String(url)); return new Response('', { status: 404 }); };
   const result = await search('US2025/0292675A1');
-  assert.deepEqual(result, { patents: [], papers: [] });
+  assert.deepEqual(result.patents, []);
+  assert.deepEqual(result.papers, []);
+  assert.ok(result.warnings.length > 0);
   assert.ok(calls.length > 0);
   assert.equal(calls.some(url => /openalex|crossref|semanticscholar/.test(url)), false);
 });
@@ -226,7 +228,7 @@ test('academic metadata does not invent a year, author, venue, abstract or DOI',
 
 test('real dev middleware rejects bad pages and returns partial source records', async () => {
   const { get } = await import('node:http');
-  const dev = await createServer({ server: { host: '127.0.0.1', port: 0 },
+  const dev = await createServer({ server: { host: '127.0.0.1', port: 0, hmr: false },
     optimizeDeps: { noDiscovery: true, include: [] } });
   let html = fixture();
   let calls = 0;
@@ -254,7 +256,7 @@ test('real dev middleware rejects bad pages and returns partial source records',
     for (const badHtml of ['<title>Access denied</title>', fixture('US87654321B2')]) {
       html = badHtml;
       const bad = await request('/api/patents/resolve?identifier=US12345678B2');
-      assert.equal(bad.status, 404);
+      assert.equal(bad.status, 502);
       assert.equal(bad.body.success, false);
     }
   } finally { await dev.close(); }
@@ -295,4 +297,3 @@ test('workspaceStore computes dynamic portfolio metrics without synthetic scores
   store.setActivePatent(initialPatents[1].id);
   assert.equal(store.getActivePatent()?.id, initialPatents[1].id);
 });
-

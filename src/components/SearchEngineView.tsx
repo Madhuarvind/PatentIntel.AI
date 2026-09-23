@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { ModuleView, Patent, RealtimeAcademicPaper } from '../types';
 import { getPatentSourceUrl } from '../services/usptoApi';
 import { searchPriorArt } from '../services/priorArtSearch';
+import { searchWorkspace } from '../services/workspaceSearch';
 import { workspaceStore } from '../services/workspaceStore';
 import { 
   Search, 
@@ -34,10 +35,8 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
   // Local workspace patents from store
   const [workspacePatents, setWorkspacePatents] = useState(workspaceStore.getPatents());
 
-  // Local hybrid search parameters
-  const [searchMode, setSearchMode] = useState<'hybrid' | 'bm25' | 'sbert'>('hybrid');
-  const [bm25Weight, setBm25Weight] = useState(0.35);
-  const [sbertWeight, setSbertWeight] = useState(0.65);
+  const [includeSamples, setIncludeSamples] = useState(false);
+  const [submittedQuery, setSubmittedQuery] = useState('');
 
   useEffect(() => {
     const unsubscribe = workspaceStore.subscribe(() => {
@@ -46,17 +45,11 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
     return unsubscribe;
   }, []);
 
-  // Run USPTO live search when tab changes or search requested
-  useEffect(() => {
-    if (searchTab === 'uspto-live') {
-      handleRunUsptoSearch(query);
-    }
-  }, [searchTab]);
-
-  const handleRunUsptoSearch = async (queryStr: string) => {
+  const handleRunUsptoSearch = useCallback(async (queryStr: string) => {
     const current = ++requestId.current;
     setIsLoading(true);
     setSearchError('');
+    setSubmittedQuery(queryStr.trim());
     setLivePatents([]);
     setLivePapers([]);
     try {
@@ -64,56 +57,46 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
       if (current !== requestId.current) return;
       setLivePatents(results.patents);
       setLivePapers(results.papers);
+      setSearchError(results.warnings?.join(' ') || '');
     } catch {
       if (current === requestId.current) setSearchError('Search could not be completed. Please try again.');
     } finally {
       if (current === requestId.current) setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (initialQuery !== undefined) {
+      setQuery(initialQuery);
+      setSearchTab('uspto-live');
+      void handleRunUsptoSearch(initialQuery);
+    }
+    return () => { requestId.current++; };
+  }, [initialQuery, handleRunUsptoSearch]);
 
   const importPatent = (p: Patent) => {
     // A search summary must never overwrite a fuller existing specification.
-    if (workspaceStore.findPatent(p.id)) return;
+    const existing = workspaceStore.findPatent(p.id);
+    if (existing && !existing.isSample) { workspaceStore.setActivePatent(p.id); return; }
     workspaceStore.addPatent({
       id: p.id, title: p.title, assignee: p.assignee, inventors: p.inventors,
       cpcCodes: p.cpcClass ? [p.cpcClass] : [], filingDate: p.filingDate,
       publicationDate: p.publicationDate, issueDate: p.grantDate,
       priorityDate: p.priorityDate, abstract: p.abstract,
-      claims: p.parsedClaims?.map(c => ({ claimNumber: c.claimNumber, text: c.text, type: c.type, elements: [] })) || [],
+      claims: p.parsedClaims?.map(c => ({ number: c.claimNumber, text: c.text, type: c.type, elements: [] })) || [],
       displayNumber: p.patentNumber, rawSourceIdentifier: p.id, sourceIdentifier: p.id,
       source: p.source, sourceUrl: getPatentSourceUrl(p), importQuality: 'PARTIAL'
     });
+    workspaceStore.setActivePatent(p.id);
   };
 
-  // Dynamically compute similarity scores against workspace store patents
-  const filteredWorkspaceResults = workspacePatents.map((p) => {
-    const textToMatch = `${p.title} ${p.abstract}`.toLowerCase();
-    const queryTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 2);
-    let matchCount = 0;
-    queryTerms.forEach(t => {
-      if (textToMatch.includes(t)) matchCount++;
-    });
-
-    const termOverlapRatio = queryTerms.length > 0 ? matchCount / queryTerms.length : 0.8;
-    const bm25Score = Math.min(98, Math.round(60 + termOverlapRatio * 38));
-    const sbertScore = Math.min(99, Math.round(75 + termOverlapRatio * 24));
-    const overallScore = Math.round(bm25Score * bm25Weight + sbertScore * sbertWeight);
-
-    return {
-      id: p.id,
-      patentNumber: p.id,
-      title: p.title,
-      assignee: p.assignee || 'Assigned to Record',
-      priorityDate: p.filingDate || '2020-01-01',
-      pubDate: p.issueDate || '2022-01-01',
-      cpc: p.cpcCodes?.[0] || 'G06V 20/58',
-      overallScore,
-      bm25Score,
-      sbertScore,
-      claimMatch: `${Math.round(overallScore * 0.98)}%`,
-      abstractSnippet: p.abstract
-    };
-  }).sort((a, b) => b.overallScore - a.overallScore);
+  const filteredWorkspaceResults = searchWorkspace(workspacePatents, query, includeSamples).map(({patent: p, score, matchedTerms, totalTerms}) => ({
+    id: p.id, patentNumber: p.displayNumber || p.id, title: p.title,
+    assignee: p.assignee || 'Unavailable', priorityDate: p.priorityDate || 'Unavailable',
+    pubDate: p.publicationDate || 'Unavailable', cpc: p.cpcCodes?.join(', ') || p.cpc?.join(', ') || 'Unavailable',
+    overallScore: score, matchedTerms, totalTerms, abstractSnippet: p.abstract,
+    source: p.source || 'Unspecified', isSample: p.isSample
+  }));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -178,7 +161,7 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
             gap: '8px'
           }}
         >
-          <Sparkles size={18} /> Workspace Hybrid Vector Search ({workspacePatents.length} Patents)
+          <Sparkles size={18} /> Workspace Text Search ({workspacePatents.length} Patents)
         </button>
       </div>
 
@@ -198,111 +181,25 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={searchTab === 'uspto-live' ? "Type patent number (e.g. US10928341, US10482391) or technical terms to query live USPTO database..." : "Type patent title, claims, or technical concept query..."}
+            placeholder={searchTab === 'uspto-live' ? "Type a patent number or technical terms to search external sources..." : "Type patent title, claims, or technical concept query..."}
             className="input-field"
             style={{ paddingLeft: '48px', paddingRight: '150px', fontSize: '1rem', height: '52px', borderRadius: '12px' }}
           />
           <button 
             type="submit" 
             className="btn-primary" 
-            disabled={isLoading}
+            disabled={searchTab === 'uspto-live' && isLoading}
             style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', height: '36px', padding: '0 20px' }}
           >
-            {isLoading ? <Loader2 size={16} className="spin-animation" /> : <Search size={16} />}
+            {searchTab === 'uspto-live' && isLoading ? <Loader2 size={16} className="spin-animation" /> : <Search size={16} />}
             {isLoading ? 'Querying API...' : (searchTab === 'uspto-live' ? 'Search sources' : 'Run Search')}
           </button>
         </form>
 
-        {/* Retrieval Mode Controls for Hybrid Tab */}
         {searchTab === 'workspace-hybrid' && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-            <div style={{ display: 'flex', gap: '8px', background: 'var(--bg-surface)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-              <button
-                onClick={() => setSearchMode('hybrid')}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: searchMode === 'hybrid' ? 'var(--gradient-primary)' : 'transparent',
-                  color: searchMode === 'hybrid' ? '#0B0F19' : 'var(--text-muted)',
-                  fontWeight: 600,
-                  fontSize: '0.84rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}
-              >
-                <Sparkles size={14} /> Hybrid (BM25 + SBERT)
-              </button>
-              <button
-                onClick={() => setSearchMode('bm25')}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: searchMode === 'bm25' ? 'var(--bg-card-solid)' : 'transparent',
-                  color: searchMode === 'bm25' ? 'var(--accent-cyan)' : 'var(--text-muted)',
-                  fontWeight: 600,
-                  fontSize: '0.84rem',
-                  cursor: 'pointer'
-                }}
-              >
-                Lexical BM25 Only
-              </button>
-              <button
-                onClick={() => setSearchMode('sbert')}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: searchMode === 'sbert' ? 'var(--bg-card-solid)' : 'transparent',
-                  color: searchMode === 'sbert' ? 'var(--accent-cyan)' : 'var(--text-muted)',
-                  fontWeight: 600,
-                  fontSize: '0.84rem',
-                  cursor: 'pointer'
-                }}
-              >
-                Vector SBERT Only
-              </button>
-            </div>
-
-            {/* Weight Sliders */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', fontSize: '0.84rem', color: 'var(--text-muted)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>BM25 Weight: <strong>{bm25Weight}</strong></span>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="1" 
-                  step="0.05" 
-                  value={bm25Weight}
-                  onChange={(e) => {
-                    const val = parseFloat(e.target.value);
-                    setBm25Weight(val);
-                    setSbertWeight(parseFloat((1 - val).toFixed(2)));
-                  }}
-                  style={{ width: '90px', accentColor: 'var(--accent-cyan)' }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>SBERT Weight: <strong>{sbertWeight}</strong></span>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="1" 
-                  step="0.05" 
-                  value={sbertWeight}
-                  onChange={(e) => {
-                    const val = parseFloat(e.target.value);
-                    setSbertWeight(val);
-                    setBm25Weight(parseFloat((1 - val).toFixed(2)));
-                  }}
-                  style={{ width: '90px', accentColor: 'var(--accent-indigo)' }}
-                />
-              </div>
-            </div>
+          <div>
+            <p>Exact query-term coverage across identifiers, titles, abstracts, claims, assignees and classifications. This is a lexical search, not an embedding model or legal assessment.</p>
+            <label><input type="checkbox" checked={includeSamples} onChange={e => setIncludeSamples(e.target.checked)} /> Include labeled sample records</label>
           </div>
         )}
       </div>
@@ -316,7 +213,7 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
         </h2>
         <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
           {searchTab === 'uspto-live' 
-            ? 'Patent sources and local records; academic providers'
+            ? 'Retrieved patent sources and academic providers; samples excluded'
             : `Retrieval pool: ${workspacePatents.length} workspace patents`}
         </span>
       </div>
@@ -334,7 +231,7 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
             <AlertCircle size={32} style={{ color: 'var(--accent-cyan)', marginBottom: '12px' }} />
             <h3 style={{ color: 'var(--text-main)', margin: '0 0 8px', fontSize: '1.1rem' }}>No results available</h3>
             <p style={{ margin: 0, fontSize: '0.88rem', maxWidth: '540px', marginLeft: 'auto', marginRight: 'auto' }}>
-              No results were returned for "{query}". Sources may be unavailable or have no matches. Try again or search by exact publication number.
+              {submittedQuery ? `No results returned for "${submittedQuery}". See any source warnings above.` : 'Enter a publication number or keywords and select Search sources.'}
             </p>
           </div>
         ) : (
@@ -427,6 +324,7 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
       ) : (
         /* Workspace Hybrid Search Cards */
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {filteredWorkspaceResults.length === 0 && <p role="status">{query.trim() ? `No matching workspace records.${includeSamples ? '' : ' Sample records are excluded unless selected above.'}` : 'Enter search terms to find workspace records.'}</p>}
           {filteredWorkspaceResults.map((res) => (
             <div key={res.id} className="glass-panel glass-panel-hover" style={{ padding: '24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
@@ -447,13 +345,13 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
                 {/* Similarity Score Pillar */}
                 <div style={{ textAlign: 'right', background: 'var(--bg-surface)', padding: '12px 18px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>
-                    Hybrid Similarity
+                    Query-term coverage
                   </div>
                   <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--accent-cyan)', lineHeight: 1.1 }}>
                     {res.overallScore}<span style={{ fontSize: '1rem' }}>/100</span>
                   </div>
                   <div style={{ fontSize: '0.74rem', color: 'var(--accent-emerald)', marginTop: '2px' }}>
-                    Claim Match: {res.claimMatch}
+                    {res.matchedTerms.length} of {res.totalTerms} unique query terms
                   </div>
                 </div>
               </div>
@@ -465,13 +363,13 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
               {/* Score Breakdown Bar & Action Button */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '14px' }}>
                 <div style={{ display: 'flex', gap: '20px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  <span>BM25 Score: <strong style={{ color: 'var(--text-main)' }}>{res.bm25Score}%</strong></span>
-                  <span>SBERT Dense Score: <strong style={{ color: 'var(--accent-cyan)' }}>{res.sbertScore}%</strong></span>
+                  <span>Matched terms: {res.matchedTerms.join(', ')}</span>
+                  <span>{res.isSample ? 'Sample record (not verified)' : res.source}</span>
                 </div>
 
                 <button 
                   className="btn-secondary"
-                  onClick={() => onNavigate('mapping')}
+                  onClick={() => { workspaceStore.setActivePatent(res.id); onNavigate('mapping'); }}
                   style={{ padding: '8px 14px', fontSize: '0.84rem' }}
                 >
                   <GitCompare size={16} /> Compare Claims Side-by-Side <ArrowRight size={14} />

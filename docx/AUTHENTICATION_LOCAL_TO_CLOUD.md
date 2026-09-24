@@ -15,12 +15,14 @@ Requires Node 24 or newer.
 ```sh
 npm ci
 # Copy .env.example to .env if customizing ports/origin.
-npm run api
-# In another terminal:
 npm run dev
 ```
 
-Open `http://localhost:5173`. Use that exact host because mutation requests validate the origin. Vite forwards `/api/auth` to port 3001. Set `APP_ORIGIN` to the actual frontend origin if changing ports. The API and Vite must both run. On the current Windows machine the global npm launcher is broken; invoke `C:/Program Files/nodejs/node_modules/npm/bin/npm-cli.js` with the bundled Node executable until the system launcher is repaired.
+Open `http://localhost:5173`. `npm run dev` now starts Vite and authentication in one process and opens the database before accepting requests. Use the exact URL printed in the terminal because mutation requests validate the origin. `APP_ORIGIN` sets the local host/port; otherwise `npm run dev -- --port 5180` selects another port. Startup uses a strict port so it cannot silently switch to an origin the API rejects. Stop with Ctrl+C to close the database cleanly. Do not run a separate API against the same database alongside this command.
+
+For manual troubleshooting only, run `npm run api` and `npm run dev:web` in two terminals. In that mode the existing Vite proxy expects the API on port 3001 and APP_ORIGIN must match the frontend. On this Windows machine, if the global npm launcher fails, invoke `C:/Program Files/nodejs/node_modules/npm/bin/npm-cli.js` with the bundled Node executable.
+
+If PGlite reports permission denied for its startup lock, verify the database directory is writable. Windows read-only directory attributes can prevent its virtual filesystem from creating the lock even when file ACLs allow writes. Stop all database processes and back up `.data/auth` before any local recovery; do not delete or reinitialize the database to fix a startup failure.
 
 Accounts, password hashes, session hashes, reset-token hashes and rate limits persist server-side. Account emails are normalized to lowercase. Public registration cannot choose elevated roles. Passwords are 15–128 characters, hashed using scrypt (N=131072, r=8, p=1) with random salts. Session tokens are random, stored hashed in the database, and sent in HttpOnly/SameSite=Lax cookies. Production also requires Secure cookies. Ordinary sessions expire after 12 hours; Remember me expires after 30 days. These are absolute expiry limits, not sliding sessions.
 

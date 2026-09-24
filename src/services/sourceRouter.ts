@@ -1,3 +1,5 @@
+import { normalizePatentNumber } from './patentNormalizer';
+
 /**
  * PatentIntel.AI - Dual Pipeline Source Router & Classifier
  * Strictly separates Patent Resolution (USPTO/Google Patents) from Academic Research (OpenAlex/IEEE).
@@ -23,24 +25,12 @@ export interface RouteDecision {
 export function isPatentIdentifier(input: string): boolean {
   if (!input || typeof input !== 'string') return false;
 
-  const cleaned = input.trim().replace(/[\s\.,\-]/g, '').toUpperCase();
-
-  // Pattern 1: Country prefix + digits + optional kind code (e.g. US11650869B2, EP3400000A1, WO2021000000)
-  if (/^(US|EP|WO|JP|CN|KR|DE|GB|FR|CA)\d{6,12}([A-Z]\d?)?$/.test(cleaned)) {
+  try {
+    normalizePatentNumber(input);
     return true;
+  } catch {
+    return false;
   }
-
-  // Pattern 2: Standard 7 to 11 digit numbers (e.g. 11650869, 11940634, 10255577)
-  if (/^\d{7,11}$/.test(cleaned)) {
-    return true;
-  }
-
-  // Pattern 3: Standard US publication application format (e.g. US20250292675A1, 20250292675)
-  if (/^US\d{11}[A-Z]\d?$/.test(cleaned) || /^\d{11}$/.test(cleaned)) {
-    return true;
-  }
-
-  return false;
 }
 
 /**
@@ -49,7 +39,7 @@ export function isPatentIdentifier(input: string): boolean {
 export function resolveSearchDomain(input: string, userSelectedMode: SearchDomain = 'ALL'): RouteDecision {
   const trimmed = input.trim();
   const isPatentId = isPatentIdentifier(trimmed);
-  const normalizedId = isPatentId ? trimmed.replace(/[\s\.,\-]/g, '').toUpperCase() : undefined;
+  const normalizedId = isPatentId ? normalizePatentNumber(trimmed).normalizedInput : undefined;
 
   let classification: SearchClassification;
   let targetDomain: SearchDomain;

@@ -54,7 +54,7 @@ export function saveStoredSettings(settings: {
     return updated;
   } catch (e) {
     console.warn('Failed to save settings:', e);
-    return settings;
+    throw new Error('Settings could not be persisted.');
   }
 }
 

@@ -11,6 +11,7 @@ import type {
 import { claimTranslatorService } from '../services/claimTranslatorService';
 import { workspaceStore } from '../services/workspaceStore';
 import { dbStore } from '../services/dbStore';
+import { createTranslationExport } from '../services/translationExporter';
 import {
   Languages,
   X,
@@ -70,6 +71,7 @@ export const ClaimTranslatorModal: React.FC<Props> = ({
   // Active translation session
   const [session, setSession] = useState<ClaimTranslationSession | null>(null);
   const [isTranslating, setIsTranslating] = useState<boolean>(false);
+  const [translationError, setTranslationError] = useState('');
   const [editedTranslation, setEditedTranslation] = useState<string>('');
   const [isEditingTranslation, setIsEditingTranslation] = useState<boolean>(false);
 
@@ -87,7 +89,7 @@ export const ClaimTranslatorModal: React.FC<Props> = ({
 
   // Export modal state
   const [isExporting, setIsExporting] = useState<boolean>(false);
-  const [exportFormat, setExportFormat] = useState<'pdf' | 'docx' | 'txt' | 'json'>('pdf');
+  const [exportFormat, setExportFormat] = useState<'txt' | 'json'>('txt');
   const [exportSuccessMsg, setExportSuccessMsg] = useState<string | null>(null);
 
   // Batch translation states
@@ -145,6 +147,8 @@ export const ClaimTranslatorModal: React.FC<Props> = ({
   const handleTranslate = async () => {
     if (!claimInputText.trim()) return;
     setIsTranslating(true);
+    setTranslationError('');
+    setSession(null);
 
     try {
       const resultSession = await claimTranslatorService.translateClaim({
@@ -165,6 +169,7 @@ export const ClaimTranslatorModal: React.FC<Props> = ({
       setHistorySessions(dbStore.getClaimTranslations());
     } catch (err) {
       console.error('Translation failed:', err);
+      setTranslationError(err instanceof Error ? err.message : 'Translation failed. Please try again.');
     } finally {
       setIsTranslating(false);
     }
@@ -267,15 +272,24 @@ export const ClaimTranslatorModal: React.FC<Props> = ({
     }
   };
 
-  // Export Document simulation
+  // Download the active translation as a working draft.
   const handleExecuteExport = () => {
-    setIsExporting(true);
+    if (!session) return;
     setExportSuccessMsg(null);
-    setTimeout(() => {
-      setIsExporting(false);
-      setExportSuccessMsg(`Successfully generated and downloaded WIPO Claim Translation Report in .${exportFormat.toUpperCase()} format!`);
-      setTimeout(() => setExportSuccessMsg(null), 4000);
-    }, 1200);
+    try {
+      const file = createTranslationExport(session, exportFormat);
+      const url = URL.createObjectURL(new Blob([file.content], { type: file.mimeType }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setExportSuccessMsg(`Translation .${exportFormat} download started.`);
+    } catch (error) {
+      setExportSuccessMsg(error instanceof Error ? error.message : 'Export failed. Please try again.');
+    }
   };
 
   // Restore session from history
@@ -589,6 +603,7 @@ export const ClaimTranslatorModal: React.FC<Props> = ({
                 </div>
               </div>
 
+              {translationError && <p role="alert">{translationError}</p>}
               {/* TWO COLUMN COMPARISON LAYOUT */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                 {/* LEFT PANEL: ORIGINAL CLAIM */}
@@ -1189,7 +1204,7 @@ export const ClaimTranslatorModal: React.FC<Props> = ({
         >
           <div className="glass-panel" style={{ width: '420px', padding: '24px', borderRadius: '14px', background: 'var(--bg-surface)' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 12px' }}>
-              Export WIPO Translation Report
+              Export Translation Working Draft
             </h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
@@ -1200,8 +1215,6 @@ export const ClaimTranslatorModal: React.FC<Props> = ({
                 className="input-field"
                 style={{ height: '38px', fontSize: '0.88rem' }}
               >
-                <option value="pdf">PDF Document (.pdf)</option>
-                <option value="docx">Microsoft Word (.docx)</option>
                 <option value="txt">Plain Text (.txt)</option>
                 <option value="json">Structured JSON (.json)</option>
               </select>
@@ -1217,7 +1230,7 @@ export const ClaimTranslatorModal: React.FC<Props> = ({
               <button className="btn-secondary" onClick={() => setIsExporting(false)}>
                 Cancel
               </button>
-              <button className="btn-primary" onClick={handleExecuteExport}>
+              <button className="btn-primary" onClick={handleExecuteExport} disabled={!session}>
                 Download Export
               </button>
             </div>

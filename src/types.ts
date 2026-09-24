@@ -662,7 +662,7 @@ export interface NormalizedPatent {
   uspc?: string[];
   patentFamily?: string[];
   citations?: string[];
-  source: 'USPTO' | 'Google Patents' | 'OpenAlex' | 'EPO' | 'Uploaded PDF Specification';
+  source: 'USPTO' | 'Google Patents' | 'OpenAlex' | 'EPO' | 'Uploaded PDF Specification' | 'Local registry (not live verified)';
   sourceUrl: string;
   fileHash?: string;
   retrievedAt: string;
@@ -701,6 +701,501 @@ export interface Patent {
   importQuality?: 'COMPLETE' | 'PARTIAL' | 'FAILED';
 }
 
+export type ClaimLimitationCategory = 
+  | 'PREAMBLE'
+  | 'HARDWARE_COMPONENT'
+  | 'FUNCTIONAL_LIMITATION'
+  | 'PROCESS_STEP'
+  | 'OPERATIONAL_CONSTRAINT'
+  | 'DATA_INTERFACE';
+
+export type LimitationCriticality = 'CORE' | 'SUPPORTING' | 'CONTEXTUAL';
+
+export interface ClaimLanguagePattern {
+  id: string;
+  patternType: 'FUNCTIONAL_LANGUAGE' | 'NEGATIVE_LIMITATION' | 'CONDITIONAL_TRIGGER' | 'RELATIONAL_COUPLING' | 'MARKUSH_GROUP' | 'MEANS_PLUS_FUNCTION';
+  triggerPhrase: string;
+  matchedText: string;
+  significance: string;
+}
+
+export interface NumericalRangeConstraint {
+  id: string;
+  operator: 'BETWEEN' | 'AT_LEAST' | 'LESS_THAN' | 'WITHIN' | 'EXACT' | 'PERCENTAGE' | 'THRESHOLD';
+  lowerBound?: number;
+  upperBound?: number;
+  unit: string;
+  rawExpression: string;
+}
+
+export interface MarkushAlternativeGroup {
+  introPhrase: string;
+  alternatives: string[];
+  isClosedGroup: boolean;
+}
+
+export interface LimitationRelationship {
+  id: string;
+  sourceLimitationId: string;
+  targetLimitationId: string;
+  relationshipType: 'feeds' | 'processed_by' | 'performs' | 'enables' | 'triggers' | 'modulates' | 'couples_to';
+  evidenceSpan: string;
+  confidence: number;
+}
+
+export interface ClaimSpecEvidence {
+  documentId: string;
+  claimLineReference: string;
+  specificationParagraphs: string[];
+  specificationExcerpt: string;
+  figureReferences: string[];
+  sourceUrl?: string;
+}
+
+export interface ClaimLimitationSplitRationale {
+  clauseBoundary: string;
+  syntacticTrigger: string;
+  detectedSubject: string;
+  detectedPredicate: string;
+  detectedObject: string;
+  semanticRole: string;
+  classificationBasis: string;
+}
+
+export interface LimitationSearchIntelligence {
+  exactTechnicalQuery: string;
+  semanticQuery: string;
+  componentExpansionQuery: string;
+  producedReferencesCount?: number;
+}
+
+export type ProvenanceTag = 
+  | 'SOURCE-DERIVED' 
+  | 'AI-GENERATED' 
+  | 'MODEL-CLASSIFIED' 
+  | 'AI-INFERRED' 
+  | 'SOURCE-VERIFIED' 
+  | 'RULE-PARSED' 
+  | 'COMPUTED-RETRIEVAL';
+
+export type AmbiguityStatus = 'SUPPORTED' | 'REVIEW_RECOMMENDED' | 'ABSTAIN';
+
+export interface MultiAgentConsensus {
+  parserAgentVote: string;
+  technicalAgentVote: string;
+  legalNlpVote: string;
+  consensusCategory: ClaimLimitationCategory | 'ABSTAIN';
+  consensusAgreementScore: number;
+  consensusStatus: 'CONSENSUS_ESTABLISHED' | 'SPLIT_DECISION' | 'ABSTAIN';
+  competingCandidates?: { category: ClaimLimitationCategory; score: number }[];
+  dissentingNote?: string;
+  abstainReason?: string;
+  agentVotes: {
+    agentName: string;
+    role: string;
+    proposedCategory: string;
+    confidence: number;
+    rationale: string;
+  }[];
+}
+
+export interface LimitationReasoningTrace {
+  inputSpan: string;
+  parserSignals: string[];
+  detectedSubject: string;
+  detectedPredicate: string;
+  detectedPattern: string;
+  evidenceSpan: string;
+  agentVotes: {
+    agentName: string;
+    role: string;
+    proposedCategory: string;
+    confidence: number;
+    rationale: string;
+  }[];
+  consensusRule: string;
+  finalDecision: string;
+  charStart?: number;
+  charEnd?: number;
+  calibratedConfidence?: number;
+}
+
+export interface LimitationEvidenceCoverageItem {
+  limitationId: string;
+  canonicalName: string;
+  hasClaimSupport: boolean;
+  hasSpecSupport: boolean;
+  hasFigureSupport: boolean;
+  hasPriorArtSupport: boolean;
+  specReference?: string;
+  figureReference?: string;
+}
+
+export interface ClaimEvidenceCoverageSummary {
+  totalLimitations: number;
+  claimSupportedCount: number;
+  specSupportedCount: number;
+  figureSupportedCount: number;
+  priorArtSupportedCount: number;
+  coverageRating: 'HIGH' | 'MODERATE' | 'LOW';
+  coverageItems: LimitationEvidenceCoverageItem[];
+}
+
+export interface CounterfactualRetrievalComparison {
+  simulationId: string;
+  action: 'REMOVE' | 'SUBSTITUTE';
+  targetLimitationId: string;
+  targetLimitationName: string;
+  originalQuery: string;
+  modifiedQuery: string;
+  r0OriginalCandidateCount: number;
+  r1ModifiedCandidateCount: number;
+  r0PatentIds: string[];
+  r1PatentIds: string[];
+  newlySurfacedPatents: { id: string; title: string; whySurfaced: string }[];
+  droppedPatents: { id: string; title: string; whyDropped: string }[];
+  persistentPatents: { id: string; title: string }[];
+  structuralBreadthShift: 'EXPANDED' | 'NARROWED' | 'SHIFTED';
+  structuralBreadthBasis: string[];
+  examinerScrutinyForecast: string;
+  parityControls: {
+    queryQ0: string;
+    queryQ1: string;
+    corpusSnapshot: string;
+    retrievalProvider: string;
+    topK: number;
+    defaultTopK: number;
+    actualTopK: number;
+    filtersApplied: string[];
+    timestamp: string;
+    rankingConfiguration: string;
+  };
+}
+
+export interface AnalysisRunSnapshot {
+  runId: string;
+  patentId: string;
+  claimNumber: number;
+  timestamp: string;
+  embeddingModel: string;
+  nlpParserEngine: string;
+  corpusVersion: string;
+  corpusDocumentCount: number;
+  corpusSnapshot: {
+    documentCount: number;
+    documentIds: string[];
+    contentHash: string;
+    claimTextHash: string;
+    specificationHash: string;
+    retrievalConfigHash: string;
+  };
+  searchStrategy: string;
+  verifiedEvidenceCount: number;
+  hallucinationGateStatus: 'ALL_OBJECTS_GROUNDED' | 'FLAGS_DETECTED';
+  driftStatus: 'STABLE' | 'DRIFT_DETECTED';
+  driftType?: 'NONE' | 'COUNT_DRIFT' | 'CONTENT_HASH_DRIFT' | 'SPECIFICATION_DRIFT' | 'CONFIGURATION_DRIFT';
+  corpusDeltaCount?: number;
+  evidenceFreshness: {
+    patentMetadataStatus: 'CURRENT' | 'OUTDATED';
+    claimTextStatus: 'CURRENT' | 'MODIFIED';
+    specEvidenceStatus: 'CURRENT' | 'STALE';
+    priorArtRetrievalStatus: 'CURRENT' | 'STALE_CORPUS_UPDATED';
+    overallStatus: 'CURRENT' | 'STALE_RERUN_RECOMMENDED';
+    stalenessReason?: string;
+  };
+}
+
+export interface ClaimLimitationDetail {
+  id: string;
+  elementNumber: number;
+  category: ClaimLimitationCategory;
+  canonicalName: string;
+  rawText: string;
+  cleanedText: string;
+  scopeTag: string;
+  cpcCategory?: string;
+  criticality: LimitationCriticality;
+  criticalityRationale: string;
+  antecedentStatus: 'VERIFIED' | 'MISSING_ANTECEDENT' | 'NEW_INTRODUCTION' | 'NOT_APPLICABLE';
+  antecedentNotes?: string;
+  breadthImpact: 'BROAD' | 'MODERATE' | 'NARROW';
+  confidence: number;
+  ambiguityStatus: AmbiguityStatus;
+  splitRationale: ClaimLimitationSplitRationale;
+  languagePatterns: ClaimLanguagePattern[];
+  numericalConstraints: NumericalRangeConstraint[];
+  markushGroups?: MarkushAlternativeGroup[];
+  specEvidence?: ClaimSpecEvidence;
+  searchIntelligence: LimitationSearchIntelligence;
+  relationships: LimitationRelationship[];
+  searchQuerySuggestion?: string;
+  startOffset?: number;
+  endOffset?: number;
+  hiddenConstraints?: HiddenLimitationConstraint[];
+  evidenceConflicts?: ClaimEvidenceConflict[];
+  calibratedConfidence?: CalibratedConfidenceBreakdown;
+  hallucinationValidation?: HallucinationValidationResult;
+  provenanceTag: ProvenanceTag;
+  provenanceSourceId: string;
+  multiAgentConsensus?: MultiAgentConsensus;
+  reasoningTrace?: LimitationReasoningTrace;
+}
+
+export interface ClaimDependencyNode {
+  claimNumber: number;
+  claimType: 'independent' | 'dependent';
+  dependsOnClaimNumbers: number[];
+  childClaimNumbers: number[];
+  inheritedLimitations: { claimNumber: number; elementId: string; canonicalName: string }[];
+  addedLimitations: { elementId: string; canonicalName: string; rawText: string }[];
+  cumulativeLimitationsCount: number;
+}
+
+export interface ClaimGlossaryTerm {
+  term: string;
+  definitionCandidate: string;
+  occurrenceClaims: number[];
+  specificationParagraph: string;
+  specificationSnippet: string;
+  consistencyStatus: 'CONSISTENT' | 'AMBIGUOUS' | 'NEEDS_SPEC_SUPPORT';
+  confidence: number;
+}
+
+export interface ClaimVersionDiff {
+  claimNumber: number;
+  sourceVersion: string;
+  targetVersion: string;
+  status: 'ADDED' | 'REMOVED' | 'MODIFIED' | 'UNCHANGED';
+  limitationDiffs: {
+    elementId: string;
+    canonicalName: string;
+    diffType: 'ADDED' | 'REMOVED' | 'MODIFIED' | 'UNCHANGED';
+    oldText?: string;
+    newText?: string;
+    explanation: string;
+  }[];
+}
+
+export interface FamilyClaimComparison {
+  primaryPatentId: string;
+  primaryJurisdiction: string;
+  familyMembers: {
+    patentId: string;
+    jurisdiction: 'US' | 'EP' | 'WO' | 'IN' | 'JP';
+    claimNumber: number;
+    claimText: string;
+    keyDifferences: string[];
+    addedLimitations: string[];
+    removedLimitations: string[];
+  }[];
+}
+
+export interface PriorArtLimitationHeatmapRow {
+  limitationId: string;
+  canonicalName: string;
+  category: ClaimLimitationCategory;
+  criticality: LimitationCriticality;
+  scores: Record<string, { 
+    score: number; 
+    status: 'HIGH' | 'PARTIAL' | 'LOW' | 'NONE' | 'INSUFFICIENT_EVIDENCE' | 'ABSTAIN_UNRESOLVED'; 
+    evidence: string;
+    safetyGuard?: string;
+  }>;
+}
+
+// 1. AI Claim Skeleton
+export interface ClaimSkeletonNode {
+  id: string;
+  nodeType: 'SYSTEM_ROOT' | 'SUBSYSTEM' | 'FUNCTIONAL_CAPABILITY' | 'OPERATIONAL_CONSTRAINT';
+  title: string;
+  role: string;
+  claimLimitationId?: string;
+  statutoryTextSpan: string;
+  specParagraphRef?: string;
+  specExcerpt?: string;
+  figureRef?: string;
+  children: ClaimSkeletonNode[];
+}
+
+// 2. Hidden Limitation & Nested Constraints
+export interface HiddenLimitationConstraint {
+  id: string;
+  parentLimitationId: string;
+  primaryLimitation: string;
+  triggerPhrase: string;
+  nestedDependency: string;
+  statutoryEvidenceSnippet: string;
+  inferenceRationale: string;
+  dependencyStatus: 'SUPPORTED' | 'INFERRED';
+  additionalHypotheticalConstraint?: string;
+  hypotheticalStatus?: 'NOT_ESTABLISHED' | 'UNSUPPORTED';
+  provenanceTag: 'AI-INFERRED';
+  hiddenDependency: string;
+  hiddenConstraint: string;
+  nestedConditions: { conditionId: string; label: string; description: string }[];
+  searchRefinementImpact: string;
+}
+
+// 3. Claim Semantic Contradiction / Consistency
+export interface ClaimSemanticConflict {
+  id: string;
+  conflictType: 'DIRECT_CONTRADICTION' | 'SCOPE_TENSION' | 'OPERATIONAL_IMPOSSIBILITY' | 'TEMPORAL_CONFLICT';
+  limitationAId: string;
+  limitationAName: string;
+  limitationAText: string;
+  limitationBId: string;
+  limitationBName: string;
+  limitationBText: string;
+  tensionRationale: string;
+  mpepContext: string;
+  auditRecommendation: string;
+}
+
+// 4. Claim Dependency Impact Propagation
+export interface DependencyImpactSimulation {
+  targetElementId: string;
+  targetElementName: string;
+  parentClaimNumber: number;
+  affectedClaimNumbers: number[];
+  unaffectedClaimNumbers: number[];
+  propagationPath: { claimNumber: number; inheritedImpact: string; status: 'DIRECTLY_AFFECTED' | 'INHERITED_AFFECTED' | 'UNAFFECTED' }[];
+  draftingAssessment: string;
+}
+
+// 5. Counterfactual Claim Analysis
+export interface CounterfactualSimulationResult {
+  simulationId: string;
+  action: 'REMOVE' | 'SUBSTITUTE';
+  targetLimitationId: string;
+  targetLimitationName: string;
+  originalText: string;
+  substituteText?: string;
+  scopeBreadthShiftPercentage: number;
+  scopeDirection: 'BROADENED' | 'NARROWED' | 'SHIFTED';
+  priorArtOverlapDelta: number;
+  affectedDownstreamLimitationIds: string[];
+  technicalImpactAnalysis: string[];
+  examinerScrutinyForecast: string;
+}
+
+// 6. Claim Mutation Laboratory
+export interface ClaimMutationVariant {
+  variantId: 'VARIANT_A' | 'VARIANT_B' | 'VARIANT_C';
+  variantLabel: string;
+  targetElementId: string;
+  originalClause: string;
+  mutatedClause: string;
+  mutationStrategy: 'GENUS_EXPANSION' | 'DEFENSIVE_NARROWING' | 'ALTERNATIVE_PHYSICAL_MECHANISM';
+  retrievalOverlapShift: 'INCREASED_OVERLAP' | 'DECREASED_OVERLAP' | 'BALANCED';
+  retrievalOverlapDeltaCount: number;
+  conceptPreservationScore: 'HIGH' | 'MEDIUM' | 'LOW';
+  draftingTradeoff: string;
+  preservationPercent: number;
+  downstreamTracking?: {
+    affectedElementIds: string[];
+    relationshipChangesCount: number;
+    searchResultsDelta: { before: number; after: number; surfacedCount: number };
+    structuralFingerprintChange: string;
+    evidenceCoverageDelta: {
+      beforeFraction: string;
+      afterFraction: string;
+      deltaCount: number;
+      isGrounded: boolean;
+    };
+  };
+}
+
+// 7. Structural Fingerprint
+export interface ClaimStructuralFingerprint {
+  claimNumber: number;
+  architectureScore: number;
+  dataFlowScore: number;
+  functionScore: number;
+  constraintScore: number;
+  relationshipScore: number;
+  overallAnalyticalSimilarity: number;
+  fingerprintVector: {
+    architecture: string;
+    dataFlow: string;
+    controlPipeline: string;
+    primaryConstraints: string[];
+  };
+}
+
+// 8. Search Failure Diagnosis
+export interface SearchFailureDiagnosis {
+  claimNumber: number;
+  hasFailure: boolean;
+  detectedDomainJargon: string[];
+  diagnosisRationale: string;
+  recommendedTransformations: {
+    originalJargon: string;
+    suggestedTerm: string;
+    expansionType: 'SYNONYM' | 'CPC_EXPANSION' | 'GENERALIZED_GENUS';
+  }[];
+  expandedQuery: string;
+  baselineHits: number;
+  simulatedExpandedHits: number;
+  retrievalQualityDelta: string;
+}
+
+// 9. Claim Evidence Conflict
+export interface ClaimEvidenceConflict {
+  id: string;
+  limitationId: string;
+  canonicalName: string;
+  claimTerm: string;
+  specExcerpt: string;
+  specParagraphRef: string;
+  tensionType: 'TIMING_MISMATCH' | 'RANGE_INCONSISTENCY' | 'DEFINITION_DIVERGENCE' | 'SCOPE_NARROWING';
+  severity: 'WARNING' | 'ADVISORY';
+  explanation: string;
+}
+
+// 10. Calibrated Confidence Breakdown
+export interface CalibratedConfidenceBreakdown {
+  compositeScore: number;
+  sourceSpanCoverage: number;
+  grammarBoundaryScore: number;
+  specGroundingScore: number;
+  antecedentHealthScore: number;
+  confidenceTier: 'HIGH' | 'MODERATE' | 'REVIEW_RECOMMENDED';
+  calibratedFactors: { label: string; score: number; passed: boolean; note: string }[];
+}
+
+// 11. AI Hallucination Guard
+export interface HallucinationValidationResult {
+  isGrounded: boolean;
+  confidence: number;
+  sourceSpan?: string;
+  validationChecks: { checkName: string; passed: boolean; detail: string }[];
+  rejectionReason?: string;
+}
+
+export interface DecomposedClaim {
+  claimNumber: number;
+  claimType: 'independent' | 'dependent';
+  dependsOnClaimNumbers: number[];
+  fullText: string;
+  preamble: string;
+  transitionalPhrase: string;
+  transitionalScope: 'OPEN' | 'CLOSED' | 'PARTIALLY_OPEN';
+  limitations: ClaimLimitationDetail[];
+  antecedentAudit: {
+    totalDefiniteTerms: number;
+    validTerms: number;
+    flaggedTerms: string[];
+    healthScore: number;
+  };
+  complexityMetrics: {
+    totalLimitations: number;
+    breadthScore: number;
+    categoryCounts: Record<string, number>;
+  };
+  evidenceCoverage?: ClaimEvidenceCoverageSummary;
+  runSnapshot?: AnalysisRunSnapshot;
+}
+
 export interface ClaimElement {
   id: string;
   type?: 'component' | 'function' | 'process' | 'constraint';
@@ -708,6 +1203,14 @@ export interface ClaimElement {
   description?: string;
   text?: string;
   cpcCategory?: string;
+  canonicalName?: string;
+  category?: ClaimLimitationCategory;
+  cleanedText?: string;
+  rawText?: string;
+  antecedentStatus?: 'VERIFIED' | 'MISSING_ANTECEDENT' | 'NEW_INTRODUCTION' | 'NOT_APPLICABLE';
+  antecedentNotes?: string;
+  breadthImpact?: 'BROAD' | 'MODERATE' | 'NARROW';
+  searchQuerySuggestion?: string;
 }
 
 export interface Claim {
@@ -720,6 +1223,7 @@ export interface Claim {
 }
 
 export interface PatentDocument {
+  isSample?: boolean;
   id: string;
   title: string;
   assignee?: string;

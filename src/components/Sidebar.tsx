@@ -44,7 +44,7 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
       items: [
         { id: 'dashboard', label: 'Executive Dashboard', icon: LayoutDashboard },
         { id: 'workspace', label: 'Patent Workspace', icon: FolderKanban, badge: 'Live' },
-        { id: 'search', label: 'Hybrid Search Engine', icon: Search, badge: 'BM25+SBERT' }
+        { id: 'search', label: 'Prior-Art Search', icon: Search, badge: 'Sources' }
       ]
     },
     {
@@ -180,7 +180,7 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
 
         <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: '1.4', display: 'flex', alignItems: 'center', gap: '5px' }}>
           <Activity size={12} color="var(--accent-cyan)" />
-          <span>USPTO Open Data & Semantic Scholar Synced</span>
+          <span>Local workspace · source availability checked on request</span>
         </div>
       </div>
     </aside>

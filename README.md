@@ -99,7 +99,7 @@ VITE_OPENAI_API_KEY="sk-proj-..."
 ## 🚀 Quick Start & Installation
 
 ### Prerequisites
-- **Node.js**: `v18.0.0` or higher
+- **Node.js**: `v24.0.0` or higher
 - **npm**: `v9.0.0` or higher
 
 ### 1. Clone & Install Dependencies
@@ -113,7 +113,7 @@ npm install
 ```bash
 npm run dev
 ```
-Open your browser at `http://localhost:5173`.
+Open your browser at `http://localhost:5173`. This command starts the frontend and authentication together, using a persistent local database in `.data/auth`. Stop with Ctrl+C so the database closes cleanly. Do not run a separate `npm run api` process at the same time. See [authentication setup](docx/AUTHENTICATION_LOCAL_TO_CLOUD.md) for custom ports and cloud configuration.
 
 ### 3. Build for Production
 ```bash

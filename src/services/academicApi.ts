@@ -201,6 +201,7 @@ export async function searchRealtimeAcademicPapers(
   totalCount: number;
   sourcesUsed: string[];
   resolvedAuthor?: AuthorProfile | null;
+  warnings?: string[];
 }> {
   let filters: AcademicSearchFilters;
 
@@ -269,6 +270,8 @@ export async function searchRealtimeAcademicPapers(
     sourcesUsed.push('CrossRef');
   }
 
+  const warnings = [semResult, alexResult, crossrefResult].flatMap((result, index) =>
+    result.status === 'rejected' ? [`${['Semantic Scholar', 'OpenAlex', 'CrossRef'][index]} unavailable.`] : []);
   // Deduplicate results across providers
   const deduplicated = deduplicateAcademicPapers(allPapers);
 
@@ -278,7 +281,8 @@ export async function searchRealtimeAcademicPapers(
   return {
     papers: filteredAndSorted,
     totalCount: filteredAndSorted.length,
-    sourcesUsed: sourcesUsed.length > 0 ? sourcesUsed : ['No Source Available']
+    sourcesUsed: sourcesUsed.length > 0 ? sourcesUsed : ['No Source Available'],
+    ...(warnings.length ? { warnings } : {})
   };
 }
 
@@ -315,9 +319,9 @@ async function fetchSemanticScholar(query: string, filters: AcademicSearchFilter
       }
     }
   } catch (err) {
-    console.warn('Semantic Scholar fetch warning:', err);
+    throw err;
   }
-  return [];
+  throw new Error('Source unavailable or invalid response.');
 }
 
 /**
@@ -345,9 +349,9 @@ async function fetchOpenAlex(query: string, filters: AcademicSearchFilters): Pro
       }
     }
   } catch (err) {
-    console.warn('OpenAlex fetch warning:', err);
+    throw err;
   }
-  return [];
+  throw new Error('Source unavailable or invalid response.');
 }
 
 /**
@@ -370,9 +374,9 @@ async function fetchCrossref(query: string, filters: AcademicSearchFilters): Pro
       }
     }
   } catch (err) {
-    console.warn('Crossref fetch warning:', err);
+    throw err;
   }
-  return [];
+  throw new Error('Source unavailable or invalid response.');
 }
 
 /**
@@ -526,26 +530,26 @@ function formatSemanticScholarPaper(item: any): RealtimeAcademicPaper {
   const authorObjs: AuthorProfile[] = Array.isArray(item.authors)
     ? item.authors.map((a: any) => ({
         id: a.authorId || `sem_auth_${a.name?.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
-        displayName: a.name || 'Academic Author',
+        displayName: a.name || '',
         worksCount: 0,
         citationCount: 0,
         source: 'Semantic Scholar' as const
       }))
     : [];
 
-  const authorsList = authorObjs.map(a => a.displayName);
+  const authorsList = authorObjs.map(a => a.displayName).filter(Boolean);
   const primaryAuthor = authorsList[0] || 'Author';
-  const paperYear = item.year || new Date().getFullYear();
-  const doiStr = item.externalIds?.DOI || item.externalIds?.ArXiv || item.paperId || '';
+  const paperYear = item.year || '';
+  const doiStr = item.externalIds?.DOI || '';
   const firstWord = item.title ? item.title.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '') : 'paper';
 
   return {
     id: item.paperId || `sem_${Math.random().toString(36).substring(2, 9)}`,
     title: item.title || 'Untitled Academic Publication',
-    authors: authorsList.length > 0 ? authorsList : ['Academic Researcher'],
+    authors: authorsList,
     authorObjects: authorObjs,
     year: paperYear,
-    venue: item.venue || 'Computer Science Repository',
+    venue: item.venue || '',
     doi: doiStr,
     citationCount: item.citationCount || 0,
     abstract: item.abstract || 'Abstract unavailable for this public domain index item. Full text accessible via DOI or PDF link.',
@@ -554,7 +558,7 @@ function formatSemanticScholarPaper(item: any): RealtimeAcademicPaper {
     bibtex: `@article{${primaryAuthor.toLowerCase().replace(/[^a-z]/g, '')}${paperYear}${firstWord},
   title={${item.title}},
   author={${authorsList.join(' and ')}},
-  journal={${item.venue || 'Scientific Journal'}},
+  journal={${item.venue || ''}},
   year={${paperYear}},
   doi={${doiStr}}
 }`,
@@ -571,7 +575,7 @@ function formatSemanticScholarPaper(item: any): RealtimeAcademicPaper {
 function formatOpenAlexPaper(item: any): RealtimeAcademicPaper {
   const authorObjs: AuthorProfile[] = Array.isArray(item.authorships)
     ? item.authorships.map((a: any) => {
-        const name = a.author?.display_name || 'Academic Researcher';
+        const name = a.author?.display_name || '';
         const rawId = a.author?.id || '';
         return {
           id: rawId ? rawId.replace('https://openalex.org/', '') : `alex_auth_${name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
@@ -585,17 +589,17 @@ function formatOpenAlexPaper(item: any): RealtimeAcademicPaper {
       })
     : [];
 
-  const authorsList = authorObjs.map(a => a.displayName);
+  const authorsList = authorObjs.map(a => a.displayName).filter(Boolean);
   const primaryAuthor = authorsList[0] || 'Author';
-  const paperYear = item.publication_year || new Date().getFullYear();
+  const paperYear = item.publication_year || '';
   const doiStr = item.doi ? item.doi.replace('https://doi.org/', '') : '';
   const firstWord = item.display_name ? item.display_name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '') : 'work';
-  const venueName = item.primary_location?.source?.display_name || item.type || 'Academic Journal';
+  const venueName = item.primary_location?.source?.display_name || '';
 
   return {
     id: item.id ? item.id.replace('https://openalex.org/', '') : `alex_${Math.random().toString(36).substring(2, 9)}`,
     title: item.display_name || 'Dynamic Research Paper',
-    authors: authorsList.length > 0 ? authorsList : ['Academic Researcher'],
+    authors: authorsList,
     authorObjects: authorObjs,
     year: paperYear,
     venue: venueName,
@@ -603,7 +607,7 @@ function formatOpenAlexPaper(item: any): RealtimeAcademicPaper {
     citationCount: item.cited_by_count || 0,
     abstract: item.abstract_inverted_index 
       ? reconstructAbstract(item.abstract_inverted_index) 
-      : 'Abstract retrieved live via OpenAlex graph query.',
+      : '',
     url: item.doi || item.id,
     pdfUrl: item.open_access?.is_oa ? item.primary_location?.pdf_url : undefined,
     bibtex: `@article{${primaryAuthor.toLowerCase().replace(/[^a-z]/g, '')}${paperYear}${firstWord},
@@ -627,7 +631,7 @@ function formatOpenAlexPaper(item: any): RealtimeAcademicPaper {
 function formatCrossrefPaper(item: any): RealtimeAcademicPaper {
   const authorObjs: AuthorProfile[] = Array.isArray(item.author)
     ? item.author.map((a: any) => {
-        const name = `${a.given || ''} ${a.family || ''}`.trim() || 'Academic Researcher';
+        const name = `${a.given || ''} ${a.family || ''}`.trim();
         return {
           id: `cross_auth_${name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
           displayName: name,
@@ -638,18 +642,18 @@ function formatCrossrefPaper(item: any): RealtimeAcademicPaper {
       })
     : [];
 
-  const authorsList = authorObjs.map(a => a.displayName);
+  const authorsList = authorObjs.map(a => a.displayName).filter(Boolean);
   const primaryAuthor = authorsList[0] || 'Author';
-  const paperYear = item.issued?.['date-parts']?.[0]?.[0] || new Date().getFullYear();
+  const paperYear = item.issued?.['date-parts']?.[0]?.[0] || '';
   const doiStr = item.DOI || '';
   const titleStr = item.title?.[0] || 'Untitled Publication';
-  const venueStr = item['container-title']?.[0] || 'Crossref Indexed Journal';
+  const venueStr = item['container-title']?.[0] || '';
   const firstWord = titleStr.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
 
   return {
     id: `cross_${doiStr || Math.random().toString(36).substring(2, 9)}`,
     title: titleStr,
-    authors: authorsList.length > 0 ? authorsList : ['Academic Researcher'],
+    authors: authorsList,
     authorObjects: authorObjs,
     year: paperYear,
     venue: venueStr,
@@ -657,7 +661,7 @@ function formatCrossrefPaper(item: any): RealtimeAcademicPaper {
     citationCount: item['is-referenced-by-count'] || 0,
     abstract: item.abstract 
       ? item.abstract.replace(/<[^>]*>/g, '').substring(0, 450) + '...'
-      : 'Abstract retrieved from Crossref metadata index.',
+      : '',
     url: item.URL || (doiStr ? `https://doi.org/${doiStr}` : undefined),
     bibtex: `@article{${primaryAuthor.toLowerCase().replace(/[^a-z]/g, '')}${paperYear}${firstWord},
   title={${titleStr}},
@@ -681,7 +685,7 @@ function reconstructAbstract(invertedIndex: Record<string, number[]>): string {
     wordPositions.sort((a, b) => a.pos - b.pos);
     return wordPositions.map(wp => wp.word).join(' ').substring(0, 450) + '...';
   } catch (e) {
-    return 'Abstract reconstructed from OpenAlex inverted index.';
+    return '';
   }
 }
 

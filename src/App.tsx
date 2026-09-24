@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { ModuleView } from './types';
-import { dbStore } from './services/dbStore';
+import { authClient } from './services/authClient';
+import { workspaceStore } from './services/workspaceStore';
 import { AuthScreen } from './components/AuthScreen';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
@@ -19,18 +20,26 @@ import { ClaimTranslatorModal } from './components/ClaimTranslatorModal';
 import { IdeaNoveltyView } from './components/IdeaNoveltyView';
 
 export const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return !!dbStore.getCurrentUser();
-  });
-  
-  const [user, setUser] = useState<{ name: string; email: string; role: string }>(() => {
-    const active = dbStore.getCurrentUser();
-    return active ? { name: active.name, email: active.email, role: active.role } : {
-      name: 'Dr. Alex Vance',
-      email: 'alex.vance@uspto-research.gov',
-      role: 'Lead Patent Examiner'
-    };
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+  const [sessionError, setSessionError] = useState('');
+  const [user, setUser] = useState({ name: '', email: '', role: '' });
+  useEffect(() => {
+    let active = true;
+    const restore = () => authClient.session().then(account => {
+      if (!active) return;
+      setIsAuthenticated(!!account);
+      if (account) setUser(account);
+      setSessionError('');
+    }).catch(() => {
+      if (active) { setIsAuthenticated(false); setSessionError('Session service unavailable. Please retry signing in.'); }
+    }).finally(() => { if (active) setCheckingSession(false); });
+    void restore();
+    const onFocus = () => { void restore(); };
+    window.addEventListener('focus', onFocus);
+    const timer = window.setInterval(onFocus, 60000);
+    return () => { active = false; window.removeEventListener('focus', onFocus); window.clearInterval(timer); };
+  }, []);
 
   const [activeView, setActiveView] = useState<ModuleView>(() => {
     const hash = window.location.hash;
@@ -126,49 +135,51 @@ export const App: React.FC = () => {
   const openClaimTranslator = (patentId?: string, claimNumber?: number, claimText?: string) => {
     if (patentId) setTranslatorPatentId(patentId);
     if (claimNumber) setTranslatorClaimNumber(claimNumber);
-    if (claimText) setTranslatorClaimText(claimText);
+    setTranslatorClaimText(claimText);
     setIsTranslatorOpen(true);
   };
 
   const handleSearchSimilarFromTranslator = (translatedQuery: string) => {
     setTranslatorSearchQuery(translatedQuery);
-    setActiveView('search');
+    setIsTranslatorOpen(false);
+    handleSelectView('search');
   };
 
   const handleLoginSuccess = (userData: { name: string; email: string; role: string }) => {
     setUser(userData);
     setIsAuthenticated(true);
-    setActiveView('dashboard');
+    setSessionError('');
+    handleSelectView('dashboard');
   };
 
-  const handleLogout = () => {
-    dbStore.logoutUser();
-    setIsAuthenticated(false);
+  const handleLogout = async () => {
+    try { await authClient.logout(); setIsAuthenticated(false); setSessionError(''); }
+    catch { setSessionError('Sign-out failed. Please retry to revoke your session.'); }
   };
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };
 
-  if (!isAuthenticated) {
+  if (checkingSession) return <main role="status" style={{ padding: 48 }}>Checking your session…</main>;
+  if (!isAuthenticated || new URLSearchParams(window.location.search).has('reset')) {
     return (
-      <AuthScreen 
-        onLoginSuccess={handleLoginSuccess}
-      />
+      <AuthScreen onLoginSuccess={handleLoginSuccess} serviceError={sessionError} />
     );
   }
 
   return (
-    <div style={{ 
-      height: '100vh', 
+    <div style={{
+      height: '100vh',
       width: '100vw',
-      display: 'flex', 
-      flexDirection: 'column', 
+      display: 'flex',
+      flexDirection: 'column',
       background: 'var(--bg-main)',
       overflow: 'hidden'
     }}>
       {/* Header Bar */}
       <div style={{ flexShrink: 0, zIndex: 10 }}>
+        {sessionError && <div role="alert">{sessionError}</div>}
         <Header
           user={user}
           theme={theme}
@@ -189,62 +200,66 @@ export const App: React.FC = () => {
         />
 
         {/* Dynamic View Content Container (Individually Scrollable Main Area) */}
-        <main 
-          className={`app-main-content ${activeView === 'review-queue' ? 'review-queue-main-container' : ''}`} 
-          style={{ 
-            flex: 1, 
-            height: '100%', 
-            width: '100%', 
-            maxWidth: '100%', 
-            minWidth: 0, 
-            padding: activeView === 'review-queue' ? '20px 28px' : '32px', 
-            overflowY: activeView === 'review-queue' ? 'hidden' : 'auto', 
-            boxSizing: 'border-box' 
+        <main
+          className={`app-main-content ${activeView === 'review-queue' ? 'review-queue-main-container' : ''}`}
+          style={{
+            flex: 1,
+            height: '100%',
+            width: '100%',
+            maxWidth: '100%',
+            minWidth: 0,
+            padding: activeView === 'review-queue' ? '20px 28px' : '32px',
+            overflowY: activeView === 'review-queue' ? 'hidden' : 'auto',
+            boxSizing: 'border-box'
           }}
         >
           {activeView === 'dashboard' && (
-            <DashboardView 
-              onNavigate={handleSelectView} 
+            <DashboardView
+              onNavigate={handleSelectView}
               onOpenLiterature={(q) => openLiteratureWithQuery(q)}
             />
           )}
 
           {activeView === 'workspace' && (
-            <PatentWorkspaceView 
+            <PatentWorkspaceView
               onOpenClaimTranslator={openClaimTranslator}
             />
           )}
 
           {activeView === 'search' && (
-            <SearchEngineView 
-              onNavigate={handleSelectView} 
+            <SearchEngineView
+              onNavigate={handleSelectView}
               onOpenPaper={(q) => openLiteratureWithQuery(q)}
               initialQuery={translatorSearchQuery}
             />
           )}
 
           {activeView === 'claims' && (
-            <ClaimIntelligenceView 
+            <ClaimIntelligenceView
               onNavigate={handleSelectView}
               onOpenClaimTranslator={openClaimTranslator}
             />
           )}
 
           {activeView === 'mapping' && (
-            <ClaimMappingView 
-              onNavigate={handleSelectView} 
+            <ClaimMappingView
+              onNavigate={handleSelectView}
               onOpenPaper={(q) => openLiteratureWithQuery(q)}
             />
           )}
 
           {activeView === 'timeline' && (
-            <PriorArtTimelineView 
+            <PriorArtTimelineView
               onOpenPaper={(q) => openLiteratureWithQuery(q)}
+              onNavigateToMapping={(target, candidate) => {
+                workspaceStore.setComparisonPair(target.id, candidate.id);
+                handleSelectView('mapping');
+              }}
             />
           )}
 
           {activeView === 'ai-evidence' && (
-            <AIEvidenceView 
+            <AIEvidenceView
               onOpenPaper={(q) => openLiteratureWithQuery(q)}
             />
           )}
@@ -262,14 +277,14 @@ export const App: React.FC = () => {
           )}
 
           {activeView === 'idea-novelty' && (
-            <IdeaNoveltyView 
+            <IdeaNoveltyView
               selectedProjectId={selectedProjectId}
               onNavigate={handleNavigateWithMetadata}
             />
           )}
 
           {activeView === 'review-queue' && (
-            <IdeaNoveltyView 
+            <IdeaNoveltyView
               initialTab="review_queue"
               onNavigate={handleNavigateWithMetadata}
             />

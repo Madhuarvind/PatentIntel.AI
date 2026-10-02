@@ -104,7 +104,7 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
             PatentIntel R&D Executive Workspace
           </h1>
           <p style={{ fontSize: '0.92rem', color: 'var(--text-muted)', maxWidth: '720px', lineHeight: '1.55', margin: 0 }}>
-            Enterprise examination suite integrating real-time USPTO/EPO patent ingestion, hierarchical claim limitation decomposition, prior-art element coverage mapping, and academic literature cross-referencing.
+            Local research tools for source lookup, rule-based claim decomposition, lexical comparisons, and academic references. Provider availability and evidence coverage are shown in each workflow.
           </p>
         </div>
 
@@ -203,7 +203,7 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
             Technology Domains
           </div>
           <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>
-            Leading: {metrics.cpcDistribution[0]?.code || 'G08G'} ({metrics.cpcDistribution[0]?.percentage || 0}%)
+            Leading: {metrics.cpcDistribution[0]?.code || 'Not recorded'} ({metrics.cpcDistribution[0]?.percentage || 0}%)
           </div>
         </div>
 
@@ -374,7 +374,7 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
               R&D Examination & Analytics Pipeline
             </h2>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
-              Direct access into deep claim analysis, semantic search, and patent synthesis workflows
+              Explore claim parsing, source retrieval, and experimental drafting tools
             </p>
           </div>
         </div>
@@ -420,7 +420,7 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
                 Claim Decomposition & Tree
               </h3>
               <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: '1.45', margin: 0 }}>
-                Extracts atomic claim limitations, classifies structural components, verifies 35 U.S.C. § 112 antecedent basis, and visualizes dependency trees.
+                Splits claim text into candidate limitations, flags possible antecedent issues, and visualizes dependencies. Human review is required.
               </p>
             </div>
             <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -445,7 +445,7 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
                 Claim Element Mapping Matrix
               </h3>
               <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: '1.45', margin: 0 }}>
-                Cross-references subject claim limitations against prior-art citations with verified element-by-element coverage and exportable charts.
+                Compares claim wording with source passages using lexical rules and traceable excerpts. Matches do not establish legal conclusions.
               </p>
             </div>
             <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -470,7 +470,7 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
                 Prior-Art Trajectory & Clusters
               </h3>
               <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: '1.45', margin: 0 }}>
-                Interactive temporal timeline of priority and filing milestones coupled with 2D UMAP/t-SNE semantic vector space projections.
+                Displays recorded publication and filing dates with claim-text comparisons. Semantic vector projections are not implemented.
               </p>
             </div>
             <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -520,7 +520,7 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
                 Traceable Evidence & Dossier
               </h3>
               <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: '1.45', margin: 0 }}>
-                Generates verifiable patent examiner office-action responses, extracts grounded citation excerpts, and exports formatted legal dossiers.
+                Inspects stored citation excerpts and exports research evidence for human review. It does not generate verified legal opinions.
               </p>
             </div>
             <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -594,10 +594,10 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
             </p>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
               <button className="btn-primary" onClick={handleResetToDefault}>
-                <RotateCcw size={14} /> Restore Standard Reference Patents
+                <RotateCcw size={14} /> Load Demonstration Records
               </button>
               <button className="btn-secondary" onClick={() => onNavigate('workspace')}>
-                <PlusCircle size={14} /> Import Live Patent from USPTO API
+                <PlusCircle size={14} /> Look Up a Patent
               </button>
             </div>
           </div>

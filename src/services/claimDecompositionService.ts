@@ -35,6 +35,7 @@ import type {
   CounterfactualRetrievalComparison,
   AnalysisRunSnapshot
 } from '../types';
+import { workspaceStore } from './workspaceStore';
 
 /**
  * Standard patent transitional phrases and their legal exclusivity scope.
@@ -388,18 +389,28 @@ export function extractSpecificationEvidence(
   elementId: string, 
   canonicalName: string
 ): ClaimSpecEvidence {
-  const paragraphs = ['§[0028]', '§[0031]', '§[0034]', '§[0042]', '§[0047]', '§[0053]'];
-  const p1 = paragraphs[(elementId.charCodeAt(1) || 1) % paragraphs.length];
-  const p2 = paragraphs[((elementId.charCodeAt(1) || 1) + 2) % paragraphs.length];
-
-  const figNum = ((elementId.charCodeAt(1) || 1) % 4) + 1;
+  const patent = workspaceStore.getPatent(documentId);
+  if (patent && (patent.abstract || patent.claims?.length)) {
+    const specText = patent.abstract || '';
+    const hasCanonical = specText.toLowerCase().includes(canonicalName.toLowerCase());
+    return {
+      documentId,
+      claimLineReference: `Claim 1, clause ${elementId}`,
+      specificationParagraphs: hasCanonical ? ['§[Abstract]'] : [],
+      specificationExcerpt: hasCanonical
+        ? `Disclosed in ${patent.id} abstract: "${specText.slice(0, 160)}..."`
+        : `Specification disclosure in ${patent.id} (${patent.title})`,
+      figureReferences: [],
+      sourceUrl: patent.sourceUrl || `https://patents.google.com/patent/${documentId}/en`
+    };
+  }
 
   return {
     documentId,
     claimLineReference: `Claim 1, clause ${elementId}`,
-    specificationParagraphs: [p1, p2],
-    specificationExcerpt: `As disclosed in ${p1}, the ${canonicalName.toLowerCase()} operates in conjunction with autonomous edge nodes to continuously sample environmental telemetry and modulate execution duty cycles.`,
-    figureReferences: [`FIG. ${figNum}`, `FIG. ${figNum + 1}`],
+    specificationParagraphs: [],
+    specificationExcerpt: `Raw claim text analysis for clause ${elementId} (${canonicalName}). Specification text not supplied.`,
+    figureReferences: [],
     sourceUrl: `https://patents.google.com/patent/${documentId}/en`
   };
 }
@@ -735,15 +746,16 @@ export function computeClaimEvidenceCoverage(
   limitations: ClaimLimitationDetail[],
   _documentId: string = 'US11954112B2'
 ): ClaimEvidenceCoverageSummary {
-  const items: LimitationEvidenceCoverageItem[] = limitations.map((lim, idx) => {
+  const items: LimitationEvidenceCoverageItem[] = limitations.map((lim) => {
     // Statutory claim support is ALWAYS verified (100% exact character span match)
     const hasClaimSupport = true;
     // Specification grounding confirmed via disclosed paragraphs
     const hasSpecSupport = !!(lim.specEvidence?.specificationParagraphs && lim.specEvidence.specificationParagraphs.length > 0);
     // Figure support for structural components
-    const hasFigureSupport = idx % 2 === 0 || idx === 1 || !!(lim.specEvidence?.figureReferences && lim.specEvidence.figureReferences.length > 0);
-    // Prior art mapping exists
-    const hasPriorArtSupport = idx !== 3;
+    const hasFigureSupport = !!(lim.specEvidence?.figureReferences && lim.specEvidence.figureReferences.length > 0);
+    // A generated search query is not retrieved evidence. This decomposition
+    // stage has no verified prior-art mappings attached to its limitations.
+    const hasPriorArtSupport = false;
 
     return {
       limitationId: lim.id,
@@ -752,8 +764,8 @@ export function computeClaimEvidenceCoverage(
       hasSpecSupport,
       hasFigureSupport,
       hasPriorArtSupport,
-      specReference: lim.specEvidence?.specificationParagraphs?.[0] || `§[00${15 + idx * 8}]`,
-      figureReference: `Fig. ${idx + 1}`
+      specReference: lim.specEvidence?.specificationParagraphs?.[0] || 'Uncorrelated in specification',
+      figureReference: lim.specEvidence?.figureReferences?.[0] || 'No figure reference'
     };
   });
 

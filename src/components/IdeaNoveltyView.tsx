@@ -367,7 +367,7 @@ ${activeReport.multimodalSchematics?.schematicMatches?.length ? activeReport.mul
 SECTION 5: FREEDOM-TO-OPERATE (FTO) LEGAL STATUS TRACKER
 ================================================================================
 Legal Status Breakdown:
-${activeReport.topMatchedPatents?.map(p => `- Patent ${p.id}: ${p.id.includes('604965') || p.id.includes('784998') ? 'EXPIRED (Public Domain - Safe to Commercialize)' : 'ACTIVE MONOPOLY (FTO Risk: High)'}`).join('\n') || `- Patent US10892144B2: ACTIVE MONOPOLY`}
+${activeReport.topMatchedPatents && activeReport.topMatchedPatents.length > 0 ? activeReport.topMatchedPatents.map(p => `- Patent ${p.id}: ${p.id.includes('604965') || p.id.includes('784998') ? 'EXPIRED (Public Domain - Safe to Commercialize)' : 'ACTIVE MONOPOLY (FTO Risk: High)'}`).join('\n') : '- No matching prior-art patents found in active workspace corpus'}
 
 ================================================================================
 SECTION 6: EXAMINER SUMMARY & RECOMMENDED ACTION
@@ -1815,6 +1815,27 @@ const RESEARCH_PRESETS: RDPreset[] = [
                                 <span>Archived</span>
                               </span>
                             )}
+
+                            {(proj.id.startsWith('proj_preset') || proj.id.startsWith('preset')) && (
+                              <span
+                                style={{
+                                  fontSize: '0.66rem',
+                                  fontWeight: 800,
+                                  padding: '2px 7px',
+                                  borderRadius: 4,
+                                  background: 'rgba(245, 158, 11, 0.12)',
+                                  color: 'var(--accent-amber)',
+                                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 3
+                                }}
+                                title="Preset demonstration project - not verified against live corpus"
+                              >
+                                <AlertTriangle size={10} />
+                                <span>Demo Sample</span>
+                              </span>
+                            )}
                           </div>
 
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
@@ -2546,6 +2567,26 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     <span>{activeProject.status.replace(/_/g, ' ')}</span>
                   )}
                 </span>
+
+                {(activeProject.id.startsWith('proj_preset') || activeProject.id.startsWith('preset')) && (
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      padding: '4px 10px',
+                      borderRadius: 6,
+                      background: 'rgba(245, 158, 11, 0.14)',
+                      color: 'var(--accent-amber)',
+                      border: '1px solid rgba(245, 158, 11, 0.4)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5
+                    }}
+                  >
+                    <AlertTriangle size={12} />
+                    <span>Demonstration Sample — Not Verified Against Live Corpus</span>
+                  </span>
+                )}
 
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--text-dim)', background: 'var(--bg-surface)', padding: '4px 10px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
                   <Calendar size={13} />
@@ -5910,7 +5951,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                 2. Prior Art Novelty Objections (Section 102)
               </h4>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
-                Identified {activeReport.directOverlapCount} direct prior-art collisions. {activeReport.topMatchedPatents?.[0] ? `Primary cited reference Patent ${activeReport.topMatchedPatents[0].id} ("${activeReport.topMatchedPatents[0].title}") discloses ${(activeReport.topMatchedPatents[0] as any).matchedTerm || activeReport.extractedComponents[0]?.term || 'telemetry processing'} with ${(activeReport.topMatchedPatents[0] as any).similarityScore || 84}% vector similarity.` : `Collisions identified against primary feature ${activeReport.extractedComponents[0]?.term || 'core output'}.`}
+                {activeReport.directOverlapCount > 0
+                  ? `Identified ${activeReport.directOverlapCount} direct prior-art collision(s). ${activeReport.topMatchedPatents?.[0] ? `Primary cited reference Patent ${activeReport.topMatchedPatents[0].id} ("${activeReport.topMatchedPatents[0].title}") discloses ${(activeReport.topMatchedPatents[0] as any).matchedTerm || activeReport.extractedComponents[0]?.term || 'telemetry processing'} with ${(activeReport.topMatchedPatents[0] as any).similarityScore || 84}% vector similarity.` : `Collisions identified against primary feature ${activeReport.extractedComponents[0]?.term || 'core output'}.`}`
+                  : `No direct prior-art collisions identified in active workspace corpus under 35 U.S.C. § 102.`}
               </p>
             </div>
 
@@ -5920,7 +5963,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                 3. Inventive Step & Multi-Document Combination (Section 103 / TSM)
               </h4>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
-                Section 103 Risk Score: {activeReport.tsmObviousnessRisk?.score || 95}%. Motivation to combine {activeReport.topMatchedPatents?.[0]?.id || activeReport.extractedComponents[0]?.term || 'Ref 1'} with {activeReport.topMatchedPatents?.[1]?.id || activeReport.topMatchedPapers?.[0]?.title?.substring(0, 35) || 'Ref 2'} is {activeReport.tsmObviousnessRisk?.combinedReferences?.[0]?.motivationReason || 'suggested by standard domain engineering principles.'}
+                {activeReport.tsmObviousnessRisk
+                  ? `Section 103 Risk Score: ${activeReport.tsmObviousnessRisk.score}%. Motivation to combine ${activeReport.topMatchedPatents?.[0]?.id || activeReport.extractedComponents[0]?.term || 'Ref 1'} with ${activeReport.topMatchedPatents?.[1]?.id || activeReport.topMatchedPapers?.[0]?.title?.substring(0, 35) || 'Ref 2'} is ${activeReport.tsmObviousnessRisk?.combinedReferences?.[0]?.motivationReason || 'suggested by standard domain engineering principles.'}`
+                  : `Inventive step evaluation: insufficient multi-document combinations in active corpus to suggest prima facie obviousness under § 103.`}
               </p>
             </div>
 
@@ -5930,7 +5975,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                 4. ColPali Multimodal Schematic Verification
               </h4>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
-                {activeReport.multimodalSchematics?.schematicMatches?.[0] ? `Visual topology match of ${activeReport.multimodalSchematics.schematicMatches[0].figureId || 'FIG. 1'} block diagram against prior art ${activeReport.multimodalSchematics.schematicMatches[0].priorArtId} (${activeReport.multimodalSchematics.schematicMatches[0].priorArtTitle}): ${activeReport.multimodalSchematics.schematicMatches[0].visualSimilarity}% visual structural similarity identified.` : `Visual topology match of FIG. 1 block diagram for "${activeProject?.title || 'proposal'}" against global patent repository: ${(activeReport.topMatchedPatents?.[0] as any)?.similarityScore || 88}% visual structural similarity identified.`}
+                {activeReport.multimodalSchematics?.schematicMatches?.[0]
+                  ? `Visual topology match of ${activeReport.multimodalSchematics.schematicMatches[0].figureId || 'FIG. 1'} block diagram against prior art ${activeReport.multimodalSchematics.schematicMatches[0].priorArtId} (${activeReport.multimodalSchematics.schematicMatches[0].priorArtTitle}): ${activeReport.multimodalSchematics.schematicMatches[0].visualSimilarity}% visual structural similarity identified.`
+                  : `No drawing figures or schematics uploaded for visual topological verification.`}
               </p>
             </div>
 

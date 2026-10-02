@@ -415,8 +415,13 @@ const CandidateCard: React.FC<{
         </div>
         <span style={{ fontSize: '0.8rem', fontWeight: 800, color: col }}>{candidate.coverage}%</span>
       </div>
-      <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-        {totalClaims} claims · {candidate.quality.unsupportedElements === 0 ? '✓ Fully grounded' : `⚠ ${candidate.quality.unsupportedElements} unsupported`}
+      <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
+        <span>{totalClaims} claims · {candidate.quality.unsupportedElements === 0 ? '✓ Fully grounded' : `⚠ ${candidate.quality.unsupportedElements} unsupported`}</span>
+        {(candidate.quality.warnings?.length ?? 0) > 0 && (
+          <span title={candidate.quality.warnings.join('; ')} style={{ color: 'var(--accent-amber)', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+            <AlertTriangle size={11} /> {candidate.quality.warnings.length}
+          </span>
+        )}
       </div>
     </div>
   );

@@ -797,8 +797,12 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                   <div style={{ fontSize: '1.65rem', fontWeight: 900, color: 'var(--accent-cyan)' }}>
                     {decomposedClaim.evidenceCoverage.specSupportedCount} / {decomposedClaim.evidenceCoverage.totalLimitations}
                   </div>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-cyan)' }}>Disclosed Passages</div>
-                  <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)' }}>Verified in patent description</div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-cyan)' }}>
+                    {decomposedClaim.evidenceCoverage.specSupportedCount > 0 ? 'Disclosed Passages' : 'Raw Claim Analysis'}
+                  </div>
+                  <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)' }}>
+                    {decomposedClaim.evidenceCoverage.specSupportedCount > 0 ? 'Verified in patent description' : 'Specification text not supplied'}
+                  </div>
                 </div>
 
                 <div style={{ background: 'var(--bg-input)', padding: '16px 18px', borderRadius: '10px', border: '1px solid var(--border-color)', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -806,8 +810,12 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                   <div style={{ fontSize: '1.65rem', fontWeight: 900, color: 'var(--accent-indigo)' }}>
                     {decomposedClaim.evidenceCoverage.figureSupportedCount} / {decomposedClaim.evidenceCoverage.totalLimitations}
                   </div>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-indigo)' }}>Drawing References</div>
-                  <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)' }}>Correlated technical illustrations</div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-indigo)' }}>
+                    {decomposedClaim.evidenceCoverage.figureSupportedCount > 0 ? 'Drawing References' : 'Drawings Not Supplied'}
+                  </div>
+                  <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)' }}>
+                    {decomposedClaim.evidenceCoverage.figureSupportedCount > 0 ? 'Correlated technical illustrations' : 'No figure illustrations provided'}
+                  </div>
                 </div>
 
                 <div style={{ background: 'var(--bg-input)', padding: '16px 18px', borderRadius: '10px', border: '1px solid var(--border-color)', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -835,11 +843,11 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                   }}>
                     <strong style={{ color: 'var(--accent-indigo)', fontSize: '0.86rem' }}>{item.limitationId}</strong>
                     <span style={{ color: item.hasClaimSupport ? 'var(--accent-emerald)' : 'var(--text-dim)', fontWeight: 600 }} title="Claim text support">✓ Claim</span>
-                    <span style={{ color: item.hasSpecSupport ? 'var(--accent-emerald)' : '#f87171', fontWeight: 600 }} title="Specification grounding">
-                      {item.hasSpecSupport ? '✓ Spec' : '✗ Spec'}
+                    <span style={{ color: item.hasSpecSupport ? 'var(--accent-emerald)' : 'var(--text-dim)', fontWeight: 600 }} title={item.hasSpecSupport ? 'Specification grounding' : 'Specification text not supplied'}>
+                      {item.hasSpecSupport ? '✓ Spec' : '– Spec'}
                     </span>
-                    <span style={{ color: item.hasFigureSupport ? 'var(--accent-emerald)' : '#f87171', fontWeight: 600 }} title="Figure grounding">
-                      {item.hasFigureSupport ? '✓ Fig' : '✗ Fig'}
+                    <span style={{ color: item.hasFigureSupport ? 'var(--accent-emerald)' : 'var(--text-dim)', fontWeight: 600 }} title={item.hasFigureSupport ? 'Figure grounding' : 'No figure illustrations provided'}>
+                      {item.hasFigureSupport ? '✓ Fig' : '– Fig'}
                     </span>
                     <span style={{ color: item.hasPriorArtSupport ? 'var(--accent-emerald)' : 'var(--text-dim)', fontWeight: 600 }} title="Prior art mapped">
                       {item.hasPriorArtSupport ? '✓ Prior Art' : '– Distinguishing'}

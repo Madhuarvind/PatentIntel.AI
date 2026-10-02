@@ -37,10 +37,14 @@ Local screenshot: ignored `scratch/pilot-approved-report.png`. Synthetic QA data
 
 - Saved-PDF pagination/content inspection remains unverified: the native print dialog prevented further control of its tab. API JSON/report-component tests passed, but do not substitute for inspecting a saved PDF.
 - On 2 October, restarted the isolated local server and signed in to the persisted researcher account. Invalid-version links displayed an explicit access/unavailable error. Downloaded proposal-v3.json and inspected its selected version, features, passage/page/section, missing F2 evidence, source dates and approval reason against the displayed report; they matched.
-- Full keyboard audit, every mobile screen, interactive outage/retry scenarios and persistence in a different browser engine remain pending.
+- On 2 October, keyboard navigation across all six pilot pages at 320 px showed no horizontal overflow. Proposal, evidence, review and report detail screens also fit. Fixed route-change focus, Escape-to-close navigation with focus return, and low-contrast platform-link styling. Skip-to-content and labelled editor fields were verified. Full assistive-technology audit, interactive outage/retry scenarios and persistence in a different browser engine remain pending.
 - Older modules retain browser-local storage and experimental workflows. These records are not isolated by server account. A visible notice directs private proposals and assigned decisions to the pilot. Legacy provider/AI settings are not the pilot's server-only architecture; do not enter private provider secrets there. The legacy patent resolver is currently Vite development middleware and external browser calls are restricted by production CSP: legacy hosted-provider parity remains an additional deployment gate.
 - No Render, Supabase or Resend account is configured. Hosted private storage, delivered email, HTTPS, restart/redeployment, restore and rollback have not been verified. No purchases or deployment were performed.
 
 ## Release gates
 
 The hosted pilot is complete only after the deployment checklist and two-user hosted journey pass, including exports, email delivery, private uploads, persistence, backup restoration and rollback. Do not infer production readiness from a build or sidebar smoke check.
+
+## Interface follow-up — 2 October
+
+Navigation and report tests pass (3 targeted checks), with browser checks for the focus changes. The previous full-suite baseline remains 110 passing tests. Native saved-PDF inspection still requires a supported print-dialog interaction or an operator-saved PDF; it is not inferred from the report DOM.

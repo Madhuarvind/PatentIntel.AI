@@ -26,6 +26,8 @@ test('one development server supports registration, cookies and persistence acro
   };
   try {
     app = await startDevelopmentServer({ env });
+    const unauthenticatedPatent = await fetch(`${env.APP_ORIGIN}/api/patents/resolve?identifier=US1234567A`);
+    assert.equal(unauthenticatedPatent.status, 401, 'Shared authenticated handler must precede legacy Vite middleware');
     assert.equal((await request('session')).data.user, null);
     const account = { name: 'Development Test', email: 'dev-test@example.test', organization: 'Test', password: 'synthetic development passphrase' };
     assert.equal((await request('register', account)).status, 201);

@@ -4,6 +4,7 @@ import { createServer } from 'vite';
 import { openDatabase } from '../server/database.mjs';
 import { createAuthHandler } from '../server/auth.mjs';
 import { createPilotHandler } from '../server/pilot.mjs';
+import { createPatentHandler } from '../server/patents.mjs';
 
 // Run auth inside Vite's process so a frontend cannot silently outlive its API.
 export async function startDevelopmentServer({ env = process.env, port, configFile } = {}) {
@@ -27,13 +28,16 @@ export async function startDevelopmentServer({ env = process.env, port, configFi
       server: { host: origin.hostname, port: frontendPort, strictPort: true },
       plugins: [{
         name: 'local-authentication',
+        enforce: 'pre',
         // configureServer middleware runs before Vite's proxy and HTML fallback.
         async configureServer(vite) {
           db = await openDatabase(env);
           const auth = await createAuthHandler(db, { ...env, APP_ORIGIN: origin.origin });
           const pilot = await createPilotHandler(db, { ...env, APP_ORIGIN: origin.origin });
+          const patents = createPatentHandler(db, env);
           vite.middlewares.use((req, res, next) => {
             if (req.url?.startsWith('/api/auth/')) return auth(req, res);
+            if (req.url?.startsWith('/api/patents/')) return patents(req, res);
             if (req.url?.startsWith('/api/')) return pilot(req, res);
             next();
           });

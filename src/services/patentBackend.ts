@@ -4,7 +4,7 @@ export interface PatentResolutionResult {
   success: boolean;
   documentType: 'PATENT';
   patent?: PatentDocument;
-  errorCode?: 'PATENT_NOT_FOUND' | 'SOURCE_UNAVAILABLE' | 'INVALID_IDENTIFIER' | 'RATE_LIMITED' | 'SOURCE_TIMEOUT';
+  errorCode?: 'PATENT_NOT_FOUND' | 'SOURCE_UNAVAILABLE' | 'INVALID_IDENTIFIER' | 'RATE_LIMITED' | 'SOURCE_TIMEOUT' | 'AUTH_REQUIRED';
   message?: string;
 }
 export { parseGooglePatentsHtmlServer } from './patentHtmlParser';
@@ -16,6 +16,7 @@ export async function resolvePatentViaBackend(identifier: string, signal?: Abort
   try {
     const response = await fetch(`/api/patents/resolve?identifier=${encodeURIComponent(normalizedId)}`, { signal });
     const data = await response.json();
+    if (response.status === 401) return { success: false, documentType: 'PATENT', errorCode: 'AUTH_REQUIRED', message: 'Your session expired. Sign in again before looking up a patent.' };
     if (response.ok && data?.success && data.documentType === 'PATENT' && data.patent) return data;
     return { success: false, documentType: 'PATENT',
       errorCode: response.status === 404 && data?.errorCode === 'PATENT_NOT_FOUND' ? 'PATENT_NOT_FOUND' : 'SOURCE_UNAVAILABLE',

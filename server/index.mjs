@@ -4,11 +4,13 @@ import { resolve, extname, sep } from 'node:path';
 import { openDatabase } from './database.mjs';
 import { createAuthHandler } from './auth.mjs';
 import { createPilotHandler } from './pilot.mjs';
+import { createPatentHandler } from './patents.mjs';
 
 const db = await openDatabase();
 let auth, pilot;
 try { auth = await createAuthHandler(db); pilot = await createPilotHandler(db); }
 catch (error) { await db.close(); throw error; }
+const patents = createPatentHandler(db);
 const root = resolve('dist');
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon' };
 const server = createServer(async (req, res) => {
@@ -23,6 +25,7 @@ const server = createServer(async (req, res) => {
   if (req.url === '/health') {
     try { await db.query('SELECT 1'); res.end('ok'); } catch { res.statusCode = 503; res.end('unavailable'); } return;
   }
+  if (req.url.startsWith('/api/patents/')) return patents(req, res);
   if (req.url.startsWith('/api/')) return pilot(req, res);
   if (!['GET', 'HEAD'].includes(req.method)) { res.statusCode = 405; res.end(); return; }
   try {

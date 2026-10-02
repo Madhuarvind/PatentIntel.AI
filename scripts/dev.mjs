@@ -3,6 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { createServer } from 'vite';
 import { openDatabase } from '../server/database.mjs';
 import { createAuthHandler } from '../server/auth.mjs';
+import { createPilotHandler } from '../server/pilot.mjs';
 
 // Run auth inside Vite's process so a frontend cannot silently outlive its API.
 export async function startDevelopmentServer({ env = process.env, port, configFile } = {}) {
@@ -30,8 +31,10 @@ export async function startDevelopmentServer({ env = process.env, port, configFi
         async configureServer(vite) {
           db = await openDatabase(env);
           const auth = await createAuthHandler(db, { ...env, APP_ORIGIN: origin.origin });
+          const pilot = await createPilotHandler(db, { ...env, APP_ORIGIN: origin.origin });
           vite.middlewares.use((req, res, next) => {
             if (req.url?.startsWith('/api/auth/')) return auth(req, res);
+            if (req.url?.startsWith('/api/')) return pilot(req, res);
             next();
           });
         }

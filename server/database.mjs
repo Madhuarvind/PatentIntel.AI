@@ -1,5 +1,7 @@
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { acquireDatabaseLock } from './database-lock.mjs';
+import { migratePilot } from './migrations.mjs';
 
 export async function openDatabase(env = process.env) {
   let db;
@@ -21,12 +23,16 @@ export async function openDatabase(env = process.env) {
     const { PGlite } = await import('@electric-sql/pglite');
     const directory = resolve(env.AUTH_DATA_DIR || '.data/auth');
     await mkdir(directory, { recursive: true });
-    const local = new PGlite(directory);
-    await local.waitReady;
-    db = { query: (sql, values) => local.query(sql, values), transaction: fn => local.transaction(fn), close: () => local.close() };
+    const release = await acquireDatabaseLock(directory);
+    let local;
+    try { local = new PGlite(directory); await local.waitReady; }
+    catch { await release(); throw new Error('Local database could not start. Check folder write permissions and restore from backup if needed; do not delete account data.'); }
+    let closing;
+    db = { query: (sql, values) => local.query(sql, values), transaction: fn => local.transaction(fn),
+      close: () => closing ||= (async () => { try { await local.close(); } finally { await release(); } })() };
   }
   // Version-one schema. PostgreSQL constraints are the authority for uniqueness.
-  await db.transaction(async tx => {
+  try { await db.transaction(async tx => {
     await tx.query(`CREATE TABLE IF NOT EXISTS auth_users (
       id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, name TEXT NOT NULL,
       organization TEXT NOT NULL DEFAULT '', password_hash TEXT NOT NULL,
@@ -46,5 +52,7 @@ export async function openDatabase(env = process.env) {
     await tx.query('CREATE INDEX IF NOT EXISTS auth_sessions_user_idx ON auth_sessions(user_id)');
     await tx.query('CREATE INDEX IF NOT EXISTS auth_resets_user_idx ON auth_resets(user_id)');
   });
+  await migratePilot(db);
+  } catch (error) { await db.close(); throw error; }
   return db;
 }

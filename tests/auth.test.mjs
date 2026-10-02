@@ -115,6 +115,8 @@ test('production requires a real PostgreSQL URL and HTTPS origin; cookies use Se
   await assert.rejects(openDatabase({ NODE_ENV: 'production' }), /DATABASE_URL/);
   await assert.rejects(createAuthHandler(db, { NODE_ENV: 'production', APP_ORIGIN: origin }), /HTTPS/);
   handler = await createAuthHandler(db, { NODE_ENV: 'production', APP_ORIGIN: 'https://patent.example' });
+  assert.equal((await request('login', { email: account.email, password: 'updated horse battery river' }, undefined, { Origin: 'https://patent.example' })).status, 403);
+  await db.query('UPDATE auth_users SET verified_at=CURRENT_TIMESTAMP WHERE email=$1', [account.email]);
   const login = await request('login', { email: account.email, password: 'updated horse battery river' }, undefined, { Origin: 'https://patent.example' });
   assert.match(login.cookie, /^__Host-patentintel_session=/); assert.match(login.cookie, /; Secure/);
   assert.equal((await request('forgot-password', { email: account.email }, undefined, { Origin: 'https://patent.example' })).status, 503);

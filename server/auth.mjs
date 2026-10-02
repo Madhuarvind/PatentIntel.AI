@@ -2,11 +2,20 @@ import { randomBytes, randomUUID, createHash, scrypt, timingSafeEqual } from 'no
 import { promisify } from 'node:util';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { createMailer } from './mail.mjs';
 
 const derive = promisify(scrypt);
 const digest = value => createHash('sha256').update(value).digest('hex');
 const options = { N: 131072, r: 8, p: 1, maxmem: 256 * 1024 * 1024 };
-const safeUser = row => ({ id: row.id, email: row.email, name: row.name, organization: row.organization, role: row.role, createdAt: row.created_at });
+export const safeUser = row => ({ id: row.id, email: row.email, name: row.name, organization: row.organization, role: row.role, createdAt: row.created_at, verified: !!row.verified_at });
+export async function authenticatedUser(db, req, env = process.env) {
+  const name = env.NODE_ENV === 'production' ? '__Host-patentintel_session' : 'patentintel_session';
+  const token = req.headers.cookie?.split(';').map(p => p.trim()).find(p => p.startsWith(`${name}=`))?.slice(name.length + 1) || '';
+  if (!/^[a-f0-9]{64}$/.test(token)) return null;
+  const { rows } = await db.query('SELECT u.* FROM auth_users u JOIN auth_sessions s ON s.user_id=u.id WHERE s.token_hash=$1 AND s.expires_at>CURRENT_TIMESTAMP', [digest(token)]);
+  if ((env.NODE_ENV === 'production' || env.AUTH_REQUIRE_VERIFICATION === 'true') && !rows[0]?.verified_at) return null;
+  return rows[0] ? safeUser(rows[0]) : null;
+}
 const fail = (status, message) => Object.assign(new Error(message), { status });
 
 export async function hashPassword(password) {
@@ -43,12 +52,17 @@ export async function createAuthHandler(db, env = process.env, deliverOverride) 
   const cookieName = production ? '__Host-patentintel_session' : 'patentintel_session';
   const dummy = await hashPassword(randomBytes(32).toString('hex'));
   let hashing = 0;
+  const hashQueue = [];
   async function expensive(fn) {
-    if (hashing >= 4) throw fail(503, 'Authentication is busy. Please retry shortly.');
-    hashing++;
-    try { return await fn(); } finally { hashing--; }
+    // Serialize memory-hard hashing to fit a small hosted process; bound the wait queue.
+    if (hashing) {
+      if (hashQueue.length >= 3) throw fail(503, 'Authentication is busy. Please retry shortly.');
+      await new Promise(resolve => hashQueue.push(resolve));
+    }
+    hashing = 1;
+    try { return await fn(); } finally { const next = hashQueue.shift(); if (next) next(); else hashing = 0; }
   }
-  let deliver = deliverOverride;
+  let deliver = deliverOverride || (env.RESEND_API_KEY ? createMailer(env) : null);
   if (!deliver && env.SMTP_URL && env.MAIL_FROM) {
     const { default: nodemailer } = await import('nodemailer');
     const transport = nodemailer.createTransport(env.SMTP_URL);
@@ -61,6 +75,21 @@ export async function createAuthHandler(db, env = process.env, deliverOverride) 
     };
   }
   const cookie = (token, seconds) => `${cookieName}=${token}; Path=/; HttpOnly; SameSite=Lax${production ? '; Secure' : ''}${seconds === undefined ? '' : `; Max-Age=${seconds}`}`;
+  const requireVerification = production || env.AUTH_REQUIRE_VERIFICATION === 'true';
+  const accountMail = deliverOverride || createMailer(env);
+  async function verificationMail(userId, email) {
+    if (!accountMail) throw fail(503, 'Account email delivery is not configured. Contact the administrator.');
+    const token = randomBytes(32).toString('hex');
+    await db.query('INSERT INTO account_tokens(token_hash,user_id,email,purpose,expires_at) VALUES ($1,$2,$3,$4,$5)', [digest(token), userId, email, 'verify', new Date(Date.now() + 86400000)]);
+    try { await accountMail(email, `${origin}/?verify=${token}`, 'verify'); }
+    catch { await db.query('DELETE FROM account_tokens WHERE token_hash=$1', [digest(token)]); throw fail(503, 'Verification email could not be sent. Request another verification link.'); }
+  }
+  async function consumeInvitation(tx, invitation, email) {
+    if (!/^[a-f0-9]{64}$/.test(invitation || '')) throw fail(400, 'Invitation is invalid or expired.');
+    const { rows } = await tx.query("DELETE FROM account_tokens WHERE token_hash=$1 AND purpose='invite' AND email=$2 AND expires_at>CURRENT_TIMESTAMP RETURNING role", [digest(invitation), email]);
+    if (!rows[0]) throw fail(400, 'Invitation is invalid or expired.');
+    return rows[0].role;
+  }
   const sessionToken = req => {
     const value = req.headers.cookie?.split(';').map(p => p.trim()).find(p => p.startsWith(`${cookieName}=`))?.slice(cookieName.length + 1);
     return /^[a-f0-9]{64}$/.test(value || '') ? value : '';
@@ -91,27 +120,55 @@ export async function createAuthHandler(db, env = process.env, deliverOverride) 
     try {
       const path = req.url.split('?')[0];
       if (req.method === 'GET' && path === '/api/auth/session') {
-        const { rows } = await db.query('SELECT u.* FROM auth_sessions s JOIN auth_users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>CURRENT_TIMESTAMP', [digest(sessionToken(req))]);
-        send(200, { user: rows[0] ? safeUser(rows[0]) : null }); return;
+        send(200, { user: await authenticatedUser(db, req, env) }); return;
       }
       if (req.method !== 'POST') throw fail(405, 'Method not allowed.');
       if (req.headers.origin !== origin) throw fail(403, 'Request origin is not allowed.');
       const body = await readBody(req);
+      if (path === '/api/auth/profile') {
+        const account = await authenticatedUser(db, req, env);
+        if (!account) throw fail(401, 'Sign in to continue.');
+        if (typeof body.name !== 'string' || body.name.trim().length < 2 || body.name.length > 100 || typeof body.organization !== 'string' || body.organization.length > 200) throw fail(400, 'Enter a valid name and organization.');
+        const { rows } = await db.query('UPDATE auth_users SET name=$1, organization=$2 WHERE id=$3 RETURNING *', [body.name.trim(), body.organization.trim(), account.id]);
+        send(200, { user: safeUser(rows[0]) }); return;
+      }
       if (path === '/api/auth/logout') {
         await db.query('DELETE FROM auth_sessions WHERE token_hash=$1', [digest(sessionToken(req))]);
         res.setHeader('Set-Cookie', cookie('', 0)); send(200, { ok: true }); return;
       }
       // Proxy headers are deliberately not trusted. Configure the ingress for production limits too.
       await limit(`ip:${req.socket.remoteAddress}`, 40);
+      if (path === '/api/auth/verify-email') {
+        if (!/^[a-f0-9]{64}$/.test(body.token || '')) throw fail(400, 'Verification link is invalid or expired.');
+        await db.transaction(async tx => {
+          const { rows } = await tx.query("DELETE FROM account_tokens WHERE token_hash=$1 AND purpose='verify' AND expires_at>CURRENT_TIMESTAMP RETURNING user_id", [digest(body.token)]);
+          if (!rows[0]) throw fail(400, 'Verification link is invalid or expired.');
+          await tx.query('UPDATE auth_users SET verified_at=CURRENT_TIMESTAMP WHERE id=$1', [rows[0].user_id]);
+          await tx.query("DELETE FROM account_tokens WHERE user_id=$1 AND purpose='verify'", [rows[0].user_id]);
+        });
+        send(200, { message: 'Email verified. You can sign in.' }); return;
+      }
+      if (path === '/api/auth/resend-verification') {
+        const email = emailInput(body.email); await limit(`verify:${email}`, 3);
+        const { rows } = await db.query('SELECT id FROM auth_users WHERE email=$1 AND verified_at IS NULL', [email]);
+        if (rows[0]) await verificationMail(rows[0].id, email);
+        send(200, { message: 'If verification is needed, a link has been sent.', delivery: production ? 'email' : env.RESEND_API_KEY ? 'email' : 'local-outbox' }); return;
+      }
       if (path === '/api/auth/register') {
+        if (requireVerification && !accountMail) throw fail(503, 'Registration is unavailable until account email delivery is configured.');
         const email = emailInput(body.email); const password = passwordInput(body.password);
         if (typeof body.name !== 'string' || body.name.trim().length < 2 || body.name.length > 100) throw fail(400, 'Enter your name (2–100 characters).');
         if (typeof body.organization !== 'string' || body.organization.length > 200) throw fail(400, 'Organization must be at most 200 characters.');
         const hash = await expensive(() => hashPassword(password));
+        const id = randomUUID();
         try {
-          await db.query('INSERT INTO auth_users(id,email,name,organization,password_hash) VALUES ($1,$2,$3,$4,$5)', [randomUUID(), email, body.name.trim(), body.organization.trim(), hash]);
+          await db.transaction(async tx => {
+            const role = body.invitation ? await consumeInvitation(tx, body.invitation, email) : 'Researcher';
+            await tx.query('INSERT INTO auth_users(id,email,name,organization,password_hash,role,verified_at) VALUES ($1,$2,$3,$4,$5,$6,$7)', [id, email, body.name.trim(), body.organization.trim(), hash, role, body.invitation ? new Date() : null]);
+          });
         } catch (error) { if (error.code === '23505') throw fail(409, 'An account with that email already exists. Sign in or reset your password.'); throw error; }
-        send(201, { message: 'Account created. You can now sign in.' }); return;
+        if (!body.invitation && requireVerification) await verificationMail(id, email);
+        send(201, { message: requireVerification && !body.invitation ? 'Account created. Verify your email before signing in.' : 'Account created. You can now sign in.', verificationRequired: requireVerification && !body.invitation, delivery: production || env.RESEND_API_KEY ? 'email' : 'local-outbox' }); return;
       }
       if (path === '/api/auth/login') {
         const email = emailInput(body.email);
@@ -120,6 +177,14 @@ export async function createAuthHandler(db, env = process.env, deliverOverride) 
         const { rows } = await db.query('SELECT * FROM auth_users WHERE email=$1', [email]);
         const valid = await expensive(() => verify(body.password, rows[0]?.password_hash || dummy));
         if (!valid || !rows[0]) throw fail(401, 'Email or password is incorrect.');
+        if (body.invitation) {
+          await db.transaction(async tx => {
+            const role = await consumeInvitation(tx, body.invitation, email);
+            await tx.query("UPDATE auth_users SET role=CASE WHEN role='Administrator' THEN role ELSE $1 END,verified_at=CURRENT_TIMESTAMP WHERE id=$2", [role, rows[0].id]);
+          });
+          Object.assign(rows[0], (await db.query('SELECT * FROM auth_users WHERE id=$1', [rows[0].id])).rows[0]);
+        }
+        if (requireVerification && !rows[0].verified_at) throw fail(403, 'Verify your email before signing in. Request a new verification link if needed.');
         await startSession(req, res, rows[0].id, body.rememberMe === true, rows[0].password_hash);
         send(200, { user: safeUser(rows[0]) }); return;
       }
@@ -134,7 +199,7 @@ export async function createAuthHandler(db, env = process.env, deliverOverride) 
           try { await deliver(email, `${origin}/?reset=${token}`); }
           catch { await db.query('DELETE FROM auth_resets WHERE token_hash=$1', [digest(token)]); console.error('Password reset delivery failed.'); }
         }
-        send(200, { message: 'If an account exists, a reset link has been sent.', delivery: production ? 'email' : env.SMTP_URL ? 'email' : 'local-outbox' }); return;
+        send(200, { message: 'If an account exists, a reset link has been sent.', delivery: production || env.RESEND_API_KEY || env.SMTP_URL ? 'email' : 'local-outbox' }); return;
       }
       if (path === '/api/auth/reset-password') {
         if (!/^[a-f0-9]{64}$/.test(body.token || '')) throw fail(400, 'Reset link is invalid or expired.');

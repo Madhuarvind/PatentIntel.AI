@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - 'feat/**'
+      - 'feature/**'
+      - 'codex/**'
   pull_request:
     branches:
       - main
@@ -30,14 +32,14 @@ jobs:
       - name: ⚙️ Set up Node.js Environment
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: 'npm'
 
       - name: 📦 Install Project Dependencies
-        run: npm install --force
+        run: npm ci
 
-      - name: 🔍 TypeScript Compile & Type Check
-        run: npx tsc --noEmit
+      - name: Test account, evidence and review workflows
+        run: node --test --test-concurrency=1 tests/*.test.mjs
 
       - name: ⚡ Build Vite Production Artifacts
         run: npm run build

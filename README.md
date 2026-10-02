@@ -1,138 +1,39 @@
-# ⚖️ PatentIntel.AI — Claim-Centric LLM Prior-Art Retrieval & Patent Intelligence Engine
+# PatentIntel.AI — research platform and proposal review pilot
 
-> **PatentIntel.AI** is an advanced, production-grade patent intelligence platform engineered for IP attorneys, patent examiners, and corporate R&D teams. It combines **deterministic NLP grounding**, **vector-based prior-art search**, **server-side official USPTO/Google Patents resolution**, and **Generative LLM reasoning** (Google Gemini 1.5 Pro / OpenAI GPT-4o) to deliver high-precision patent claim analysis and invalidity assessment.
+A research-team workspace for proposals, source-backed lexical comparisons, assigned review, revision and version-specific reports. Navy, ivory and mint interface with Researcher, Reviewer and Administrator roles.
 
----
+## Run locally
 
-## 🌟 Key Features & Core Modules
+Use Node 24+, then:
 
-### 1. 📂 Patent Document Workspace & Real-Time Parser
-- **Live USPTO / Google Patents Direct Fetcher**: Resolves patent identifiers (e.g., `US11650869B2`, `US11954112B2`) in real-time server-side without browser CORS constraints.
-- **Drag & Drop PDF Specification Parser**: Client-side and hybrid binary parsing using `pdfjs-dist` to extract claims, abstract, filing dates, and assignees directly from PDF specification disclosures.
-- **Canonical Identity Validation**: Verifies document publication numbers and kind codes against requested identifiers.
-
-### 2. 🔀 Isolated Dual-Pipeline Source Router
-- **Domain-Specific Classification**: Prevents cross-domain contamination by classifying inputs into `PATENT` identifiers vs. `ACADEMIC` prior-art keywords.
-- **Zero Fallback Contamination**: Patent identifier lookups query official USPTO/Google Patents channels exclusively, ensuring OpenAlex academic papers are never returned for a patent identifier.
-
-### 3. 🔍 Hybrid Prior-Art Retrieval Engine (BM25 + SBERT)
-- Combined lexical (BM25) and dense semantic embedding (Sentence-BERT / FAISS) scoring over official patent databases.
-- Multi-vector scoring across CPC classification categories, claims similarity, and abstract disclosures.
-
-### 4. 🧩 Claim Decomposition & Element Alignment
-- Automatically breaks down complex independent claims into discrete structural components, system functions, inputs, outputs, and operational constraints.
-- Provides target-to-retrieved element mapping to evaluate novelty (35 U.S.C. § 102) and non-obviousness (35 U.S.C. § 103).
-
-### 5. 📜 AI Evidence Reasoning & § 112 Grounding Engine
-- **Text Chunking & Tokenization**: Paragraph-level source specification chunking.
-- **Porter-like Stemming & Jaccard Overlap**: Calculates exact evidence support scores:
-  - `SUPPORTED` (Score $\ge 0.65$)
-  - `PARTIALLY_SUPPORTED` (Score $\ge 0.30$)
-  - `UNSUPPORTED` (Score $< 0.30$)
-
-### 6. ⚡ Strategic AI Claim Synthesizer
-Synthesizes grounded independent and dependent claims across 3 distinct patent prosecution strategies:
-- 🛡️ **Broad Supported Claim**: Maximizes claim scope while maintaining traceable specification disclosure.
-- ⚖️ **Balanced Claim**: Standard commercial specification protection.
-- 🔬 **Narrow Technical Defense**: High-density feature constraints for defensive patent filing.
-
-### 7. 🌐 WIPO-Compliant Multilingual Patent Translator
-- Patent-aware translation for foreign claims (Chinese `zh`, Japanese `ja`, German `de`, French `fr`).
-- Preserves technical terminology, claim dependency chains, and numerical unit formatting.
-
----
-
-## 🏗️ Technical Architecture & Tech Stack
-
-```
-                                  ┌───────────────────────────┐
-                                  │   React 19 Frontend UI    │
-                                  └─────────────┬─────────────┘
-                                                │
-                                    isPatentIdentifier(query)
-                                                │
-                       ┌────────────────────────┴────────────────────────┐
-                       │                                                 │
-                [RETURNS TRUE]                                    [RETURNS FALSE]
-                       │                                                 │
-                       ▼                                                 ▼
-             PATENT PIPELINE ROUTE                             ACADEMIC PIPELINE ROUTE
-             ─────────────────────                             ───────────────────────
-           • Node.js Proxy (/api/patents/resolve)            • OpenAlex API
-           • USPTO PatentsView REST API                      • CrossRef / IEEE
-           • Official Patent Record                          • Research Paper Record
-```
-
-### Stack Specification
-
-| Layer | Technology | Description |
-| :--- | :--- | :--- |
-| **Frontend** | **React 19** (`react` `^19.2.8`) | Component framework with concurrent features and clean state management. |
-| **Type Safety** | **TypeScript 5.x/6.0** (`~6.0.2`) | Strict typing across all data interfaces (`PatentDocument`, `PatentClaim`, `ResearchDocument`). |
-| **Build System** | **Vite 8.2** (`vite` `^8.2.2`) | Ultra-fast HMR dev server and Rolldown/SWC production bundler. |
-| **Backend Server**| **Node.js ESM Middleware** | Embedded Vite middleware for server-side scraping and proxy endpoints. |
-| **Icons & UI** | **Lucide React** (`^1.37.0`) | Modern SVG icon set. |
-| **PDF Engine** | **PDF.js (`pdfjs-dist`)** | Extract text and metadata from PDF files in browser or server. |
-| **Styling** | **Vanilla CSS Tokens** | Custom HSL design tokens with dark-mode aesthetic (`#0B0F19`), grid layouts, and glassmorphism. |
-
----
-
-## ⚙️ API & LLM Configuration
-
-**PatentIntel.AI** supports both direct **Google Gemini 1.5** / **OpenAI API** live completions and internal dynamic NLP engines.
-
-### Setting Up API Keys in the UI:
-1. Open the application and click **System Settings** in the left sidebar.
-2. Select your preferred reasoning provider (**Google Gemini 1.5 Pro** or **OpenAI GPT-4o**).
-3. Paste your API Key into the **LLM API Key** field and click **Save System Settings**.
-4. The system immediately routes live completions directly to your API endpoint!
-
-### Setting Up via Environment Variables (`.env`):
-Create a `.env` file in the project root directory:
-```env
-VITE_GEMINI_API_KEY="AIzaSyB..."
-VITE_OPENAI_API_KEY="sk-proj-..."
-```
-
----
-
-## 🚀 Quick Start & Installation
-
-### Prerequisites
-- **Node.js**: `v24.0.0` or higher
-- **npm**: `v9.0.0` or higher
-
-### 1. Clone & Install Dependencies
-```bash
-git clone https://github.com/Madhuarvind/PatentIntel.AI.git
-cd "Major Project 2"
-npm install
-```
-
-### 2. Run Development Server
-```bash
+```sh
+npm ci
 npm run dev
 ```
-Open your browser at `http://localhost:5173`. This command starts the frontend and authentication together, using a persistent local database in `.data/auth`. Stop with Ctrl+C so the database closes cleanly. Do not run a separate `npm run api` process at the same time. See [authentication setup](docx/AUTHENTICATION_LOCAL_TO_CLOUD.md) for custom ports and cloud configuration.
 
-### 3. Build for Production
-```bash
-npm run build
-```
-Generates production bundle in `dist/`.
+Open the exact localhost URL printed in the terminal. One process serves the React interface and all authentication/workspace APIs. PGlite keeps accounts and research records in `.data/auth`; private files live in `.data/documents`. Stop the process cleanly before backups or operator commands. Do not run two processes against the same database. See `.env.example` for configuration.
 
----
+Register normally. For the initial administrator, stop the app and run `npm run bootstrap-admin -- your-email@example.com`, then restart. Administrators invite reviewers and assign proposals. Verification and recovery links go to the local outbox; enable `AUTH_REQUIRE_VERIFICATION=true` for the complete local verification flow.
 
-## 🧪 Testing Live Patent Import
+## Working journey
 
-Try importing the following official USPTO patent numbers in the **Patent Workspace**:
+Register → sign in → create proposal → save confirmed technical features → import sources → run BM25 comparison → submit to assigned reviewer → comment/request revision → save and compare new version → resubmit → decide → print PDF or export JSON.
 
-- `US11650869B2` — *Quantum computing service with local edge devices supporting multiple quantum computing technologies* (Amazon Technologies Inc)
-- `US11954112B2` — *Intelligent control vector generation for machine learning accelerators*
-- `US11594127B1` — *Autonomous collision warning system with V2X roadside unit telemetry*
+The server enforces ownership and assigned-version access. A submission freezes its version and analysis snapshot. New versions preserve documents and need a new comparison. Reports contain exact source passages and version-bound review history. Browser-only historical proposal text is imported only after explicit selection in Settings. Demonstration data is not seeded into real projects.
 
----
+## Evidence boundaries
 
-## 📄 License
+BM25 is lexical retrieval, not SBERT or a novelty/patentability probability. Live Crossref searches return papers and available publisher abstracts; patent references can be imported manually into a separate collection. Global live patent search is not configured. Unavailable providers, absent passages and unmatched features are reported explicitly. AI generation is disabled; no paid model is needed for the review journey.
 
-Distributed under the MIT License. See `LICENSE` for more details.
+The original 12-module platform remains the default entry point. Open **Enterprise Review Pilot** in its sidebar for the persistent proposal workflow (`#/pilot`); the pilot includes a return link. Legacy modules remain experimental and use browser-local records that can be shared across accounts on the same device. Their retention does not imply server ownership, complete functionality or cloud durability. Use the pilot for private proposals and assigned review. Historical IEEE research drafts are marked unverified; do not cite their reported scores as measured results.
+
+## Design, validation and hosting
+
+- [Requirements, permissions, ER and architecture diagrams](docs/pilot/DESIGN.md)
+- [Research claim verification](docs/pilot/RESEARCH_VERIFICATION.md)
+- [Deployment, backups and rollback](docs/pilot/DEPLOYMENT.md)
+- [Acceptance evidence and remaining gates](docs/pilot/ACCEPTANCE.md)
+
+`npm test` runs automated checks; `npm run build` type-checks and builds the frontend. Tests use disposable databases and synthetic accounts. Run the complete two-user hosted journey before calling the pilot released.
+
+A Render blueprint is prepared for one Node service, external Supabase PostgreSQL/private storage and Resend HTTPS mail. Hosted deployment requires project credentials, a verified sender and the acceptance/restore drill. No hosted completion or production readiness is claimed. No purchases are necessary to run the local application.

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { 
   Search, 
   BookOpen, 
@@ -17,6 +17,7 @@ interface Props {
   onLogout: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
+  onSearchSubmit?: (q: string) => void;
 }
 
 export const Header: React.FC<Props> = ({
@@ -26,8 +27,22 @@ export const Header: React.FC<Props> = ({
   onOpenLiterature,
   onLogout,
   searchQuery,
-  onSearchChange
+  onSearchChange,
+  onSearchSubmit
 }) => {
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
   return (
     <header style={{
       height: '68px',
@@ -81,10 +96,16 @@ export const Header: React.FC<Props> = ({
       <div style={{ flex: 1, maxWidth: '440px', margin: '0 24px', position: 'relative' }}>
         <Search size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--accent-cyan)' }} />
         <input
+          ref={searchInputRef}
           type="text"
           placeholder="Search patent numbers, claims, or technical terms (e.g. US10928341)..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && searchQuery.trim()) {
+              onSearchSubmit?.(searchQuery.trim());
+            }
+          }}
           className="input-field"
           style={{ paddingLeft: '40px', paddingRight: '60px', fontSize: '0.84rem', height: '40px', background: 'var(--bg-input)' }}
         />

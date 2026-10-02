@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { ArrowRight, Fingerprint, Eye, EyeOff, LockKeyhole, ArrowLeft } from 'lucide-react';
 import { authClient } from '../services/authClient';
+import type { SessionUser } from '../services/authClient';
 import './AuthScreen.css';
 
 interface Props {
-  onLoginSuccess: (user: { name: string; email: string; role: string }) => void;
+  onLoginSuccess: (user: SessionUser) => void;
   serviceError?: string;
 }
 export const AuthScreen: React.FC<Props> = ({ onLoginSuccess, serviceError }) => {
   const [token] = useState(() => new URLSearchParams(window.location.search).get('reset') || '');
-  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'reset'>(token ? 'reset' : 'login');
+  const [verification] = useState(() => new URLSearchParams(window.location.search).get('verify') || '');
+  const [invitation, setInvitation] = useState(() => new URLSearchParams(window.location.search).get('invite') || '');
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'reset' | 'verify'>(token ? 'reset' : verification ? 'verify' : invitation ? 'register' : 'login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [organization, setOrganization] = useState('');
@@ -27,10 +30,19 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess, serviceError }) =>
     if ((mode === 'register' || mode === 'reset') && password !== confirmation) { setError('Passwords do not match.'); return; }
     setBusy(true);
     try {
-      if (mode === 'login') { onLoginSuccess(await authClient.login(email, password, remember)); }
+      if (mode === 'login') {
+        const user = await authClient.login(email, password, remember, invitation || undefined);
+        window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+        onLoginSuccess(user);
+      }
       else if (mode === 'register') {
-        await authClient.register({ name, email, password, organization });
-        changeMode('login'); setNotice('Account created. Sign in with your new password.');
+        const result = await authClient.register({ name, email, password, organization, invitation: invitation || undefined });
+        setInvitation(''); window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+        changeMode('login'); setNotice(result.message + (result.verificationRequired && result.delivery === 'local-outbox' ? ' The link is in the local development mail outbox.' : ''));
+      } else if (mode === 'verify') {
+        const result = await authClient.verify(verification);
+        window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+        changeMode('login'); setNotice(result.message);
       } else if (mode === 'forgot') {
         const result = await authClient.forgot(email);
         setNotice(result.delivery === 'local-outbox' ? 'If an account exists, a reset link is in the local development mail outbox. Ask the local administrator to retrieve it.' : result.message);
@@ -42,7 +54,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess, serviceError }) =>
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Request failed. Please retry.'); }
     finally { setBusy(false); }
   };
-  const title = { login: 'Welcome back', register: 'Create your account', forgot: 'Reset your password', reset: 'Choose a new password' }[mode];
+  const title = { login: 'Welcome back', register: invitation ? 'Join your research team' : 'Create your account', forgot: 'Reset your password', reset: 'Choose a new password', verify: 'Verify your email' }[mode];
   return <main className="auth-page">
     <section className="auth-intro">
       <a className="auth-brand" href="/" aria-label="PatentIntel.AI home"><span className="auth-brand-icon"><Fingerprint size={25} aria-hidden="true" /></span>PatentIntel<span className="auth-brand-ai">.AI</span></a>
@@ -79,7 +91,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess, serviceError }) =>
       <div className="auth-form-heading">
       <p className="auth-form-eyebrow">YOUR RESEARCH WORKSPACE</p>
       <h2 id="auth-title">{title}</h2>
-      <p>{mode === 'register' ? 'Make room for your next discovery. Start with your details below.' : mode === 'login' ? 'Pick up where your curiosity left off.' : 'We’ll help you get back to your research. Reset links are valid for 30 minutes.'}</p>
+      <p>{mode === 'register' ? 'Make room for your next discovery. Start with your details below.' : mode === 'login' ? 'Pick up where your curiosity left off.' : mode === 'verify' ? 'Confirm this email address to activate your account.' : 'We’ll help you get back to your research. Reset links are valid for 30 minutes.'}</p>
       </div>
       {(error || serviceError) && <div role="alert" className="auth-error">{error || serviceError}</div>}
       {notice && <div role="status" className="auth-notice">{notice}</div>}
@@ -88,16 +100,22 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess, serviceError }) =>
           <div className="auth-field"><label htmlFor="auth-name">Full name</label><input id="auth-name" placeholder="Your full name" autoComplete="name" required minLength={2} maxLength={100} value={name} onChange={e => setName(e.target.value)} /></div>
           <div className="auth-field"><label htmlFor="auth-org">Organization <span>(optional)</span></label><input id="auth-org" placeholder="Company or university" autoComplete="organization" maxLength={200} value={organization} onChange={e => setOrganization(e.target.value)} /></div>
         </div>}
-        {mode !== 'reset' && <div className="auth-field"><label htmlFor="auth-email">Email address</label><input id="auth-email" placeholder="you@example.com" type="email" autoComplete="username" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} /></div>}
-        {mode !== 'forgot' && <div className="auth-field"><label htmlFor="auth-password">Password</label><div className="auth-password"><input id="auth-password" placeholder={mode === 'login' ? 'Enter your password' : 'Create a long passphrase'} type={visible ? 'text' : 'password'} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} aria-describedby={mode !== 'login' ? 'auth-password-hint' : undefined} required minLength={mode === 'login' ? 1 : 15} maxLength={128} value={password} onChange={e => setPassword(e.target.value)} /><button type="button" aria-label={visible ? 'Hide password' : 'Show password'} onClick={() => setVisible(!visible)}>{visible ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}</button></div>
+        {mode !== 'reset' && mode !== 'verify' && <div className="auth-field"><label htmlFor="auth-email">Email address</label><input id="auth-email" placeholder="you@example.com" type="email" autoComplete="username" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} /></div>}
+        {mode !== 'forgot' && mode !== 'verify' && <div className="auth-field"><label htmlFor="auth-password">Password</label><div className="auth-password"><input id="auth-password" placeholder={mode === 'login' ? 'Enter your password' : 'Create a long passphrase'} type={visible ? 'text' : 'password'} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} aria-describedby={mode !== 'login' ? 'auth-password-hint' : undefined} required minLength={mode === 'login' ? 1 : 15} maxLength={128} value={password} onChange={e => setPassword(e.target.value)} /><button type="button" aria-label={visible ? 'Hide password' : 'Show password'} onClick={() => setVisible(!visible)}>{visible ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}</button></div>
           {mode !== 'login' && <small id="auth-password-hint">Use 15–128 characters. Spaces are welcome.</small>}
         </div>}
         {(mode === 'register' || mode === 'reset') && <div className="auth-field"><label htmlFor="auth-confirm">Confirm password</label><input id="auth-confirm" placeholder="Enter your passphrase again" type={visible ? 'text' : 'password'} autoComplete="new-password" required maxLength={128} value={confirmation} onChange={e => setConfirmation(e.target.value)} /></div>}
         {mode === 'login' && <div className="auth-options"><label><input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} /> Remember me <span>(30 days)</span></label><button type="button" onClick={() => changeMode('forgot')}>Forgot password?</button></div>}
-        <button className="auth-submit" type="submit"><span>{busy ? 'Please wait…' : { login: 'Sign in', register: 'Create account', forgot: 'Send reset link', reset: 'Update password' }[mode]}</span>{!busy && <ArrowRight size={18} aria-hidden="true" />}</button>
+        <button className="auth-submit" type="submit"><span>{busy ? 'Please wait…' : { login: 'Sign in', register: 'Create account', forgot: 'Send reset link', reset: 'Update password', verify: 'Verify email' }[mode]}</span>{!busy && <ArrowRight size={18} aria-hidden="true" />}</button>
       </fieldset></form>
       <div className="auth-switch">{mode === 'login' ? <>New to PatentIntel? <button type="button" disabled={busy} onClick={() => changeMode('register')}>Create an account</button></> : mode === 'register' ? <>Already have an account? <button type="button" disabled={busy} onClick={() => changeMode('login')}>Sign in</button></> : <button type="button" disabled={busy} onClick={() => changeMode('login')}><ArrowLeft size={14} aria-hidden="true" /> Back to sign in</button>}</div>
       <p className="auth-footnote"><LockKeyhole size={14} aria-hidden="true" /> Password-protected access to your account</p>
+      {mode === 'login' && <div className="auth-switch"><button type="button" disabled={busy} onClick={async () => {
+        setBusy(true); setError('');
+        try { const result = await authClient.resendVerification(email); setNotice(result.message + (result.delivery === 'local-outbox' ? ' Check the local development mail outbox.' : '')); }
+        catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not request verification.'); }
+        finally { setBusy(false); }
+      }}>Resend verification email</button></div>}
     </div>
     <p className="auth-panel-footer">A little curiosity can go a long way.</p>
     </section>

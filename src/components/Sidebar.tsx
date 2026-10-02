@@ -81,6 +81,47 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
     }}>
       {/* Navigation Sections */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+        {/* Enterprise Pilot Portal Link */}
+        <a
+          href="#/pilot"
+          className="sidebar-pilot-link"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '10px 12px',
+            borderRadius: '12px',
+            background: 'linear-gradient(90deg, rgba(99, 102, 241, 0.12) 0%, rgba(168, 85, 247, 0.08) 100%)',
+            border: '1px solid rgba(168, 85, 247, 0.3)',
+            color: '#c084fc',
+            textDecoration: 'none',
+            fontWeight: 700,
+            fontSize: '0.84rem',
+            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+            boxShadow: '0 2px 10px rgba(168, 85, 247, 0.1)'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Sparkles size={16} color="#c084fc" />
+            <span style={{ letterSpacing: '-0.01em' }}>Enterprise Review Pilot</span>
+          </div>
+          <span style={{
+            fontSize: '0.62rem',
+            fontWeight: 800,
+            padding: '2px 6px',
+            borderRadius: '4px',
+            background: 'rgba(168, 85, 247, 0.2)',
+            border: '1px solid rgba(168, 85, 247, 0.4)',
+            color: '#e9d5ff'
+          }}>
+            PILOT ↗
+          </span>
+        </a>
+        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.75rem', lineHeight: 1.5 }}>
+          Experimental local tools. Browser records can be shared across accounts on this device.
+          Use the Review Pilot for private, server-persisted proposals and assigned decisions.
+        </p>
+
         {sections.map((section, sIdx) => (
           <div key={sIdx}>
             <div className="sidebar-section-title" style={{

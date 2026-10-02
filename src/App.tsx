@@ -145,6 +145,11 @@ export const App: React.FC = () => {
     handleSelectView('search');
   };
 
+  const handleHeaderSearch = (q: string) => {
+    setTranslatorSearchQuery(q);
+    handleSelectView('search');
+  };
+
   const handleLoginSuccess = (userData: { name: string; email: string; role: string }) => {
     setUser(userData);
     setIsAuthenticated(true);
@@ -188,6 +193,7 @@ export const App: React.FC = () => {
           onLogout={handleLogout}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          onSearchSubmit={handleHeaderSearch}
         />
       </div>
 

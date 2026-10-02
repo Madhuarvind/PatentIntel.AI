@@ -2,7 +2,7 @@ import { test, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { authClient } from '../src/services/authClient.ts';
 
-afterEach(() => mock.restoreAll());
+afterEach(() => { mock.restoreAll(); authClient.clearSession(); });
 const account = { name: 'Client Test', email: 'client@example.test', password: 'synthetic test passphrase', organization: '' };
 const respond = (body, status = 200, type = 'application/json') => {
   mock.method(globalThis, 'fetch', async () => new Response(body, { status, headers: { 'Content-Type': type } }));
@@ -38,4 +38,32 @@ test('signed-out sessions are accepted and unconfirmed logout is rejected', asyn
   assert.equal(await authClient.session(), null);
   mock.restoreAll(); respond('{}');
   await assert.rejects(authClient.logout(), /could not be confirmed/);
+});
+
+test('a delayed signed-out response cannot overwrite a newer login', async () => {
+  let resolveSession;
+  const user = { id: 'new-user', name: 'New user', email: 'new@example.test', role: 'Researcher' };
+  mock.method(globalThis, 'fetch', async url => url.endsWith('/session') ? new Promise(resolve => { resolveSession = resolve; }) : Response.json({ user }));
+  const pending = authClient.session();
+  await authClient.login('new@example.test', 'synthetic test password', false);
+  resolveSession(Response.json({ user: null }));
+  assert.deepEqual(await pending, user);
+});
+
+test('a delayed authenticated response cannot revive a logged-out session', async () => {
+  let resolveSession;
+  mock.method(globalThis, 'fetch', async url => url.endsWith('/session') ? new Promise(resolve => { resolveSession = resolve; }) : Response.json({ ok: true }));
+  const pending = authClient.session();
+  await authClient.logout();
+  resolveSession(Response.json({ user: { id: 'old', name: 'Old', email: 'old@example.test', role: 'Researcher' } }));
+  assert.equal(await pending, null);
+});
+
+test('a delayed profile update cannot revive an expired session', async () => {
+  let resolveProfile;
+  mock.method(globalThis, 'fetch', () => new Promise(resolve => { resolveProfile = resolve; }));
+  const pending = authClient.profile('Old user', 'Test team');
+  authClient.clearSession();
+  resolveProfile(Response.json({ user: { id: 'old', name: 'Old user', email: 'old@example.test', role: 'Researcher' } }));
+  await assert.rejects(pending, /session changed/);
 });

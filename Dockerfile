@@ -12,6 +12,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 COPY --from=build /app/dist ./dist
 COPY server ./server
+COPY src/services/patentNormalizer.ts src/services/patentHtmlParser.ts ./src/services/
 USER node
 EXPOSE 3001
 CMD ["node", "server/index.mjs"]

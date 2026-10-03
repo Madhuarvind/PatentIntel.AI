@@ -51,4 +51,4 @@ Live global patent retrieval, OCR, semantic models, generation, training and sim
 
 ## Dual-workspace deployment gate
 
-The retained legacy platform is experimental and browser-local. The patent resolver is now served by the shared authenticated Node handler. Other direct external requests are not covered by the production pilot server/CSP. Verify or migrate these providers before advertising hosted legacy feature parity; do not weaken CSP to hide this gap. The persistent review workflow is available at #/pilot.
+The retained legacy platform is experimental and browser-local. The patent resolver is now served by the shared authenticated Node handler. Academic search, DOI resolution and author retrieval now also use authenticated Node handlers. The remaining PatentsView keyword request is not covered by the production pilot server/CSP. Verify or migrate these providers before advertising hosted legacy feature parity; do not weaken CSP to hide this gap. The persistent review workflow is available at #/pilot.

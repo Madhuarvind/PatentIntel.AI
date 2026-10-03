@@ -69,7 +69,7 @@ flowchart LR
   L --> P
 ```
 
-The pilot uses no provider credentials in browser bundles. Legacy settings are outside this server-only boundary. Live search sends only user-entered queries to Crossref; proposal text is not automatically sent to an LLM. AI is disabled. A source is user-supplied or provider-retrieved; a manually entered citation is not called independently verified. Metadata-only sources cannot substantiate full-text claims.
+The pilot uses no provider credentials in browser bundles. Legacy generative providers are disabled, browser credential entry is removed, and academic retrieval now shares the server boundary. Live search sends only user-entered queries to Crossref; proposal text is not automatically sent to an LLM. AI is disabled. A source is user-supplied or provider-retrieved; a manually entered citation is not called independently verified. Metadata-only sources cannot substantiate full-text claims.
 
 ## Screen design
 
@@ -86,3 +86,15 @@ Keep existing account records. Legacy browser projects require explicit import a
 ## Retained platform scope
 
 At the user's request, the original 12-module platform remains the default entry, with a sidebar link to the persistent pilot. Pilot routes use #/pilot and preserve project/version identifiers. Legacy records remain browser-local and are not covered by pilot ownership guarantees. See ACCEPTANCE.md for automated, browser and outstanding checks; navigation smoke coverage is not complete feature certification.
+
+## Compatibility acceptance matrix — 3 October 2026
+
+| Requirement | Screen | Data/API | Acceptance evidence | Status |
+|---|---|---|---|---|
+| Server-side academic retrieval | Literature / prior-art search | POST /api/academic/search, /authors, /author-works | academic-server tests; live built-app browser search | Locally verified; hosted pending |
+| Explicit provider failures and partial results | Literature search | providerStatuses and warnings | malformed/empty/outage/partial-author tests; live partial outage | Locally verified |
+| No browser provider secrets | Platform settings / startup | Legacy settings sanitation; no frontend provider calls in LLM client | module-audit credential tests; settings browser check | Locally verified; AI disabled |
+| Retain documentation and research assets | Repository | SHA-256 cleanup inventory | CLEANUP.md | Preserved |
+| Saved PDF matches selected version | Pilot report | Existing version-bound report snapshot | PDF inspection still unavailable | Pending |
+
+Academic request bodies are JSON: search accepts filters, authors accepts query, author-works accepts author plus optional filters. Existing academic result types are retained; responses include per-provider status and retrieval timestamps. Calls require the existing HttpOnly session; no replacement auth or database migration is introduced here. Research experiments are retained outside the application import graph. PatentsView keyword search remains a separate compatibility gate.

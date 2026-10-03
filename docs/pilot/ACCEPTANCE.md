@@ -4,7 +4,7 @@ Status: local workflow demonstrated; hosted pilot is not released. Both workspac
 
 ## Automated verification
 
-Final verification on 2 October: **110 tests pass, 0 failures**, TypeScript passes, production build passes. Vite reports a large-bundle warning (about 1.19 MB main JavaScript before gzip); this is a performance follow-up, not a passing performance audit. Tests use disposable databases and synthetic accounts, not user records.
+Latest local verification on 3 October: **122 tests pass, 0 failures**, TypeScript passes, production build passes. Vite reports a large-bundle warning (about 1.19 MB main JavaScript before gzip); this is a performance follow-up, not a passing performance audit. Tests use disposable databases and synthetic accounts, not user records.
 
 | Area | Evidence | Scope |
 |---|---|---|
@@ -38,7 +38,7 @@ Local screenshot: ignored `scratch/pilot-approved-report.png`. Synthetic QA data
 - Saved-PDF pagination/content inspection remains unverified: the native print dialog prevented further control of its tab. API JSON/report-component tests passed, but do not substitute for inspecting a saved PDF.
 - On 2 October, restarted the isolated local server and signed in to the persisted researcher account. Invalid-version links displayed an explicit access/unavailable error. Downloaded proposal-v3.json and inspected its selected version, features, passage/page/section, missing F2 evidence, source dates and approval reason against the displayed report; they matched.
 - On 2 October, keyboard navigation across all six pilot pages at 320 px showed no horizontal overflow. Proposal, evidence, review and report detail screens also fit. Fixed route-change focus, Escape-to-close navigation with focus return, and low-contrast platform-link styling. Skip-to-content and labelled editor fields were verified. Full assistive-technology audit, interactive outage/retry scenarios and persistence in a different browser engine remain pending.
-- Older modules retain browser-local storage and experimental workflows. These records are not isolated by server account. A visible notice directs private proposals and assigned decisions to the pilot. Legacy provider/AI settings are not the pilot's server-only architecture; do not enter private provider secrets there. Patent lookup now uses a shared authenticated Node handler in development and the deployment server. Other legacy external browser calls remain restricted by production CSP; their hosted-provider parity is still a deployment gate.
+- Older modules retain browser-local storage and experimental workflows. These records are not isolated by server account. A visible notice directs private proposals and assigned decisions to the pilot. Legacy AI provider credentials and custom-endpoint controls have now been removed; optional generative AI is disabled. Patent lookup now uses a shared authenticated Node handler in development and the deployment server. Academic calls now run through the authenticated server. The remaining PatentsView keyword request is still restricted by production CSP and remains a deployment gate.
 - No Render, Supabase or Resend account is configured. Hosted private storage, delivered email, HTTPS, restart/redeployment, restore and rollback have not been verified. No purchases or deployment were performed.
 
 ## Release gates
@@ -52,3 +52,15 @@ Navigation and report tests pass (3 targeted checks), with browser checks for th
 ## Patent lookup deployment parity — 2 October
 
 Shared `/api/patents/resolve` now runs in the Node deployment server and before legacy Vite middleware during normal development. It requires a session, fixes the upstream host, rejects redirects, bounds response time/size and concurrent lookups, and refuses mismatched source identity. The client reports expired sessions explicitly. Six targeted server/development tests pass; TypeScript and production build pass. A live isolated handler probe returned HTTP 200 for US10000000B2, “Coherent LADAR using intra-pixel quadrature detection”, with 20 parsed claims. This probe used a synthetic authentication adapter; real session middleware ordering is separately covered by the development integration test. It does not certify hosted availability or complete source coverage.
+
+## Academic deployment compatibility — 3 October 2026
+
+Authenticated POST /api/academic/search, /api/academic/authors and /api/academic/author-works are shared by the development and Node deployment servers. Provider hosts are fixed, redirects refused, requests time/size/concurrency bounded, DOI identity checked, and malformed identities rejected. Author publications use their selected provider ID rather than unrelated name-search fallbacks. Provider failures are distinct from empty responses and partial results retain warnings.
+
+Legacy settings no longer accept browser credentials or custom endpoints. Startup strips old provider keys from the legacy settings record when browser storage is writable. Optional generative AI remains disabled; existing experimental local heuristics remain labelled. Original experiment code is archived outside the frontend import graph.
+
+Browser: the built Node application on isolated port 5183 returned 45 papers from OpenAlex/Crossref for the literature modal's default query, with an explicit Semantic Scholar outage warning. Stopping the isolated QA server produced a retryable error; after server replacement/restart the search worked. Signing out in a second tab caused the original tab's retry to show the session-expired message and clear results. Settings displayed disabled AI without credential fields. Screenshots are retained in ignored scratch/academic-live-results.png and scratch/compat-settings.png.
+
+Limitations: no new saved PDF was supplied; native print-dialog access remains unavailable. Private-upload and unsaved-draft browser rechecks, natural timer-driven session expiry and different-browser-engine checks remain open; their existing API/unit coverage is not a substitute. PatentsView keyword retrieval still uses a legacy direct browser request and remains a hosted compatibility gate. No hosted deployment or cloud verification occurred. The development bundler had one local memory-allocation failure; the built Node server was used for browser verification.
+
+Final checks for this stage: 122/122 tests pass, TypeScript and production build pass. The large-bundle warning remains. The Docker runtime now includes the shared patent parser/normalizer modules required by server imports; Docker image execution itself was not verified.

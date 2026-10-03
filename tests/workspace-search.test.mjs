@@ -1,3 +1,4 @@
+import { createAcademicService } from '../server/academic-service.ts';
 import { test, before, after, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'vite';
@@ -125,6 +126,10 @@ test('source searches never substitute bundled examples or local patents', async
 
 test('source outage retains academic results and reports partial failure', async () => {
   globalThis.fetch = async url => String(url).includes('openalex.org') ? json({ results: [{ id: 'https://openalex.org/W1', display_name: 'Optical sensing', authorships: [] }] }) : new Response('', { status: 503 });
+  const providerFetch = globalThis.fetch;
+  globalThis.fetch = async (url, options) => String(url).startsWith('/api/academic/')
+    ? json({ result: await createAcademicService(providerFetch).searchRealtimeAcademicPapers(JSON.parse(options.body).filters) })
+    : providerFetch(url, options);
   const result = await search('optical sensing');
   assert.equal(result.patents.length, 0);
   assert.equal(result.papers.length, 1);
@@ -134,6 +139,10 @@ test('source outage retains academic results and reports partial failure', async
 
 test('successful empty source responses have no outage warnings', async () => {
   globalThis.fetch = async () => json({ patents: [], results: [], data: [], message: { items: [] } });
+  const providerFetch = globalThis.fetch;
+  globalThis.fetch = async (url, options) => String(url).startsWith('/api/academic/')
+    ? json({ result: await createAcademicService(providerFetch).searchRealtimeAcademicPapers(JSON.parse(options.body).filters) })
+    : providerFetch(url, options);
   assert.deepEqual(await search('no matches'), { patents: [], papers: [] });
 });
 

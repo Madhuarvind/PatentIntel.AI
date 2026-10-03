@@ -1,3 +1,4 @@
+import { createAcademicHandler } from './academic.mjs';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
@@ -10,6 +11,7 @@ const db = await openDatabase();
 let auth, pilot;
 try { auth = await createAuthHandler(db); pilot = await createPilotHandler(db); }
 catch (error) { await db.close(); throw error; }
+const academic = createAcademicHandler(db, process.env);
 const patents = createPatentHandler(db);
 const root = resolve('dist');
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon' };
@@ -25,6 +27,7 @@ const server = createServer(async (req, res) => {
   if (req.url === '/health') {
     try { await db.query('SELECT 1'); res.end('ok'); } catch { res.statusCode = 503; res.end('unavailable'); } return;
   }
+  if (req.url.startsWith('/api/academic/')) return academic(req, res);
   if (req.url.startsWith('/api/patents/')) return patents(req, res);
   if (req.url.startsWith('/api/')) return pilot(req, res);
   if (!['GET', 'HEAD'].includes(req.method)) { res.statusCode = 405; res.end(); return; }

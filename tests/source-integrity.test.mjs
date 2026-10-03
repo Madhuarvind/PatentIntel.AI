@@ -1,3 +1,4 @@
+import { createAcademicService } from '../server/academic-service.ts';
 import { test, before, after, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'vite';
@@ -104,6 +105,10 @@ test('paper search retains DOI and authors and never manufactures patent fields'
     authorships: [{ author: { display_name: 'Research Author' } }],
     primary_location: { source: { display_name: 'Research Journal' } }, type: 'article'
   }] }) : json({ patents: [], data: [], message: { items: [] } });
+  const providerFetch = globalThis.fetch;
+  globalThis.fetch = async (url, options) => String(url).startsWith('/api/academic/')
+    ? json({ result: await createAcademicService(providerFetch).searchRealtimeAcademicPapers(JSON.parse(options.body).filters) })
+    : providerFetch(url, options);
   const result = await search('quuxphoton');
   assert.equal(result.patents.length, 0);
   assert.equal(result.papers.length, 1);
@@ -215,6 +220,10 @@ test('academic metadata does not invent a year, author, venue, abstract or DOI',
     if (String(url).includes('semanticscholar')) return json({ data: [{ paperId: 'paper123', title: 'Quuxsparse alternate', externalIds: { ArXiv: '2401.00001' } }] });
     return json({ patents: [], message: { items: [] } });
   };
+  const providerFetch = globalThis.fetch;
+  globalThis.fetch = async (url, options) => String(url).startsWith('/api/academic/')
+    ? json({ result: await createAcademicService(providerFetch).searchRealtimeAcademicPapers(JSON.parse(options.body).filters) })
+    : providerFetch(url, options);
   const result = await search('quuxsparse');
   assert.equal(result.papers.length, 2);
   for (const paper of result.papers) {

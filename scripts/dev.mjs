@@ -1,3 +1,4 @@
+import { createAcademicHandler } from '../server/academic.mjs';
 import { parseArgs } from 'node:util';
 import { pathToFileURL } from 'node:url';
 import { createServer } from 'vite';
@@ -34,9 +35,11 @@ export async function startDevelopmentServer({ env = process.env, port, configFi
           db = await openDatabase(env);
           const auth = await createAuthHandler(db, { ...env, APP_ORIGIN: origin.origin });
           const pilot = await createPilotHandler(db, { ...env, APP_ORIGIN: origin.origin });
+          const academic = createAcademicHandler(db, env);
           const patents = createPatentHandler(db, env);
           vite.middlewares.use((req, res, next) => {
             if (req.url?.startsWith('/api/auth/')) return auth(req, res);
+            if (req.url?.startsWith('/api/academic/')) return academic(req, res);
             if (req.url?.startsWith('/api/patents/')) return patents(req, res);
             if (req.url?.startsWith('/api/')) return pilot(req, res);
             next();

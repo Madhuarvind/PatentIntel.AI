@@ -4,6 +4,9 @@ import './index.css'
 import PatentIntelApp from './App.tsx'
 import PilotApp from './PilotApp.tsx'
 import { removeDraft } from './services/pilotDrafts'
+import { getStoredSettings } from './services/llmService'
+
+getStoredSettings(); // Purge obsolete browser provider credentials on startup.
 
 function RootApp() {
   const previousHash = useRef(window.location.hash);

@@ -58,6 +58,19 @@ test('settings persistence round trip and storage failure are distinguishable', 
   assert.equal(settings.getStoredSettings().provider, 'local');
 });
 
+test('old provider credentials are removed and cannot be saved again', async () => {
+  memory.set('PATENTINTEL_SETTINGS', JSON.stringify({ apiKey: 'synthetic-secret', customEndpoint: 'https://example.test', provider: 'gemini' }));
+  assert.equal(settings.getStoredSettings().apiKey, undefined);
+  assert.doesNotMatch(memory.get('PATENTINTEL_SETTINGS'), /synthetic-secret|example.test/);
+  settings.saveStoredSettings({ apiKey: 'another-synthetic-secret', customEndpoint: 'https://example.test' });
+  assert.doesNotMatch(memory.get('PATENTINTEL_SETTINGS'), /secret|example.test/);
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = () => { throw Error('Disabled AI must not access a provider'); };
+  try { assert.equal((await settings.executeRealtimeLLM({ prompt: 'A sensor detects temperature.' })).provider, 'rule_engine'); }
+  finally { globalThis.fetch = originalFetch; }
+  assert.doesNotMatch(renderToStaticMarkup(React.createElement(Settings)), /type="password"|Paste your/);
+});
+
 test('translation downloads retain source Unicode and the active translated text', () => {
   const session = { original_text: '一种传感器，20 kHz', translated_text: 'A sensor operating at 20 kHz.', terminology_map: [] };
   const txt = exporter.createTranslationExport(session, 'txt');

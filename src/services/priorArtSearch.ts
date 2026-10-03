@@ -21,7 +21,7 @@ export async function searchPriorArt(query: string): Promise<PriorArtSearchResul
     searchLiveUsptoPatents(input, true), searchRealtimeAcademicPapers(input)
   ]);
   const warnings: string[] = [];
-  if (patents.status === 'rejected') warnings.push('Patent source unavailable; academic results may still be available.');
+  if (patents.status === 'rejected') warnings.push(patents.reason instanceof Error ? patents.reason.message : 'Patent source unavailable; academic results may still be available.');
   if (academic.status === 'rejected') warnings.push('Academic sources unavailable; patent results may still be available.');
   if (academic.status === 'fulfilled') warnings.push(...(academic.value.warnings || []));
   return { patents: patents.status === 'fulfilled' ? patents.value : [],

@@ -418,18 +418,17 @@ async function fetchUsptoPatentsViewApi(query: string, timeoutMs: number = 4000,
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const qObj = JSON.stringify({ _text_any: { patent_title: query } });
-    const fObj = JSON.stringify(["patent_number", "patent_title", "patent_abstract", "patent_date", "assignee_organization", "inventor_first_name", "inventor_last_name"]);
-    const url = `https://api.patentsview.org/patents/query?q=${encodeURIComponent(qObj)}&f=${encodeURIComponent(fObj)}&o=${encodeURIComponent(JSON.stringify({ per_page: 10 }))}`;
-
-    const res = await fetch(url, { signal: controller.signal });
-    if (!res.ok) throw new Error(`Patent source unavailable (HTTP ${res.status}).`);
+    const res = await fetch(`/api/patents/search?query=${encodeURIComponent(query)}`, { signal: controller.signal, credentials: 'same-origin' });
+    if (!res.ok) {
+      const failure = await res.json().catch(() => ({}));
+      throw new Error(failure.message || 'Patent source unavailable. Retry later.');
+    }
     const data = await res.json();
     if (!data || !Array.isArray(data.patents)) throw new Error('Patent source returned an invalid response.');
 
     return data.patents.flatMap((p: any): Patent[] => {
       const rawNum = String(p.patent_number || '').toUpperCase();
-      if (!/^(US)?\d{6,12}([A-Z]\d?)?$/.test(rawNum) || typeof p.patent_title !== 'string' || !p.patent_title.trim()) return [];
+      if (!/^(US)?(?:\d{6,12}([A-Z]\d?)?|D\d{5,9}|RE\d{4,8}|PP\d{4,8})$/.test(rawNum) || typeof p.patent_title !== 'string' || !p.patent_title.trim()) return [];
       // PatentsView can omit kind codes. Keep them absent rather than guessing B2.
       const canonicalId = rawNum.startsWith('US') ? rawNum : `US${rawNum}`;
       const inventors = Array.isArray(p.inventors) ? p.inventors.map((inv: any) =>
@@ -495,7 +494,7 @@ export async function searchLiveUsptoPatents(query: string, strict = false): Pro
   }
 
   // Bundled examples and workspace records are never merged into source results.
-  return fetchUsptoPatentsViewApi(trimmed, 4000, strict);
+  return fetchUsptoPatentsViewApi(trimmed, 15000, strict);
 }
 
 export async function fetchPatentByNumber(patentNumber: string): Promise<Patent | null> {

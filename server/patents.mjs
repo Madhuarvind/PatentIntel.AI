@@ -1,15 +1,18 @@
 import { authenticatedUser } from './auth.mjs';
 import { send } from './http.mjs';
+import { createPatentSearchHandler } from './patent-search.mjs';
 import { normalizePatentNumber } from '../src/services/patentNormalizer.ts';
 import { parseGooglePatentsHtmlServer } from '../src/services/patentHtmlParser.ts';
 
 const MAX_BYTES = 4 * 1024 * 1024;
 export function createPatentHandler(db, env = process.env, fetchSource = fetch) {
+  const search = createPatentSearchHandler(db, env, fetchSource);
   let active = 0;
   return async (req, res) => {
     const error = (status, errorCode, message) => send(res, status, { success: false, documentType: 'PATENT', errorCode, message });
     try {
       const url = new URL(req.url, 'http://localhost');
+      if (url.pathname === '/api/patents/search') return search(req, res);
       if (url.pathname !== '/api/patents/resolve') return error(404, 'NOT_FOUND', 'Patent endpoint not found.');
       if (req.method !== 'GET') { res.setHeader('Allow', 'GET'); return error(405, 'METHOD_NOT_ALLOWED', 'Use GET for patent lookup.'); }
       if (!await authenticatedUser(db, req, env)) return error(401, 'AUTH_REQUIRED', 'Sign in before looking up a patent.');

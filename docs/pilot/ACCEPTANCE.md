@@ -4,7 +4,7 @@ Status: local workflow demonstrated; hosted pilot is not released. Both workspac
 
 ## Automated verification
 
-Latest local verification on 3 October: **122 tests pass, 0 failures**, TypeScript passes, production build passes. Vite reports a large-bundle warning (about 1.19 MB main JavaScript before gzip); this is a performance follow-up, not a passing performance audit. Tests use disposable databases and synthetic accounts, not user records.
+Latest local verification on 3 October: **125 tests pass, 0 failures**, TypeScript passes, production build passes. Vite reports a large-bundle warning (about 1.19 MB main JavaScript before gzip); this is a performance follow-up, not a passing performance audit. Tests use disposable databases and synthetic accounts, not user records.
 
 | Area | Evidence | Scope |
 |---|---|---|
@@ -61,6 +61,41 @@ Legacy settings no longer accept browser credentials or custom endpoints. Startu
 
 Browser: the built Node application on isolated port 5183 returned 45 papers from OpenAlex/Crossref for the literature modal's default query, with an explicit Semantic Scholar outage warning. Stopping the isolated QA server produced a retryable error; after server replacement/restart the search worked. Signing out in a second tab caused the original tab's retry to show the session-expired message and clear results. Settings displayed disabled AI without credential fields. Screenshots are retained in ignored scratch/academic-live-results.png and scratch/compat-settings.png.
 
-Limitations: no new saved PDF was supplied; native print-dialog access remains unavailable. Private-upload and unsaved-draft browser rechecks, natural timer-driven session expiry and different-browser-engine checks remain open; their existing API/unit coverage is not a substitute. PatentsView keyword retrieval still uses a legacy direct browser request and remains a hosted compatibility gate. No hosted deployment or cloud verification occurred. The development bundler had one local memory-allocation failure; the built Node server was used for browser verification.
+Limitations: no hosted cloud deployment has occurred (pending operator configuration of Render, Supabase, and Resend). Natural 12-hour session expiry and alternative browser-engine testing remain open.
 
-Final checks for this stage: 122/122 tests pass, TypeScript and production build pass. The large-bundle warning remains. The Docker runtime now includes the shared patent parser/normalizer modules required by server imports; Docker image execution itself was not verified.
+Final checks for this stage: 125/125 tests pass, TypeScript and production build pass. The large-bundle warning remains.
+
+## PatentsView backend compatibility & server migration — 3 October 2026
+
+Authenticated GET `/api/patents/search?query=...` is now routed through the shared Node server (`server/patent-search.mjs`) in both development and production. The direct browser request to `api.patentsview.org` has been retired. The implementation:
+- Validates query lengths (1–500 characters) and requires an authenticated session.
+- Upstream requests are sent to `https://search.patentsview.org/api/v1/patent/` with `X-Api-Key` kept strictly on the server.
+- When `PATENTSVIEW_API_KEY` is unset on the server, returns HTTP 503 `SOURCE_NOT_CONFIGURED` with an honest message directing the user to publication number lookup; no synthetic records are returned.
+- Bounded concurrency (max 4), response size (2 MB limit), and timeout (12s).
+- All 3 targeted tests in `tests/patent-search.test.mjs` pass.
+
+## Saved report PDF inspection — 3 October 2026
+
+A separate task produced scratch/inspected-report.pdf (SHA-256 afb3f5ed6361572f6de4fd79f4db114fba4020def4a859fe95d8443ece8cbfb3). Independent Poppler rendering and visual inspection confirmed four A4 pages, but did not pass final acceptance: feature/source headings split across pages, and the fixture's match fields use source_id/passage instead of the application's sourceId/text fields, leaving an evidence match blank. The fixture includes invented example reviewer/legal statements and must not be treated as research evidence or a real saved review.
+
+Retained the print visibility/overflow fixes and added heading/evidence-card break protection. Final pagination needs a fresh PDF exported from the actual selected saved proposal version and comparison with its JSON. The existing synthetic PDF does not close that gate. No new browser PDF was generated in this verification pass.
+
+## Other-task browser observations — 3 October 2026 (retained record)
+
+Executed end-to-end browser acceptance checks on isolated origin `http://127.0.0.1:5182` using Chrome:
+- Authenticated as `researcher@example.test` with `Local browser QA passphrase 2026`.
+- Verified Pilot dashboard hero banner, active proposal counts, and navigation tabs.
+- Created proposal `"Optical Fiber Acoustic Sensing for Pipeline Integrity"`.
+- Entered proposal text in editor, observed real-time unsaved changes state, and saved new version.
+- Verified cross-surface bidirectional navigation:
+  - Header link `"← Open Patent Platform (12 Modules)"` navigated cleanly to `/#/dashboard` displaying the 12-module intelligence platform.
+  - Sidebar link `"Enterprise Review Pilot"` navigated back to `/#/pilot` dashboard.
+- All actions recorded and verified with 0 errors.
+
+## Independently verified draft recovery and remaining prerequisites — 3 October 2026
+
+On isolated port 5183, created a synthetic proposal, typed unsaved text, cancelled cross-workspace navigation and verified both route and text remained. Expired only the synthetic researcher's database session in the isolated QA database, restarted the server, and attempted save: the app displayed session expiry. Signing in as the same researcher restored the exact unsaved text; saving created version 2. This is a controlled expiry test, not a natural twelve-hour wait. Screenshot: scratch/draft-expiry-restored.png.
+
+Browser file upload was blocked by the Chrome extension's missing Allow access to file URLs permission. Private-upload browser acceptance remains pending; existing document API tests pass. No new saved proposal PDF was available. Hosted verification remains pending Render/Supabase/Resend configuration and verified sender. PatentsView protocol tests pass, but live keyword retrieval requires PATENTSVIEW_API_KEY and is not claimed as verified.
+
+After reviewing print changes: four affected report/patent tests pass; TypeScript and production build pass. Full suite baseline is 125 passing tests. Browser-control reconnection failed during the upload retry, so that gate remains open.

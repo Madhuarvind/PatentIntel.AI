@@ -51,4 +51,8 @@ Live global patent retrieval, OCR, semantic models, generation, training and sim
 
 ## Dual-workspace deployment gate
 
-The retained legacy platform is experimental and browser-local. The patent resolver is now served by the shared authenticated Node handler. Academic search, DOI resolution and author retrieval now also use authenticated Node handlers. The remaining PatentsView keyword request is not covered by the production pilot server/CSP. Verify or migrate these providers before advertising hosted legacy feature parity; do not weaken CSP to hide this gap. The persistent review workflow is available at #/pilot.
+The retained legacy platform is experimental and browser-local. The patent resolver and PatentsView keyword search are now served by shared authenticated Node handlers (`/api/patents/resolve` and `/api/patents/search`). Academic search, DOI resolution and author retrieval also use authenticated Node handlers. Outgoing provider requests are managed server-side without violating production CSP. Hosted deployment requires operator configuration of Render, Supabase, and Resend credentials (plus optional PATENTSVIEW_API_KEY). The persistent review workflow is available at #/pilot.
+
+### Optional patent keyword provider
+
+Set PATENTSVIEW_API_KEY only in the server secret environment. Without it, keyword search returns SOURCE_NOT_CONFIGURED while publication-number lookup and the review workflow remain available. Current protocol reference: [PatentsView PatentSearch API](https://github.com/PatentsView/PatentSearch-API/blob/main/docs/docs/Search%20API/SearchAPIReference.md). Live key validity, quotas and availability must be checked by the operator before advertising this provider as enabled. No key was supplied or purchased during this task.

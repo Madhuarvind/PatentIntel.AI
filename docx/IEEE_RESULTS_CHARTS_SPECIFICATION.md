@@ -1,3 +1,5 @@
+> Historical research draft — not verified product documentation. Numerical results, implementation/compliance claims, and unverified references must not be treated as established findings. See [research verification](../docs/pilot/RESEARCH_VERIFICATION.md) and [current design](../docs/pilot/DESIGN.md).
+
 # PatentIntel.AI: Results & Discussion Visual Charts Blueprint
 
 **Authors:** Madhuaravind P, Harish M, Mouneesh R  

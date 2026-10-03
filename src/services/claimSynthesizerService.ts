@@ -224,7 +224,8 @@ function buildDependentClaims(
   elements: TechnicalElementsModel,
   count: number,
   startNumber: number,
-  chunks: ReturnType<typeof chunkSourceText>
+  chunks: ReturnType<typeof chunkSourceText>,
+  synthesisWarnings: string[] = []
 ): GeneratedClaim[] {
   const dependentClaims: GeneratedClaim[] = [];
 
@@ -235,17 +236,27 @@ function buildDependentClaims(
     ...elements.optionalFeatures,
     ...elements.technicalRelationships,
     ...elements.technicalEffects,
-  ].filter(s => s.length > 5);
+  ].filter(s => s && s.length > 5);
 
-  for (let i = 0; i < count; i++) {
+  const availableCount = limitationSources.length;
+  if (count > availableCount && availableCount > 0) {
+    synthesisWarnings.push(
+      `Requested ${count} dependent claims, but only ${availableCount} distinct limitations were identified in the source text. Non-disclosed features were not fabricated.`
+    );
+  } else if (availableCount === 0 && count > 0) {
+    synthesisWarnings.push(
+      'No distinct technical constraints or secondary features were identified in the source disclosure to support dependent claims.'
+    );
+  }
+
+  const effectiveCount = Math.min(count, availableCount);
+
+  for (let i = 0; i < effectiveCount; i++) {
     const claimNum = startNumber + i;
     // Vary dependency: first 2 depend on parent, rest build chains
     const parentNum = i < 2 ? parentClaim.claimNumber : (startNumber + Math.max(0, i - 2));
 
-    const limitation = limitationSources[i]
-      ? capitalize(limitationSources[i].slice(0, 150).replace(/[.;]$/, '').trim())
-      : `the ${parentClaim.elements[i % parentClaim.elements.length]?.label?.toLowerCase() || 'element'} further comprises a secondary processing stage`;
-
+    const limitation = capitalize(limitationSources[i].slice(0, 150).replace(/[.;]$/, '').trim());
     const limitationText = applyGeneralization(limitation, 'low'); // dependents keep narrow terms
 
     const text = buildDependentClaimText(parentNum, parentClaim.category, limitationText);
@@ -286,6 +297,7 @@ function buildCandidate(
   chunks: ReturnType<typeof chunkSourceText>
 ): ClaimCandidate {
   const allClaims: GeneratedClaim[] = [];
+  const candidateWarnings: string[] = [];
 
   // Decide which claim categories to generate
   const categories = request.claimCategories.length > 0
@@ -324,7 +336,8 @@ function buildCandidate(
       elements,
       depCount,
       claimCounter,
-      chunks
+      chunks,
+      candidateWarnings
     );
     dependentClaims.forEach(dc => { allClaims.push(dc); claimCounter++; });
   }
@@ -333,11 +346,13 @@ function buildCandidate(
   const techElementCount = elements.components.length + elements.modules.length;
   const validation = validateClaimSet(allClaims, techElementCount);
 
-  // Coverage score: base from validation + strategy bonus, clamped 0-100
-  const baseCoverage = Math.round(
-    (validation.quality.technicalCoverage * 0.5 + validation.quality.evidenceSupport * 0.5)
+  // Authentic coverage score grounded in technical coverage and evidence support without artificial inflation
+  const rawCoverage = Math.round(
+    validation.quality.technicalCoverage * 0.6 + validation.quality.evidenceSupport * 0.4
   );
-  const coverage = Math.min(100, Math.max(60, baseCoverage + strategyConfig.coverageBonus + 20));
+  const coverage = Math.min(100, Math.max(0, rawCoverage));
+
+  const allWarnings = Array.from(new Set([...candidateWarnings, ...validation.quality.warnings]));
 
   return {
     id: strategyConfig.id,
@@ -346,7 +361,7 @@ function buildCandidate(
     coverage,
     independentClaims: allClaims.filter(c => c.isIndependent),
     dependentClaims: allClaims.filter(c => !c.isIndependent),
-    quality: { ...validation.quality, warnings: validation.quality.warnings },
+    quality: { ...validation.quality, warnings: allWarnings },
     technicalElements: elements,
   };
 }

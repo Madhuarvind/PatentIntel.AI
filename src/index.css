@@ -829,6 +829,14 @@ select.input-field option {
 
 /* Print Media Styles for Clean Official Report PDF Export */
 @media print {
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    background: #ffffff !important;
+  }
+
   body * {
     visibility: hidden !important;
   }
@@ -837,7 +845,8 @@ select.input-field option {
     display: none !important;
   }
 
-  .printable-report-area, .printable-report-area * {
+  .printable-report-area, .printable-report-area *,
+  .pilot-report, .pilot-report * {
     visibility: visible !important;
   }
 

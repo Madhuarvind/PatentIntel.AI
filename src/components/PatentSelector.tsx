@@ -165,20 +165,23 @@ export const PatentSelector: React.FC<Props> = ({
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
-      const isUpward = spaceBelow < 380 && rect.top > 380;
+      const isUpward = spaceBelow < 420 && rect.top > 420;
+      const desiredWidth = Math.max(rect.width, 680);
+      const availableWidth = Math.min(desiredWidth, window.innerWidth - 32);
+      const left = Math.max(16, Math.min(rect.left, window.innerWidth - availableWidth - 16));
 
       if (isUpward) {
         setPopoverPos({
           bottom: window.innerHeight - rect.top + 6,
-          left: rect.left,
-          width: rect.width,
+          left,
+          width: availableWidth,
           openUpward: true
         });
       } else {
         setPopoverPos({
           top: rect.bottom + 6,
-          left: rect.left,
-          width: rect.width,
+          left,
+          width: availableWidth,
           openUpward: false
         });
       }
@@ -266,7 +269,15 @@ export const PatentSelector: React.FC<Props> = ({
   };
 
   return (
-    <div style={{ width: width, position: 'relative' }} ref={containerRef}>
+    <div 
+      ref={containerRef} 
+      style={{ 
+        position: 'relative', 
+        width, 
+        minWidth: 0,
+        fontFamily: 'inherit'
+      }}
+    >
       {label && (
         <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
           <FolderKanban size={16} color="var(--accent-cyan)" />
@@ -284,8 +295,8 @@ export const PatentSelector: React.FC<Props> = ({
         onClick={handleToggle}
         style={{
           width: '100%',
-          height: '42px',
-          padding: '0 14px',
+          minHeight: '48px',
+          padding: '8px 16px',
           background: 'var(--bg-input)',
           border: '1px solid',
           borderColor: isOpen ? 'var(--accent-cyan)' : 'var(--border-color)',
@@ -296,28 +307,38 @@ export const PatentSelector: React.FC<Props> = ({
           justifyContent: 'space-between',
           cursor: 'pointer',
           boxShadow: isOpen ? '0 0 15px rgba(0, 242, 254, 0.2)' : 'none',
-          transition: 'all 0.2s ease'
+          transition: 'all 0.2s ease',
+          textAlign: 'left'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden', flex: 1, paddingRight: '8px' }}>
-          <Search size={16} color="var(--accent-cyan)" style={{ flexShrink: 0 }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0, paddingRight: '10px' }}>
+          <Search size={18} color="var(--accent-cyan)" style={{ flexShrink: 0 }} />
           {selectedPatent ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-              <span style={{ fontWeight: 800, color: 'var(--accent-cyan)', fontSize: '0.88rem', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
+              <span style={{ fontWeight: 800, color: 'var(--accent-cyan)', fontSize: '0.92rem', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>
                 {selectedPatent.publicationNumber}
               </span>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>—</span>
-              <span style={{ color: 'var(--text-main)', fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>—</span>
+              <span style={{ 
+                color: 'var(--text-main)', 
+                fontSize: '0.88rem', 
+                lineHeight: 1.4,
+                fontWeight: 600,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden'
+              }}>
                 {selectedPatent.title}
               </span>
             </div>
           ) : (
-            <span style={{ color: 'var(--text-dim)', fontSize: '0.88rem' }}>{placeholder}</span>
+            <span style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>{placeholder}</span>
           )}
         </div>
 
         <ChevronDown 
-          size={16} 
+          size={18} 
           color="var(--text-muted)" 
           style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease', flexShrink: 0 }} 
         />
@@ -541,9 +562,9 @@ const PatentCardItem: React.FC<{
       className="hover-highlight"
     >
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px', flexWrap: 'wrap' }}>
           <span style={{ 
-            fontSize: '0.88rem', 
+            fontSize: '0.94rem', 
             fontWeight: 800, 
             color: isSelected ? 'var(--accent-cyan)' : 'var(--text-main)',
             fontFamily: 'var(--font-mono)'
@@ -551,17 +572,18 @@ const PatentCardItem: React.FC<{
             {patent.publicationNumber}
           </span>
           {patent.assignee && (
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               • {patent.assignee}
             </span>
           )}
         </div>
 
-        {/* Title with line-clamp 2 */}
+        {/* Title with line-clamp 2 and readable font */}
         <div style={{
-          fontSize: '0.82rem',
-          color: 'var(--text-muted)',
-          lineHeight: '1.35',
+          fontSize: '0.88rem',
+          color: 'var(--text-main)',
+          lineHeight: '1.45',
+          fontWeight: 500,
           display: '-webkit-box',
           WebkitLineClamp: 2,
           WebkitBoxOrient: 'vertical',
@@ -572,11 +594,11 @@ const PatentCardItem: React.FC<{
         </div>
 
         {/* Badges footer */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span className="badge badge-cyan" style={{ fontSize: '0.66rem', padding: '1px 6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span className="badge badge-cyan" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
             {patent.source || 'USPTO'}
           </span>
-          <span className="badge badge-indigo" style={{ fontSize: '0.66rem', padding: '1px 6px' }}>
+          <span className="badge badge-indigo" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
             {patent.claimCount ? `${patent.claimCount} Claims` : 'Claims unavailable'}
           </span>
         </div>

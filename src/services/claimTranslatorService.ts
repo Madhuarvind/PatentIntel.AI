@@ -60,12 +60,16 @@ export class GeminiTranslationProvider implements ITranslationProvider {
     systemInstruction: string,
     _terminologyMap?: TerminologyItem[]
   ): Promise<string> {
+    if (sourceLang === targetLang) return text;
     const prompt = `Translate the following ${sourceLang} patent claim to ${targetLang}:\n\n${text}`;
     const response = await executeRealtimeLLM({
       prompt,
       systemInstruction,
       temperature: this.config.temperature
     });
+    if (response.provider === 'rule_engine' || !response.text.trim()) {
+      throw new Error('Translation unavailable. Configure a working language model in System Settings and try again.');
+    }
     return response.text;
   }
 }
@@ -156,8 +160,8 @@ export class ClaimTranslatorService {
     }
 
     // German vs French vs English heuristics
-    const deKeywords = /\b(Ein|Einem|Einen|Eine|Verfahren|Vorrichtung|Anspruch|gekennzeichnet|dadurch|wobei|Steuereinheit|Sensor|Anordnung|umfassend|System|Kollisionswarnsystem|Kamerasensor|Fahrzeug)\b/i;
-    const frKeywords = /\b(Un|Une|dispositif|système|revendication|caractérisé|comprenant|procédé|module|unité|capteur|caméra|avertissement)\b/i;
+    const deKeywords = /\b(Ein|Einem|Einen|Eine|Verfahren|Vorrichtung|Anspruch|gekennzeichnet|dadurch|wobei|Steuereinheit|Anordnung|umfassend|Kollisionswarnsystem|Kamerasensor|Fahrzeug)\b/i;
+    const frKeywords = /\b(Un|Une|dispositif|système|revendication|caractérisé|comprenant|procédé|unité|capteur|caméra|avertissement)\b/i;
     const enKeywords = /\b(apparatus|system|comprising|wherein|configured|claim|controller|sensor)\b/i;
 
     if (deKeywords.test(trimmed)) {
@@ -181,7 +185,7 @@ export class ClaimTranslatorService {
       };
     }
 
-    return { language: 'zh', label: 'Chinese', confidence: 0.85, isLowConfidence: false };
+    return { language: 'unknown', label: 'Unknown', confidence: 0, isLowConfidence: true, warning: 'Select the source language before translating.' };
   }
 
   /**
@@ -207,7 +211,8 @@ export class ClaimTranslatorService {
 
     // 1. Language Detection
     const langDetect = this.detectLanguage(claimText, sourceLanguage);
-    const effectiveSource = langDetect.language === 'unknown' ? 'zh' : langDetect.language;
+    if (langDetect.language === 'unknown') throw new Error('Select the source language before translating.');
+    const effectiveSource = langDetect.language;
 
     // 2. Claim Structure Parsing
     const parsedStructure = parseClaimStructure(claimText, claimNumber);

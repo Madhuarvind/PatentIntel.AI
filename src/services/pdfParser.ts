@@ -1,11 +1,6 @@
 import type { Patent, PatentClaim } from '../types';
 import { normalizePatentNumber, parseClaimDependency } from './patentNormalizer';
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Configure PDF.js worker for browser text layer extraction
-if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '4.10.38'}/pdf.worker.min.mjs`;
-}
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 export interface PdfPageData {
   pageNumber: number;
@@ -83,6 +78,8 @@ export async function extractPdfTextPageByPage(file: File): Promise<{
   isTextLayerAvailable: boolean;
 }> {
   try {
+    const pdfjsLib = await import('pdfjs-dist');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
     const arrayBuffer = await file.arrayBuffer();
     const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
     const pdfDoc = await loadingTask.promise;
@@ -95,10 +92,10 @@ export async function extractPdfTextPageByPage(file: File): Promise<{
       const textContent = await page.getTextContent();
 
       const pageStrings = textContent.items
-        .map((item: any) => ('str' in item ? item.str : ''))
+        .map((item: any) => ('str' in item ? item.str + (item.hasEOL ? '\n' : ' ') : ''))
         .filter(Boolean);
 
-      const pageText = pageStrings.join(' ').replace(/\s+/g, ' ').trim();
+      const pageText = pageStrings.join('').replace(/[^\S\n]+/g, ' ').trim();
       pages.push({
         pageNumber: i,
         text: pageText
@@ -107,7 +104,8 @@ export async function extractPdfTextPageByPage(file: File): Promise<{
       fullText += `\n--- Page ${i} ---\n` + pageText;
     }
 
-    const isTextLayerAvailable = fullText.trim().length > 50;
+    const isTextLayerAvailable = pages.some(page => page.text.trim().length > 0);
+    await loadingTask.destroy();
     return {
       pages,
       fullText,
@@ -115,23 +113,8 @@ export async function extractPdfTextPageByPage(file: File): Promise<{
     };
   } catch (e) {
     console.warn('PDF.js text layer extraction warning:', e);
-    // Fallback: Read text file directly if non-PDF text file uploaded
-    const text = await readFileAsText(file);
-    return {
-      pages: [{ pageNumber: 1, text }],
-      fullText: text,
-      isTextLayerAvailable: text.length > 30
-    };
+    throw new Error('Unable to read this PDF. Upload a valid PDF with selectable text.');
   }
-}
-
-function readFileAsText(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => resolve(e.target?.result as string || '');
-    reader.onerror = (err) => reject(err);
-    reader.readAsText(file);
-  });
 }
 
 /**
@@ -205,6 +188,7 @@ export function extractPatentNumberFromFirstPage(text: string): {
  * Master Client-Side Patent PDF Importer Pipeline
  */
 export async function parsePatentFile(file: File): Promise<ParsedPatentResult> {
+  if (!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') throw new Error('Upload a PDF file.');
   const fileHash = await calculateFileHash(file);
   const { pages, fullText, isTextLayerAvailable } = await extractPdfTextPageByPage(file);
   const firstPageText = pages.length > 0 ? pages[0].text : fullText;
@@ -230,11 +214,12 @@ export function parsePatentFromTextLayer(
   fileHash: string,
   isTextLayerAvailable: boolean
 ): ParsedPatentResult {
+  if (!isTextLayerAvailable || !fullText.trim()) throw new Error('No selectable text was found. OCR is not available; upload a searchable PDF.');
   // 1. Artifact Leakage Check
   const leakage = detectPdfArtifactLeakage(firstPageText);
 
   // 2. Extract Patent Identity strictly from PDF Text or Filename or SHA-256 Hash
-  const headerId = extractPatentNumberFromFirstPage(firstPageText) || extractPatentNumberFromFirstPage(fullText);
+  const headerId = extractPatentNumberFromFirstPage(firstPageText);
   
   let publicationNumber = '';
   let patentNumber = '';
@@ -253,28 +238,13 @@ export function parsePatentFromTextLayer(
     identitySource = headerId.source;
     identityConfidence = headerId.confidence;
   } else {
-    const fileMatch = fileName.match(/US?\d{7,10}[A-Z0-9]*/i);
-    if (fileMatch) {
-      const norm = normalizePatentNumber(fileMatch[0]);
-      publicationNumber = norm.canonical;
-      patentNumber = norm.documentNumber;
-      country = norm.country;
-      kindCode = norm.kindCode;
-      displayNumber = norm.displayNumber;
-      identitySource = 'document_metadata';
-      identityConfidence = 0.85;
-    } else {
-      // DYNAMIC UNIQUE IDENTITY DERIVED FROM SHA-256 FILE HASH
-      const hashStem = fileHash.substring(0, 10).toUpperCase();
-      publicationNumber = `US-PDF-${hashStem}`;
-      patentNumber = hashStem;
-      country = 'US';
-      kindCode = 'A1';
-      const cleanFileName = fileName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-      displayNumber = `PDF: ${cleanFileName.length > 20 ? cleanFileName.substring(0, 20) + '...' : cleanFileName}`;
-      identitySource = 'hash_generated';
-      identityConfidence = 0.80;
-    }
+    publicationNumber = '';
+    patentNumber = '';
+    country = '';
+    kindCode = '';
+    displayNumber = `PDF: ${fileName}`;
+    identitySource = 'hash_generated';
+    identityConfidence = 0;
   }
 
   // 3. Extract Title strictly from PDF text or Clean File Name
@@ -308,7 +278,7 @@ export function parsePatentFromTextLayer(
   }
 
   if (!assignee) {
-    assignee = 'N/A';
+    assignee = '';
   }
 
   // 5. Extract Inventors strictly from PDF text
@@ -324,17 +294,17 @@ export function parsePatentFromTextLayer(
   }
 
   if (inventors.length === 0) {
-    inventors = ['N/A'];
+    inventors = [];
   }
 
   // 6. Extract Date of Patent / Grant Date
   const dateMatch = firstPageText.match(/\((?:45)\)?\s*(?:Date\s+of\s+Patent|Patent\s+Date):\s*([A-Za-z]+\s+\d{1,2},\s*\d{4}|\d{4}-\d{2}-\d{2})/i) ||
                     fullText.match(/Date\s+of\s+Patent[:\s]+([A-Za-z]+\s+\d{1,2},\s*\d{4})/i);
 
-  let grantDate = 'N/A';
+  let grantDate = '';
   if (dateMatch) {
     const dStr = dateMatch[1].trim();
-    const parsedD = new Date(dStr);
+    const parsedD = new Date(/^\d{4}-\d{2}-\d{2}$/.test(dStr) ? `${dStr}T00:00:00Z` : `${dStr} UTC`);
     if (!isNaN(parsedD.getTime())) {
       grantDate = parsedD.toISOString().split('T')[0];
     }
@@ -352,71 +322,23 @@ export function parsePatentFromTextLayer(
     }
   }
 
-  if (!abstract) {
-    // Generate abstract preview from first 400 characters of extracted text
-    const cleanPreview = firstPageText.replace(/--- Page \d+ ---/g, '').replace(/\s+/g, ' ').trim();
-    abstract = cleanPreview.length > 50 
-      ? cleanPreview.substring(0, 400) + '...'
-      : 'Patent specification text extracted from document.';
-  }
-
-  // 8. Extract Claims strictly from PDF text
-  const claimsSectionMatch = fullText.match(/(?:claims|what is claimed is)[:\s]+([\s\S]*)/i);
-  const claimsText = claimsSectionMatch ? claimsSectionMatch[1] : fullText;
-  const rawClaimBlocks = claimsText.split(/(?=\b\d+\.\s+)/g).filter(b => b.trim().length > 10);
-  
+  // Only numbered text within an explicit claims section is treated as claims.
+  const claimsSectionMatch = fullText.match(/(?:what is claimed is|(?:^|\n)\s*claims)\s*:?\s*([\s\S]*)/i);
+  const claimsText = claimsSectionMatch?.[1] || '';
+  const blocks = claimsText.split(/(?=\b\d+\.\s+)/g);
   const parsedClaims: PatentClaim[] = [];
-
-  if (rawClaimBlocks.length > 0) {
-    rawClaimBlocks.forEach((block, idx) => {
-      if (detectPdfArtifactLeakage(block).isArtifactLeaked) return;
-
-      const numMatch = block.match(/^(\d+)\./);
-      const claimNum = numMatch ? parseInt(numMatch[1]) : idx + 1;
-      const cleanBlockText = block.replace(/--- Page \d+ ---/g, '').replace(/\s+/g, ' ').trim();
-      const depInfo = parseClaimDependency(cleanBlockText, claimNum);
-      
-      parsedClaims.push({
-        claimNumber: claimNum,
-        type: depInfo.type,
-        text: cleanBlockText,
-        dependsOn: depInfo.dependsOn
-      });
-    });
-  }
-
-  // If no numbered claims section was found, split specification text into claims
-  if (parsedClaims.length === 0) {
-    const sentences = fullText.replace(/--- Page \d+ ---/g, '').split(/(?<=\.)\s+/).filter(s => s.trim().length > 30);
-    if (sentences.length >= 2) {
-      parsedClaims.push(
-        {
-          claimNumber: 1,
-          type: 'independent',
-          text: `1. An apparatus or system for ${title}, comprising: ${sentences[0].trim()}`,
-          dependsOn: []
-        },
-        {
-          claimNumber: 2,
-          type: 'dependent',
-          text: `2. The system as claimed in claim 1, further configured wherein ${sentences[1].trim()}`,
-          dependsOn: [1]
-        }
-      );
-    } else {
-      parsedClaims.push(
-        {
-          claimNumber: 1,
-          type: 'independent',
-          text: `1. A patent specification system for ${title} as disclosed in document ${fileName}.`,
-          dependsOn: []
-        }
-      );
-    }
+  for (const block of blocks) {
+    const clean = block.replace(/--- Page \d+ ---/g, '').replace(/\s+/g, ' ').trim();
+    const number = clean.match(/^(\d+)\.\s+/);
+    if (!number || detectPdfArtifactLeakage(clean).isArtifactLeaked) continue;
+    const claimNumber = Number(number[1]);
+    if (claimNumber < 1 || parsedClaims.some(c => c.claimNumber === claimNumber)) continue;
+    const dependency = parseClaimDependency(clean, claimNumber);
+    parsedClaims.push({ claimNumber, text: clean, type: dependency.type, dependsOn: dependency.dependsOn });
   }
 
   // Generate unique internal database ID for this uploaded file
-  const internalId = `pdf_${fileHash.substring(0, 12)}_${Date.now()}`;
+  const internalId = publicationNumber || `pdf_${fileHash}`;
 
   const patent: Patent = {
     id: internalId,
@@ -428,21 +350,20 @@ export function parsePatentFromTextLayer(
     documentType: 'Uploaded Specification PDF',
     title,
     assignee,
-    assignees: [assignee],
+    assignees: assignee ? [assignee] : [],
     inventors,
-    publicationDate: grantDate,
+    publicationDate: '',
     grantDate,
-    priorityDate: grantDate,
-    cpcClass: 'G06F 17/00',
-    cpc: ['G06F 17/00'],
+    priorityDate: '',
+    cpcClass: '',
+    cpc: [],
     abstract,
     claimsCount: parsedClaims.length,
-    similarityScore: 95,
     source: 'Uploaded PDF Specification',
     sourceUrl: '',
     fileHash,
     retrievedAt: new Date().toISOString(),
-    importQuality: 'COMPLETE'
+    importQuality: 'PARTIAL'
   };
 
   console.log(`[PDF IMPORT] PARSING SUCCESS:`);

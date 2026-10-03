@@ -1,13 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { ReportExportModal } from './ReportExportModal';
+import React, { useState, useEffect, useMemo } from 'react';
 import { workspaceStore } from '../services/workspaceStore';
 import type { PatentDocument } from '../types';
 import { PatentSelector } from './PatentSelector';
-import { 
+import {
+  generateClaimEvidenceRecord,
+  exportClaimEvidenceMarkdown,
+  exportClaimEvidenceJson,
+  type MatchState
+} from '../services/claimEvidenceService';
+import {
   BookOpen,
-  Award,
   Download,
-  Sliders
+  CheckCircle2,
+  AlertTriangle,
+  FileQuestion,
+  Clock,
+  Layers,
+  FileText
 } from 'lucide-react';
 
 interface Props {
@@ -15,11 +24,13 @@ interface Props {
 }
 
 export const AIEvidenceView: React.FC<Props> = ({ onOpenPaper }) => {
-  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [workspacePatents, setWorkspacePatents] = useState<PatentDocument[]>(workspaceStore.getPatents());
 
-  const [targetId, setTargetId] = useState<string>(workspacePatents[0]?.id || 'US10928341B2');
-  const [priorArtId, setPriorArtId] = useState<string>(workspacePatents[1]?.id || workspacePatents[0]?.id || 'US10482391B1');
+  const initialPair = useMemo(() => workspaceStore.getComparisonPair(), []);
+  const [targetId, setTargetId] = useState<string>(initialPair.targetId);
+  const [priorArtId, setPriorArtId] = useState<string>(initialPair.candidateId);
+  const [claimSelection, setClaimSelection] = useState({ targetClaimNumber: initialPair.targetClaimNumber, candidateClaimNumber: initialPair.candidateClaimNumber });
+  const [exportNotice, setExportNotice] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = workspaceStore.subscribe(() => {
@@ -29,110 +40,110 @@ export const AIEvidenceView: React.FC<Props> = ({ onOpenPaper }) => {
     return unsubscribe;
   }, []);
 
-  const activePatent = workspacePatents.find(p => p.id === targetId) || workspacePatents[0];
-  const priorArtPatent = workspacePatents.find(p => p.id === priorArtId) || workspacePatents[1] || workspacePatents[0];
+  const handleTargetChange = (newId: string) => {
+    setTargetId(newId);
+    setClaimSelection({ targetClaimNumber: undefined, candidateClaimNumber: undefined });
+    workspaceStore.setComparisonPair(newId, priorArtId);
+  };
 
-  // Mathematical Multi-Signal Score Calculation Engine
-  const metrics = (() => {
-    if (!activePatent || !priorArtPatent) {
-      return {
-        semanticScore: 36.0,
-        claimAlignmentScore: 26.0,
-        techRelScore: 9.0,
-        cpcScore: 8.0,
-        citationScore: 9.4,
-        totalScore: 88.4,
-        elementsMatched: '4/5 Elements Aligned',
-        cpcMatchLabel: 'B60W 30/09'
-      };
+  const handlePriorArtChange = (newId: string) => {
+    setPriorArtId(newId);
+    setClaimSelection({ targetClaimNumber: undefined, candidateClaimNumber: undefined });
+    workspaceStore.setComparisonPair(targetId, newId);
+  };
+
+  const activePatent = workspacePatents.find(p => p.id === targetId);
+  const priorArtPatent = workspacePatents.find(p => p.id === priorArtId);
+
+  const evidenceResult = useMemo(() => {
+    if (!activePatent || !priorArtPatent) return null;
+    return generateClaimEvidenceRecord(activePatent, priorArtPatent, claimSelection);
+  }, [activePatent, priorArtPatent, claimSelection]);
+
+  const handleExport = (format: 'md' | 'json') => {
+    if (!evidenceResult || !evidenceResult.success) return;
+    const content = format === 'md'
+      ? exportClaimEvidenceMarkdown(evidenceResult.record)
+      : exportClaimEvidenceJson(evidenceResult.record);
+
+    const blob = new Blob([content], { type: format === 'md' ? 'text/markdown' : 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `evidence-ledger-${evidenceResult.record.targetDocumentId}-vs-${evidenceResult.record.candidateDocumentId}.${format}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    setExportNotice(`Exported evidence ledger as .${format}`);
+    setTimeout(() => setExportNotice(null), 3500);
+  };
+
+  const renderMatchBadge = (state: MatchState) => {
+    switch (state) {
+      case 'SUPPORTED':
+        return (
+          <span className="badge badge-emerald" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <CheckCircle2 size={12} /> Literal text match
+          </span>
+        );
+      case 'PARTIAL':
+        return (
+          <span className="badge badge-amber" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <AlertTriangle size={12} /> Partial Overlap
+          </span>
+        );
+      case 'UNMATCHED':
+        return (
+          <span className="badge" style={{ background: 'rgba(244, 63, 94, 0.15)', color: 'var(--accent-rose)', border: '1px solid rgba(244, 63, 94, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <AlertTriangle size={12} /> Unmatched
+          </span>
+        );
+      case 'UNASSESSED':
+      default:
+        return (
+          <span className="badge" style={{ background: 'rgba(255, 255, 255, 0.08)', color: 'var(--text-dim)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <FileQuestion size={12} /> Unassessed
+          </span>
+        );
     }
-
-    const isSame = activePatent.id === priorArtPatent.id;
-    if (isSame) {
-      return {
-        semanticScore: 40.0,
-        claimAlignmentScore: 30.0,
-        techRelScore: 10.0,
-        cpcScore: 10.0,
-        citationScore: 10.0,
-        totalScore: 100.0,
-        elementsMatched: '5/5 Elements Matched (100%)',
-        cpcMatchLabel: activePatent.cpcCodes?.[0] || 'Exact CPC Match'
-      };
-    }
-
-    // 1. Semantic Vector Score (0 - 40) via vocabulary intersection Jaccard similarity
-    const targetWords = new Set((activePatent.title + ' ' + activePatent.abstract).toLowerCase().match(/\w{3,}/g) || []);
-    const priorWords = new Set((priorArtPatent.title + ' ' + priorArtPatent.abstract).toLowerCase().match(/\w{3,}/g) || []);
-    
-    let intersectionCount = 0;
-    targetWords.forEach(w => { if (priorWords.has(w)) intersectionCount++; });
-    const unionCount = new Set([...targetWords, ...priorWords]).size || 1;
-    const jaccardSim = intersectionCount / unionCount;
-    
-    const semanticScore = parseFloat(Math.min(40, Math.max(22, 24 + jaccardSim * 32)).toFixed(1));
-
-    // 2. Claim Alignment Score (0 - 30)
-    const targetClaimsCount = activePatent.claims?.length || 5;
-    const sharedClaimConcepts = activePatent.claims?.filter(c => 
-      (priorArtPatent.abstract + priorArtPatent.title).toLowerCase().includes(c.text.slice(0, 15).toLowerCase())
-    ).length || Math.min(targetClaimsCount, 4);
-    const claimAlignmentScore = parseFloat(Math.min(30, Math.max(18, (sharedClaimConcepts / targetClaimsCount) * 30)).toFixed(1));
-
-    // 3. Tech Relationship Score (0 - 10)
-    const techRelScore = parseFloat(Math.min(10, Math.max(6, 7.5 + jaccardSim * 4)).toFixed(1));
-
-    // 4. CPC Classification Score (0 - 10)
-    const targetCpc = activePatent.cpcCodes?.[0] || '';
-    const priorCpc = priorArtPatent.cpcCodes?.[0] || '';
-    let cpcScore = 6.0;
-    if (targetCpc && priorCpc) {
-      if (targetCpc === priorCpc) cpcScore = 10.0;
-      else if (targetCpc.slice(0, 4) === priorCpc.slice(0, 4)) cpcScore = 8.5;
-      else if (targetCpc.slice(0, 1) === priorCpc.slice(0, 1)) cpcScore = 7.5;
-    }
-
-    // 5. Citation Graph Score (0 - 10)
-    const targetYear = parseInt(activePatent.filingDate?.slice(0, 4) || '2021');
-    const priorYear = parseInt(priorArtPatent.filingDate?.slice(0, 4) || '2017');
-    const yearGap = Math.abs(targetYear - priorYear);
-    const citationScore = parseFloat(Math.min(10, Math.max(6.5, 9.8 - yearGap * 0.4)).toFixed(1));
-
-    const totalScore = parseFloat((semanticScore + claimAlignmentScore + techRelScore + cpcScore + citationScore).toFixed(1));
-
-    return {
-      semanticScore,
-      claimAlignmentScore,
-      techRelScore,
-      cpcScore,
-      citationScore,
-      totalScore,
-      elementsMatched: `${sharedClaimConcepts}/${targetClaimsCount} Elements Aligned`,
-      cpcMatchLabel: targetCpc || 'CPC Class'
-    };
-  })();
+  };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1600px', margin: '0 auto', width: '100%' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '14px' }}>
         <div>
           <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 4px' }}>
-            Evidence-Grounded LLM Reasoning & Examination Exporter
+            Prior-Art Evidence Ledger & Reasoning
           </h1>
-          <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-            Calculates quantitative multi-signal similarity metrics and generates official USPTO executive audit reports.
+          <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: 0 }}>
+            Draft lexical comparison of stored claims. Literal text matches require technical review; legal eligibility is not assessed. Parent-claim limitations are not expanded.
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button 
-            className="btn-primary" 
-            onClick={() => setIsExportModalOpen(true)}
-            style={{ fontWeight: 800 }}
-          >
-            <Award size={16} /> 1-Click Executive Examination Report <Download size={14} />
-          </button>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          {evidenceResult?.success && (
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                className="btn-primary"
+                onClick={() => handleExport('md')}
+                style={{ fontSize: '0.84rem' }}
+                title="Export evidence ledger as Markdown"
+              >
+                <Download size={14} /> Export Evidence (.md)
+              </button>
+              <button
+                className="btn-secondary"
+                onClick={() => handleExport('json')}
+                style={{ fontSize: '0.84rem' }}
+                title="Export evidence ledger as JSON"
+              >
+                <Download size={14} /> Export JSON
+              </button>
+            </div>
+          )}
 
           {onOpenPaper && (
             <button className="btn-secondary" onClick={() => onOpenPaper('AI patent prior art search reasoning RAG')} style={{ fontSize: '0.84rem' }}>
@@ -142,13 +153,19 @@ export const AIEvidenceView: React.FC<Props> = ({ onOpenPaper }) => {
         </div>
       </div>
 
+      {exportNotice && (
+        <div style={{ padding: '10px 16px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid var(--accent-emerald)', borderRadius: '8px', color: 'var(--accent-emerald)', fontSize: '0.85rem' }}>
+          {exportNotice}
+        </div>
+      )}
+
       {/* Dynamic Patent Selector Bar */}
-      <div className="glass-panel" style={{ padding: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+      <div className="glass-panel" style={{ padding: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px', borderRadius: '14px' }}>
         <div>
           <PatentSelector
             patents={workspacePatents}
             selectedPatentId={targetId}
-            onSelect={(id) => setTargetId(id)}
+            onSelect={handleTargetChange}
             label="Select Target Application Patent:"
             placeholder="Search target application patent..."
           />
@@ -158,87 +175,184 @@ export const AIEvidenceView: React.FC<Props> = ({ onOpenPaper }) => {
           <PatentSelector
             patents={workspacePatents}
             selectedPatentId={priorArtId}
-            onSelect={(id) => setPriorArtId(id)}
-            label="Select Prior-Art Reference Patent:"
+            onSelect={handlePriorArtChange}
+            label="Select Candidate Prior-Art Reference:"
             placeholder="Search prior-art reference patent..."
           />
         </div>
       </div>
 
-      {/* Real-Time Quantitative Multi-Signal Score Breakdown */}
-      <div className="glass-panel" style={{ padding: '28px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <div>
-            <div className="badge badge-cyan" style={{ marginBottom: '6px' }}>
-              <Sliders size={12} /> Dynamic Mathematical Multi-Signal Model
+      {/* Rejection / Empty States */}
+      {(!activePatent || !priorArtPatent) && (
+        <div className="glass-panel" style={{ padding: '36px', textAlign: 'center', color: 'var(--text-muted)', borderRadius: '14px' }}>
+          <Layers size={36} color="var(--accent-cyan)" style={{ margin: '0 auto 12px', opacity: 0.6 }} />
+          <h3 style={{ color: 'var(--text-main)', marginBottom: '8px' }}>Select Target and Prior-Art Documents</h3>
+          <p style={{ fontSize: '0.86rem', maxWidth: '480px', margin: '0 auto' }}>
+            Choose two distinct patent records in your workspace session to generate a verified evidence ledger.
+          </p>
+        </div>
+      )}
+
+      {evidenceResult && !evidenceResult.success && (
+        <div className="glass-panel" style={{ padding: '28px 32px', borderRadius: '14px', border: '1px solid rgba(244, 63, 94, 0.4)', background: 'rgba(244, 63, 94, 0.05)' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+            <AlertTriangle size={24} color="var(--accent-rose)" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--accent-rose)', margin: '0 0 6px' }}>
+                Comparison Input Rejected
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-main)', margin: '0 0 8px', lineHeight: '1.5' }}>
+                {evidenceResult.error}
+              </p>
+              {evidenceResult.rejectionReason === 'SELF_COMPARISON_REJECTED' && (
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                  A document cannot serve as prior art against itself. Select a different candidate reference to evaluate patentability.
+                </p>
+              )}
             </div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-              Explainable Similarity Breakdown: {activePatent?.id} ↔ {priorArtPatent?.id}
+          </div>
+        </div>
+      )}
+
+      {/* Real Traceable Evidence Summary & Metrics */}
+      {evidenceResult?.success && (
+        <>
+          <div className="glass-panel" style={{ padding: '24px', borderRadius: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+              <div>
+                <div className="badge badge-cyan" style={{ marginBottom: '6px' }}>
+                  <FileText size={12} /> Draft Evidence Ledger
+                </div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                  Evidence Assessment: {evidenceResult.record.targetDocumentId} ↔ {evidenceResult.record.candidateDocumentId}
+                </h3>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Overall Assessment:</span>
+                {renderMatchBadge(evidenceResult.record.overallState)}
+              </div>
+            </div>
+
+            {/* Evidence Metric Summary Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
+              {/* Total Limitations */}
+              <div style={{ background: 'var(--bg-surface)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>Total Limitations</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)', margin: '4px 0' }}>
+                  {evidenceResult.record.totalLimitations}
+                </div>
+                <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>Target Claim {evidenceResult.record.targetClaimNumber}</div>
+              </div>
+
+              {/* Supported */}
+              <div style={{ background: 'var(--bg-surface)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>Literal Text Matches</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--accent-emerald)', margin: '4px 0' }}>
+                  {evidenceResult.record.supportedCount}
+                </div>
+                <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                  {evidenceResult.record.totalLimitations > 0 ? `${Math.round((evidenceResult.record.supportedCount / evidenceResult.record.totalLimitations) * 100)}% coverage` : '0%'}
+                </div>
+              </div>
+
+              {/* Partial */}
+              <div style={{ background: 'var(--bg-surface)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>Partial Overlap</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--accent-amber)', margin: '4px 0' }}>
+                  {evidenceResult.record.partialCount}
+                </div>
+                <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>Requires narrower reading</div>
+              </div>
+
+              {/* Unmatched */}
+              <div style={{ background: 'var(--bg-surface)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>Unmatched (Novel)</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--accent-rose)', margin: '4px 0' }}>
+                  {evidenceResult.record.unmatchedCount}
+                </div>
+                <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>Distinguishing features</div>
+              </div>
+
+              {/* Temporal Prior-Art Status */}
+              <div style={{ background: 'var(--bg-surface)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>Temporal Status</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', margin: '8px 0 4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Clock size={14} color="var(--accent-cyan)" />
+                  {evidenceResult.record.temporalStatus === 'PUBLISHED_BEFORE_FILING' ? 'Earlier publication' : 'Uncertified'}
+                </div>
+                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                  {evidenceResult.record.candidatePublicationDate || evidenceResult.record.candidateFilingDate || 'Date missing'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Traceable Excerpts Ledger Table */}
+          <div className="glass-panel" style={{ padding: '24px', borderRadius: '14px' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '14px' }}>
+              Limitation-by-Limitation Traceable Excerpts
             </h3>
-          </div>
 
-          <div style={{ textAlign: 'right', background: 'rgba(0, 242, 254, 0.08)', padding: '10px 18px', borderRadius: '12px', border: '1px solid var(--border-glow)' }}>
-            <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>Total Infringement Risk</div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-cyan)', lineHeight: 1.1 }}>
-              {metrics.totalScore} <span style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>/ 100</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {evidenceResult.record.limitations.map(lim => (
+                <div
+                  key={lim.limitationId}
+                  style={{
+                    padding: '16px',
+                    borderRadius: '10px',
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border-color)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '14px' }}>
+                    <div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--accent-cyan)', fontWeight: 700 }}>
+                        {lim.limitationId}: {lim.canonicalName}
+                      </div>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', marginTop: '2px' }}>
+                        {lim.limitationText}
+                      </div>
+                    </div>
+                    <div>
+                      {renderMatchBadge(lim.matchState)}
+                    </div>
+                  </div>
+
+                  {/* Traceable Candidate Excerpt */}
+                  <div style={{
+                    padding: '10px 14px',
+                    background: 'rgba(0, 0, 0, 0.25)',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                    fontSize: '0.84rem'
+                  }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--accent-indigo)', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
+                      Prior Art Excerpt{lim.candidateClaimNumber ? ` (Claim ${lim.candidateClaimNumber})` : ''}:
+                    </span>
+                    {lim.candidateExcerpt ? (
+                      <span style={{ color: 'var(--text-main)', fontStyle: 'italic', lineHeight: '1.45' }}>
+                        "{lim.candidateExcerpt}"
+                      </span>
+                    ) : (
+                      <span style={{ color: 'var(--text-muted)' }}>
+                        No corresponding limitation passage identified in candidate document.
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', paddingTop: '4px', borderTop: '1px solid var(--border-color)' }}>
+                    <strong>Evidence Analysis:</strong> {lim.explanation}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px' }}>
-          {/* Signal 1 */}
-          <div style={{ background: 'var(--bg-surface)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-            <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>Semantic Vectors</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-cyan)', margin: '6px 0' }}>
-              {metrics.semanticScore} <span style={{ fontSize: '0.9rem', color: 'var(--text-dim)' }}>/ 40</span>
-            </div>
-            <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>SBERT Cosine Similarity</div>
-          </div>
-
-          {/* Signal 2 */}
-          <div style={{ background: 'var(--bg-surface)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-            <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>Claim Alignment</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-indigo)', margin: '6px 0' }}>
-              {metrics.claimAlignmentScore} <span style={{ fontSize: '0.9rem', color: 'var(--text-dim)' }}>/ 30</span>
-            </div>
-            <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>{metrics.elementsMatched}</div>
-          </div>
-
-          {/* Signal 3 */}
-          <div style={{ background: 'var(--bg-surface)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-            <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>Tech Relationship</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-emerald)', margin: '6px 0' }}>
-              {metrics.techRelScore} <span style={{ fontSize: '0.9rem', color: 'var(--text-dim)' }}>/ 10</span>
-            </div>
-            <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>Domain Proximity</div>
-          </div>
-
-          {/* Signal 4 */}
-          <div style={{ background: 'var(--bg-surface)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-            <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>CPC Classification</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-purple)', margin: '6px 0' }}>
-              {metrics.cpcScore} <span style={{ fontSize: '0.9rem', color: 'var(--text-dim)' }}>/ 10</span>
-            </div>
-            <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>{metrics.cpcMatchLabel}</div>
-          </div>
-
-          {/* Signal 5 */}
-          <div style={{ background: 'var(--bg-surface)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-            <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>Citation Graph</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-amber)', margin: '6px 0' }}>
-              {metrics.citationScore} <span style={{ fontSize: '0.9rem', color: 'var(--text-dim)' }}>/ 10</span>
-            </div>
-            <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>Priority Chronology Link</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Exporter Modal */}
-      <ReportExportModal 
-        isOpen={isExportModalOpen} 
-        onClose={() => setIsExportModalOpen(false)} 
-        patentNumber={activePatent?.id || 'US10928341B2'}
-      />
+        </>
+      )}
     </div>
   );
 };

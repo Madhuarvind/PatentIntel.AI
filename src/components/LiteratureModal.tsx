@@ -87,6 +87,7 @@ export const LiteratureModal: React.FC<Props> = ({
   // 4. Result State
   const [papers, setPapers] = useState<RealtimeAcademicPaper[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [searchError, setSearchError] = useState('');
   const [sourcesUsed, setSourcesUsed] = useState<string[]>([]);
   const [totalResultCount, setTotalResultCount] = useState<number>(0);
   const [expandedPaperId, setExpandedPaperId] = useState<string | null>(null);
@@ -136,20 +137,24 @@ export const LiteratureModal: React.FC<Props> = ({
 
   // Debounced Author Search Suggestion handler
   useEffect(() => {
+    let cancelled = false;
     if (authorQuery.trim().length >= 2) {
       if (authorDebounceTimer.current) clearTimeout(authorDebounceTimer.current);
       authorDebounceTimer.current = setTimeout(async () => {
         setIsResolvingAuthors(true);
-        const resolved = await resolveAuthor(authorQuery);
-        setAuthorSuggestions(resolved);
-        setIsResolvingAuthors(false);
-        setShowAuthorDropdown(true);
+        try {
+          const resolved = await resolveAuthor(authorQuery);
+          if (!cancelled) { setAuthorSuggestions(resolved); setShowAuthorDropdown(true); setSearchError(resolved.warnings?.join(' ') || ''); }
+        } catch (error) {
+          if (!cancelled) { setAuthorSuggestions([]); setSearchError(error instanceof Error ? error.message : 'Author search unavailable. Retry shortly.'); }
+        } finally { if (!cancelled) setIsResolvingAuthors(false); }
       }, 400);
     } else {
       setAuthorSuggestions([]);
       setShowAuthorDropdown(false);
     }
     return () => {
+      cancelled = true;
       if (authorDebounceTimer.current) clearTimeout(authorDebounceTimer.current);
     };
   }, [authorQuery]);
@@ -176,6 +181,7 @@ export const LiteratureModal: React.FC<Props> = ({
   ) => {
     const currentReqId = ++requestIdRef.current;
     setIsLoading(true);
+    setSearchError('');
     setAuthorDisambiguationList([]);
 
     const activeQuery = overrideQuery !== undefined ? overrideQuery : searchQuery;
@@ -183,10 +189,12 @@ export const LiteratureModal: React.FC<Props> = ({
     const activeFilters = overrideFilters !== undefined ? overrideFilters : appliedFilters;
     const activeMode = overrideMode !== undefined ? overrideMode : searchMode;
 
+    try {
     // Handle AUTHOR Search Mode
     if (activeMode === 'AUTHOR' && !activeAuthor && activeQuery.trim()) {
       setIsResolvingAuthors(true);
       const candidates = await resolveAuthor(activeQuery);
+      if (currentReqId === requestIdRef.current) setSearchError(candidates.warnings?.join(' ') || '');
       
       if (currentReqId !== requestIdRef.current) return;
       setIsResolvingAuthors(false);
@@ -212,6 +220,7 @@ export const LiteratureModal: React.FC<Props> = ({
         setPapers(result.papers);
         setTotalResultCount(result.totalCount);
         setSourcesUsed(result.sourcesUsed);
+        setSearchError(result.warnings?.join(' ') || '');
       } else if (candidates.length > 1) {
         setAuthorDisambiguationList(candidates);
         setPapers([]);
@@ -239,23 +248,24 @@ export const LiteratureModal: React.FC<Props> = ({
       pageSize: pageSize
     };
 
-    try {
       const res = await searchRealtimeAcademicPapers(apiFilters);
       if (currentReqId !== requestIdRef.current) return;
       setPapers(res.papers);
       setTotalResultCount(res.totalCount);
       setSourcesUsed(res.sourcesUsed);
+      setSearchError(res.warnings?.join(' ') || '');
       if (res.papers.length > 0) {
         setExpandedPaperId(res.papers[0].id);
       }
     } catch (err) {
       if (currentReqId !== requestIdRef.current) return;
-      console.error('Academic search error:', err);
+      setSearchError(err instanceof Error ? err.message : 'Academic search unavailable. Retry shortly.');
       setPapers([]);
       setTotalResultCount(0);
     } finally {
       if (currentReqId === requestIdRef.current) {
         setIsLoading(false);
+        setIsResolvingAuthors(false);
       }
     }
   };
@@ -406,6 +416,7 @@ export const LiteratureModal: React.FC<Props> = ({
         position: 'relative'
       }}>
         
+        {searchError && <div role="alert" style={{ padding: 16 }}><p>{searchError}</p><button onClick={() => handleExecuteSearch()}>Retry search</button></div>}
         {/* Header */}
         <div style={{
           padding: '10px 20px',
@@ -1164,7 +1175,7 @@ export const LiteratureModal: React.FC<Props> = ({
                           Real-Time Source Abstract
                         </div>
                         <p style={{ fontSize: '0.86rem', color: 'var(--text-main)', lineHeight: '1.6', margin: 0, background: 'var(--bg-main)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                          "{paper.abstract}"
+                          {paper.abstract ? `“${paper.abstract}”` : 'Abstract unavailable. This metadata-only record does not provide a supporting passage.'}
                         </p>
                       </div>
 

@@ -1,80 +1,63 @@
-/**
- * Automated 35 U.S.C. § 102 & § 103 Patent Invalidity Risk Calculator Engine
- * Computes legal novelty anticipation and obviousness combination risks.
- */
+/** Element coverage is descriptive; it cannot establish statutory invalidity. */
+export interface AssessedClaimElement {
+  elementId: string;
+  text: string;
+  matchType: 'exact' | 'partial' | 'missing';
+}
 
 export interface InvalidityAssessment {
   targetPatentNumber: string;
-  claimNumber: number;
+  status: 'INSUFFICIENT_EVIDENCE' | 'COVERAGE_ONLY';
   totalElementsCount: number;
-  
-  // 35 U.S.C. § 102 Novelty / Anticipation
-  sec102RiskScore: number; // 0 - 100%
-  sec102Rating: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW';
-  primaryPriorArtNumber: string;
-  elementsAnticipatedCount: number;
-
-  // 35 U.S.C. § 103 Obviousness
-  sec103RiskScore: number; // 0 - 100%
-  sec103Rating: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW';
-  secondaryPriorArtNumber: string;
-  combinedElementsCount: number;
-  motivationToCombine: 'HIGH' | 'MEDIUM' | 'LOW';
-
-  // Summary & USPTO Rejection Likelihood
-  overallInvalidityScore: number; // 0 - 100%
+  exactMatchesCount: number;
+  partialMatchesCount: number;
+  exactCoveragePercent: number | null;
+  combinedCoveragePercent: number | null;
+  // Deliberately unset: match labels alone cannot justify legal probabilities.
+  sec102RiskScore: null;
+  sec103RiskScore: null;
+  overallInvalidityScore: null;
   expectedUsptoAction: string;
   legalSummary: string;
 }
 
 export function computeInvalidityRisk(
-  targetPatentNumber: string = 'US 10,928,341 B2',
-  claimElements: { elementId: string; text: string; matchType: 'exact' | 'partial' | 'missing' }[] = []
+  targetPatentNumber = '',
+  claimElements: AssessedClaimElement[] = []
 ): InvalidityAssessment {
-  const total = claimElements.length > 0 ? claimElements.length : 5;
-  const exactMatches = claimElements.filter(e => e.matchType === 'exact').length || 4;
-  const partialMatches = claimElements.filter(e => e.matchType === 'partial').length || 1;
-
-  // § 102 Anticipation: Single reference disclosing ALL elements (100% anticipation)
-  const sec102RiskScore = Math.round((exactMatches / total) * 100);
-  let sec102Rating: InvalidityAssessment['sec102Rating'] = 'MODERATE';
-  if (sec102RiskScore >= 85) sec102Rating = 'CRITICAL';
-  else if (sec102RiskScore >= 70) sec102Rating = 'HIGH';
-  else if (sec102RiskScore < 40) sec102Rating = 'LOW';
-
-  // § 103 Obviousness: Combination of Ref A + Ref B covering elements
-  const combinedMatches = Math.min(total, exactMatches + partialMatches);
-  const sec103RiskScore = Math.round((combinedMatches / total) * 96);
-  let sec103Rating: InvalidityAssessment['sec103Rating'] = 'HIGH';
-  if (sec103RiskScore >= 90) sec103Rating = 'CRITICAL';
-  else if (sec103RiskScore < 50) sec103Rating = 'LOW';
-
-  const overallInvalidityScore = Math.round((sec102RiskScore * 0.55) + (sec103RiskScore * 0.45));
-
-  let expectedUsptoAction = 'Rejection under 35 U.S.C. § 103(a) (Obviousness Combination)';
-  if (sec102RiskScore >= 80) {
-    expectedUsptoAction = 'Rejection under 35 U.S.C. § 102(a)(1) (Anticipation / Lack of Novelty)';
+  // Reject conflicting duplicates instead of counting them toward coverage.
+  const elements = new Map<string, AssessedClaimElement>();
+  let invalid = false;
+  for (const element of claimElements) {
+    if (!element?.elementId?.trim() || !element.text?.trim() ||
+        !['exact', 'partial', 'missing'].includes(element.matchType)) {
+      invalid = true;
+      break;
+    }
+    const key = element.elementId.trim();
+    const previous = elements.get(key);
+    if (previous && (previous.text !== element.text || previous.matchType !== element.matchType)) {
+      invalid = true;
+      break;
+    }
+    elements.set(key, element);
   }
-
-  const legalSummary = sec102RiskScore >= 80
-    ? `Claim 1 faces critical anticipation risk under 35 U.S.C. § 102(a)(1) because primary reference US 10,482,391 B1 explicitly discloses ${exactMatches} out of ${total} claim limitations.`
-    : `Claim 1 faces high obviousness risk under 35 U.S.C. § 103(a). A PHOSITA (Person Having Ordinary Skill in the Art) would find it obvious to combine primary reference US 10,482,391 B1 with secondary reference US 11,048,920 B2 to teach all ${combinedMatches} claim elements.`;
-
+  const valid = !invalid && elements.size > 0;
+  const total = valid ? elements.size : 0;
+  const exact = valid ? [...elements.values()].filter(e => e.matchType === 'exact').length : 0;
+  const partial = valid ? [...elements.values()].filter(e => e.matchType === 'partial').length : 0;
   return {
     targetPatentNumber,
-    claimNumber: 1,
+    status: valid ? 'COVERAGE_ONLY' : 'INSUFFICIENT_EVIDENCE',
     totalElementsCount: total,
-    sec102RiskScore,
-    sec102Rating,
-    primaryPriorArtNumber: 'US 10,482,391 B1',
-    elementsAnticipatedCount: exactMatches,
-    sec103RiskScore,
-    sec103Rating,
-    secondaryPriorArtNumber: 'US 11,048,920 B2',
-    combinedElementsCount: combinedMatches,
-    motivationToCombine: 'HIGH',
-    overallInvalidityScore,
-    expectedUsptoAction,
-    legalSummary
+    exactMatchesCount: exact,
+    partialMatchesCount: partial,
+    exactCoveragePercent: valid ? Math.round(exact / total * 100) : null,
+    combinedCoveragePercent: valid ? Math.round((exact + partial) / total * 100) : null,
+    sec102RiskScore: null, sec103RiskScore: null, overallInvalidityScore: null,
+    expectedUsptoAction: 'Not assessed',
+    legalSummary: valid
+      ? 'Coverage summarizes supplied match labels only. Source passages, dates, claim construction, and legal review are required before assessing novelty or obviousness.'
+      : 'No complete, consistent element assessment is available. Patent invalidity and examiner action cannot be inferred.'
   };
 }

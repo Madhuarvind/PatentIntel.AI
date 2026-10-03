@@ -1,3 +1,5 @@
+> Historical research draft — not verified product documentation. Numerical results, implementation/compliance claims, and unverified references must not be treated as established findings. See [research verification](../docs/pilot/RESEARCH_VERIFICATION.md) and [current design](../docs/pilot/DESIGN.md).
+
 # PatentIntel.AI: A Domain-Isolated Dual-Pipeline Architecture for Real-Time Patent Prior-Art Retrieval, Claim Grounding, Feature-Level Overlap Benchmarking, and Dual-Jurisdiction Statutory Subject-Matter Screening
 
 **Authors:** Madhuaravind P, Harish M, Mouneesh R  

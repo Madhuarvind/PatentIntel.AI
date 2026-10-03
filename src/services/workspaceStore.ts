@@ -1,4 +1,5 @@
 import type { PatentDocument, Claim, NormalizedPatent, ClaimElement } from '../types';
+import { decomposePatentClaim } from './claimDecompositionService';
 
 const DB_PATENTS_KEY = 'patentintel_db_patents';
 
@@ -6,6 +7,42 @@ export interface WorkspaceState {
   patents: PatentDocument[];
   activePatent: PatentDocument | null;
 }
+
+export interface WorkspaceMetrics {
+  totalPatents: number;
+  totalClaims: number;
+  totalElements: number;
+  independentClaims: number;
+  dependentClaims: number;
+  avgClaimsPerPatent: number;
+  avgElementsPerClaim: number;
+  grantedCount: number;
+  applicationsCount: number;
+  decompositionCoverage: number;
+  cpcDistribution: Array<{ code: string; count: number; percentage: number; label: string }>;
+  assigneeDistribution: Array<{ name: string; count: number }>;
+  jurisdictionDistribution: Array<{ code: string; count: number }>;
+  accuracy: number;
+}
+
+export const CPC_SUBCLASS_LABELS: Record<string, string> = {
+  'G08G': 'Traffic Control & Vehicle Guidance Systems',
+  'H04W': 'Wireless Communication Networks & 5G/C-V2X',
+  'H04L': 'Digital Data Transmission & Protocols',
+  'G06N': 'Artificial Intelligence & Neural Networks',
+  'G06F': 'Electric Digital Data Processing & Architecture',
+  'G06K': 'Recognition of Data & Biometrics',
+  'G01R': 'Measuring Electrical Properties & Sensor Circuits',
+  'G01N': 'Investigating Chemical/Physical Properties',
+  'G01S': 'Radar, Lidar & Radio Navigation',
+  'B60W': 'Autonomous Vehicles & Conjoint Sub-unit Control',
+  'A61B': 'Medical Diagnosis & Surgical Instruments',
+  'A61K': 'Preparations for Medical Purposes',
+  'H01L': 'Semiconductor Devices & Integrated Circuits',
+  'H02J': 'Circuit Systems for Power Distribution',
+  'B64C': 'Aeroplanes & Helicopters',
+  'B64U': 'Unmanned Aerial Vehicles (UAVs / Drones)'
+};
 
 export const INITIAL_WORKSPACE_PATENTS: PatentDocument[] = [
   {
@@ -20,7 +57,8 @@ export const INITIAL_WORKSPACE_PATENTS: PatentDocument[] = [
     rawSourceIdentifier: 'US011594127B1',
     sourceIdentifier: 'US11594127B1',
     displayNumber: 'US 11,594,127 B1',
-    source: 'USPTO',
+    source: 'Sample record (not verified)',
+    isSample: true,
     sourceUrl: 'https://patents.google.com/patent/US11594127B1/en',
     claims: [
       {
@@ -57,7 +95,8 @@ export const INITIAL_WORKSPACE_PATENTS: PatentDocument[] = [
     rawSourceIdentifier: 'US12260757B2',
     sourceIdentifier: 'US12260757B2',
     displayNumber: 'US 12,260,757 B2',
-    source: 'USPTO',
+    source: 'Sample record (not verified)',
+    isSample: true,
     sourceUrl: 'https://patents.google.com/patent/US12260757B2/en',
     claims: [
       {
@@ -84,7 +123,8 @@ export const INITIAL_WORKSPACE_PATENTS: PatentDocument[] = [
     rawSourceIdentifier: 'US10928341B2',
     sourceIdentifier: 'US10928341B2',
     displayNumber: 'US 10,928,341 B2',
-    source: 'USPTO',
+    source: 'Sample record (not verified)',
+    isSample: true,
     sourceUrl: 'https://patents.google.com/patent/US10928341B2/en',
     claims: [
       {
@@ -103,6 +143,7 @@ export const INITIAL_WORKSPACE_PATENTS: PatentDocument[] = [
 class WorkspaceStore {
   private patents: PatentDocument[] = [];
   private listeners: (() => void)[] = [];
+  private activePatentId: string | null = null;
 
   constructor() {
     this.loadFromStorage();
@@ -144,15 +185,26 @@ class WorkspaceStore {
           }
           return true;
         });
-        this.patents = loaded;
+        this.patents = loaded.map(p => {
+          const seed = INITIAL_WORKSPACE_PATENTS.find(sample => sample.id === p.id);
+          const sameClaims = seed && JSON.stringify((seed.claims || []).map(c => c.text)) === JSON.stringify((p.claims || []).map(c => c.text));
+          return sameClaims && !p.retrievedAt ? { ...p, isSample: true, source: 'Sample record (not verified)' } : p;
+        });
         this.saveToStorage();
       } else {
-        this.patents = [...INITIAL_WORKSPACE_PATENTS];
+        this.patents = [];
         this.saveToStorage();
       }
+
+      try {
+        const storedActiveId = localStorage.getItem('patentintel_active_patent_id');
+        if (storedActiveId) {
+          this.activePatentId = storedActiveId;
+        }
+      } catch {}
     } catch (e) {
       console.warn('Failed to load workspace patents from storage:', e);
-      this.patents = [...INITIAL_WORKSPACE_PATENTS];
+      this.patents = [];
     }
   }
 
@@ -166,6 +218,48 @@ class WorkspaceStore {
 
   public getPatents(): PatentDocument[] {
     return [...this.patents];
+  }
+
+  public getActivePatent(): PatentDocument | null {
+    if (this.activePatentId) {
+      const found = this.findPatent(this.activePatentId);
+      if (found) return found;
+    }
+    return this.patents[0] || null;
+  }
+
+  public setActivePatent(id: string) {
+    this.activePatentId = id;
+    try {
+      localStorage.setItem('patentintel_active_patent_id', id);
+    } catch (e) {
+      console.warn('Failed to persist active patent id:', e);
+    }
+    this.notify();
+  }
+
+  public getComparisonPair(): { targetId: string; candidateId: string; targetClaimNumber?: number; candidateClaimNumber?: number } {
+    try {
+      const stored = localStorage.getItem('patentintel_comparison_pair');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && typeof parsed.targetId === 'string' && typeof parsed.candidateId === 'string') {
+          return parsed;
+        }
+      }
+    } catch {}
+    const target = this.getActivePatent()?.id || this.patents[0]?.id || '';
+    const candidate = this.patents.find(p => p.id !== target)?.id || '';
+    return { targetId: target, candidateId: candidate };
+  }
+
+  public setComparisonPair(targetId: string, candidateId: string, targetClaimNumber?: number, candidateClaimNumber?: number) {
+    try {
+      localStorage.setItem('patentintel_comparison_pair', JSON.stringify({ targetId, candidateId, targetClaimNumber, candidateClaimNumber }));
+    } catch (e) {
+      console.warn('Failed to persist comparison pair:', e);
+    }
+    this.notify();
   }
 
   /**
@@ -206,16 +300,25 @@ class WorkspaceStore {
       this.findPatent(normalized.id) ||
       this.findPatent(normalized.publicationNumber);
 
-    if (existing) {
+    if (existing && !existing.isSample) {
       return { isDuplicate: true, patent: existing };
     }
 
     const docClaims: Claim[] = normalized.claims.map(nc => {
-      const phrases = nc.text.split(/;|\bcomprising:?\b|\bincluding:?\b|\bwherein\b/i).filter(p => p.trim().length > 15);
-      const elements: ClaimElement[] = phrases.map((ph, idx) => ({
-        id: `el_${nc.claimNumber}_${idx + 1}`,
-        text: ph.trim(),
-        cpcCategory: normalized.cpc[0] || 'G06F 17/00'
+      const decomposed = decomposePatentClaim(nc.text, nc.claimNumber, normalized.cpc);
+      const elements: ClaimElement[] = decomposed.limitations.map(l => ({
+        id: `el_${nc.claimNumber}_${l.elementNumber}`,
+        term: l.canonicalName,
+        text: l.cleanedText,
+        canonicalName: l.canonicalName,
+        category: l.category,
+        cleanedText: l.cleanedText,
+        rawText: l.rawText,
+        cpcCategory: l.cpcCategory,
+        antecedentStatus: l.antecedentStatus,
+        antecedentNotes: l.antecedentNotes,
+        breadthImpact: l.breadthImpact,
+        searchQuerySuggestion: l.searchQuerySuggestion
       }));
 
       return {
@@ -223,18 +326,18 @@ class WorkspaceStore {
         text: nc.text,
         type: nc.type,
         isIndependent: nc.type === 'independent',
-        elements: elements.length > 0 ? elements : [{ id: `el_${nc.claimNumber}_1`, text: nc.text, cpcCategory: normalized.cpc[0] || 'G06F 17/00' }]
+        elements: elements.length > 0 ? elements : [{ id: `el_${nc.claimNumber}_1`, text: nc.text, cpcCategory: normalized.cpc[0] }]
       };
     });
 
     const doc: PatentDocument = {
       id: normalized.id,
       title: normalized.title,
-      assignee: normalized.assignee || (normalized.assignees && normalized.assignees[0]) || 'Disclosed Assignee',
+      assignee: normalized.assignee || (normalized.assignees && normalized.assignees[0]) || '',
       inventors: normalized.inventors,
       cpcCodes: normalized.cpc,
-      filingDate: normalized.filingDate || normalized.priorityDate || 'N/A',
-      issueDate: normalized.publicationDate || normalized.grantDate || 'N/A',
+      filingDate: normalized.filingDate,
+      issueDate: normalized.grantDate,
       abstract: normalized.abstract,
       claims: docClaims,
       rawSourceIdentifier: normalized.rawSourceIdentifier,
@@ -243,12 +346,16 @@ class WorkspaceStore {
       source: normalized.source || 'USPTO',
       sourceUrl: normalized.sourceUrl,
       fileHash: normalized.fileHash,
-      retrievedAt: normalized.retrievedAt
+      retrievedAt: normalized.retrievedAt,
+      publicationNumber: normalized.publicationNumber,
+      publicationDate: normalized.publicationDate,
+      priorityDate: normalized.priorityDate,
+      grantDate: normalized.grantDate,
+      kindCode: normalized.kindCode,
+      importQuality: normalized.importQuality
     };
 
-    this.patents.unshift(doc);
-    this.saveToStorage();
-    this.notify();
+    this.addPatent(doc);
 
     return { isDuplicate: false, patent: doc };
   }
@@ -280,6 +387,13 @@ class WorkspaceStore {
     }
   }
 
+  public clearWorkspace() {
+    this.patents = [];
+    this.activePatentId = null;
+    this.saveToStorage();
+    this.notify();
+  }
+
   public logActivity(action: string, patentId: string) {
     try {
       const logs = JSON.parse(localStorage.getItem('patentintel_activity_log') || '[]');
@@ -295,6 +409,23 @@ class WorkspaceStore {
     }
   }
 
+  public resetToDefault() {
+    // Opt-in examples are added without replacing imported documents.
+    this.patents = [...this.patents, ...INITIAL_WORKSPACE_PATENTS.filter(p => !this.findPatent(p.id))];
+    this.activePatentId = this.patents[0]?.id || null;
+    this.saveToStorage();
+    this.logActivity('Reset workspace to standard reference patents', 'SYSTEM');
+    this.notify();
+  }
+
+  public getActivityLog(): Array<{ user: string; action: string; patentId: string; timestamp: string }> {
+    try {
+      return JSON.parse(localStorage.getItem('patentintel_activity_log') || '[]');
+    } catch {
+      return [];
+    }
+  }
+
   public subscribe(listener: () => void) {
     this.listeners.push(listener);
     return () => {
@@ -306,17 +437,104 @@ class WorkspaceStore {
     this.listeners.forEach(l => l());
   }
 
-  public getMetrics() {
+  public getMetrics(): WorkspaceMetrics {
     const totalPatents = this.patents.length;
-    const totalClaims = this.patents.reduce((acc: number, p: PatentDocument) => acc + (p.claims ? p.claims.length : 0), 0);
-    const totalElements = this.patents.reduce((acc: number, p: PatentDocument) => {
-      return acc + (p.claims ? p.claims.reduce((cAcc: number, c: Claim) => cAcc + (c.elements ? c.elements.length : 0), 0) : 0);
-    }, 0);
+    let totalClaims = 0;
+    let independentClaims = 0;
+    let dependentClaims = 0;
+    let totalElements = 0;
+    let claimsWithElements = 0;
+    let grantedCount = 0;
+    let applicationsCount = 0;
+
+    const cpcCounts: Record<string, number> = {};
+    const assigneeCounts: Record<string, number> = {};
+    const jurisdictionCounts: Record<string, number> = {};
+
+    for (const p of this.patents) {
+      const idUpper = (p.id || '').toUpperCase();
+      const kind = (p.kindCode || '').toUpperCase();
+      if (kind.startsWith('B') || idUpper.includes('B1') || idUpper.includes('B2') || p.issueDate || p.grantDate) {
+        grantedCount++;
+      } else if (kind.startsWith('A') || idUpper.includes('A1') || idUpper.includes('A2')) {
+        applicationsCount++;
+      } else {
+        grantedCount++;
+      }
+
+      const jurMatch = idUpper.match(/^([A-Z]{2})/);
+      const jur = jurMatch ? jurMatch[1] : 'US';
+      jurisdictionCounts[jur] = (jurisdictionCounts[jur] || 0) + 1;
+
+      const rawAssignee = p.assignee ? p.assignee.trim() : 'Independent / Unassigned';
+      assigneeCounts[rawAssignee] = (assigneeCounts[rawAssignee] || 0) + 1;
+
+      if (Array.isArray(p.cpcCodes)) {
+        for (const cpc of p.cpcCodes) {
+          const match = cpc.match(/^[A-HY]\d{2}[A-Z]/i);
+          const subclass = match ? match[0].toUpperCase() : cpc.slice(0, 4).toUpperCase();
+          if (subclass && subclass.length >= 3) {
+            cpcCounts[subclass] = (cpcCounts[subclass] || 0) + 1;
+          }
+        }
+      }
+
+      if (Array.isArray(p.claims)) {
+        for (const c of p.claims) {
+          totalClaims++;
+          if (c.isIndependent || c.type === 'independent') {
+            independentClaims++;
+          } else {
+            dependentClaims++;
+          }
+
+          const elemCount = c.elements ? c.elements.length : 0;
+          totalElements += elemCount;
+          if (elemCount > 0) {
+            claimsWithElements++;
+          }
+        }
+      }
+    }
+
+    const totalCpcCount = Object.values(cpcCounts).reduce((a, b) => a + b, 0);
+    const cpcDistribution = Object.entries(cpcCounts)
+      .map(([code, count]) => ({
+        code,
+        count,
+        percentage: totalCpcCount > 0 ? Math.round((count / totalCpcCount) * 100) : 0,
+        label: CPC_SUBCLASS_LABELS[code] || `${code} Technology Subclass`
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6);
+
+    const assigneeDistribution = Object.entries(assigneeCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    const jurisdictionDistribution = Object.entries(jurisdictionCounts)
+      .map(([code, count]) => ({ code, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const avgClaimsPerPatent = totalPatents > 0 ? Number((totalClaims / totalPatents).toFixed(1)) : 0;
+    const avgElementsPerClaim = totalClaims > 0 ? Number((totalElements / totalClaims).toFixed(1)) : 0;
+    const decompositionCoverage = totalClaims > 0 ? Math.round((claimsWithElements / totalClaims) * 100) : (totalPatents > 0 ? 100 : 0);
 
     return {
       totalPatents,
       totalClaims,
       totalElements,
+      independentClaims,
+      dependentClaims,
+      avgClaimsPerPatent,
+      avgElementsPerClaim,
+      grantedCount,
+      applicationsCount,
+      decompositionCoverage,
+      cpcDistribution,
+      assigneeDistribution,
+      jurisdictionDistribution,
       accuracy: totalPatents > 0 ? 100.0 : 0
     };
   }

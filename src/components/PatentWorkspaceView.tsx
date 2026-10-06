@@ -59,7 +59,7 @@ const PatentMetadataItem: React.FC<PatentMetadataItemProps> = ({ label, value, i
       fontWeight: 700,
       textTransform: 'uppercase',
       letterSpacing: '0.05em',
-      color: '#94A3B8'
+      color: 'var(--text-muted)'
     }}>
       {icon}
       <span>{label}</span>
@@ -67,7 +67,7 @@ const PatentMetadataItem: React.FC<PatentMetadataItemProps> = ({ label, value, i
     <div style={{
       fontSize: '0.88rem',
       fontWeight: 600,
-      color: '#F8FAFC',
+      color: 'var(--text-main)',
       lineHeight: '1.4',
       overflowWrap: 'anywhere',
       wordBreak: 'break-word'
@@ -356,10 +356,10 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
       {usptoSuccessMsg && (
         <div style={{
           padding: '12px 18px',
-          background: 'rgba(16, 185, 129, 0.1)',
-          border: '1px solid rgba(16, 185, 129, 0.3)',
+          background: 'rgba(34,104,88,0.1)',
+          border: '1px solid rgba(34,104,88,0.3)',
           borderRadius: '10px',
-          color: '#10B981',
+          color: 'var(--accent-emerald)',
           fontSize: '0.88rem',
           fontWeight: 600,
           display: 'flex',
@@ -391,10 +391,10 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
       {usptoErrorMsg && (
         <div style={{
           padding: '12px 18px',
-          background: 'rgba(239, 68, 68, 0.1)',
-          border: '1px solid rgba(239, 68, 68, 0.3)',
+          background: 'rgba(174,54,67,0.1)',
+          border: '1px solid rgba(174,54,67,0.3)',
           borderRadius: '10px',
-          color: '#EF4444',
+          color: 'var(--accent-rose)',
           fontSize: '0.88rem',
           fontWeight: 600,
           display: 'flex',
@@ -408,10 +408,10 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
       {/* USPTO Live Import Panel */}
       {activeTab === 'uspto-import' && (
         <div className="glass-panel" style={{ padding: '24px' }}>
-          <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#FFFFFF', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Globe color="#00F2FE" size={20} /> Patent Source Lookup
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Globe color="var(--accent-cyan)" size={20} /> Patent Source Lookup
           </h2>
-          <p style={{ fontSize: '0.88rem', color: '#94A3B8', marginBottom: '20px', lineHeight: '1.5' }}>
+          <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '20px', lineHeight: '1.5' }}>
             Enter a publication number to request its Google Patents source record. Source availability and missing fields are reported explicitly.
           </p>
 
@@ -426,16 +426,16 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                 style={{
                   width: '100%',
                   padding: '12px 16px 12px 42px',
-                  background: '#0F172A',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  background: 'var(--bg-card-solid)',
+                  border: '1px solid rgba(21,51,60,0.15)',
                   borderRadius: '10px',
-                  color: '#FFFFFF',
+                  color: 'var(--text-main)',
                   fontSize: '0.92rem',
                   outline: 'none',
                   opacity: isFetchingUspto ? 0.7 : 1
                 }}
               />
-              <Search size={18} color="#64748B" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+              <Search size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
             </div>
 
             <button
@@ -456,7 +456,7 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                 type="button"
                 onClick={handleCancelImport}
                 className="btn-secondary"
-                style={{ padding: '12px 16px', color: '#F87171', borderColor: 'rgba(239, 68, 68, 0.4)' }}
+                style={{ padding: '12px 16px', color: 'var(--accent-rose)', borderColor: 'rgba(174,54,67,0.4)' }}
               >
                 Cancel
               </button>
@@ -464,7 +464,7 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
           </form>
 
           {/* Quick Examples */}
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', fontSize: '0.8rem', color: '#94A3B8' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
             <span>Example Patent Numbers:</span>
             {['US11954112B2', 'US11990034B2', 'US11594127B1', 'US12260757B2', 'US10928341B2'].map(ex => (
               <button
@@ -473,11 +473,11 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                 disabled={isFetchingUspto}
                 onClick={() => setUsptoQuery(ex)}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  background: 'rgba(21,51,60,0.05)',
+                  border: '1px solid rgba(21,51,60,0.1)',
                   borderRadius: '6px',
                   padding: '3px 8px',
-                  color: '#00F2FE',
+                  color: 'var(--accent-cyan)',
                   cursor: isFetchingUspto ? 'not-allowed' : 'pointer',
                   fontSize: '0.78rem',
                   opacity: isFetchingUspto ? 0.5 : 1
@@ -490,22 +490,22 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
 
           {/* Real-time Stepper Progress Card (Requirement 3 & 15 & 17 & 18) */}
           {isFetchingUspto && importState && (
-            <div style={{ marginTop: '24px', padding: '18px', background: '#0B0F19', borderRadius: '12px', border: '1px solid rgba(0, 242, 254, 0.3)' }}>
+            <div style={{ marginTop: '24px', padding: '18px', background: 'var(--bg-card-solid)', borderRadius: '12px', border: '1px solid rgba(34,104,88,0.3)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <div style={{ fontSize: '0.88rem', color: '#00F2FE', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ fontSize: '0.88rem', color: 'var(--accent-cyan)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Loader2 size={16} className="animate-spin" />
                   <span>Step {importState.stepNumber > 0 ? importState.stepNumber : 1} of 7: {importState.message}</span>
                 </div>
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.78rem' }}>
-                  <span style={{ color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Clock size={13} color="#00F2FE" /> Elapsed: <strong style={{ color: '#F8FAFC' }}>{importState.elapsedSeconds}s</strong>
+                  <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Clock size={13} color="var(--accent-cyan)" /> Elapsed: <strong style={{ color: 'var(--text-main)' }}>{importState.elapsedSeconds}s</strong>
                   </span>
 
                   <button
                     type="button"
                     onClick={handleCancelImport}
-                    style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#F87171', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
+                    style={{ background: 'rgba(174,54,67,0.15)', border: '1px solid rgba(174,54,67,0.3)', color: 'var(--accent-rose)', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
                   >
                     Cancel
                   </button>
@@ -513,17 +513,17 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
               </div>
 
               {importState.detail && (
-                <div style={{ fontSize: '0.78rem', color: '#94A3B8', marginBottom: '10px' }}>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '10px' }}>
                   {importState.detail}
                 </div>
               )}
 
               {/* Real-Time Stage Derived Progress Bar */}
-              <div style={{ width: '100%', height: '8px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{ width: '100%', height: '8px', background: 'rgba(21,51,60,0.08)', borderRadius: '4px', overflow: 'hidden' }}>
                 <div style={{
                   width: `${importState.progress}%`,
                   height: '100%',
-                  background: 'linear-gradient(90deg, #00F2FE, #3B82F6)',
+                  background: 'linear-gradient(90deg, var(--accent-cyan), var(--accent-blue))',
                   transition: 'width 0.25s ease'
                 }} />
               </div>
@@ -535,10 +535,10 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
             <div style={{
               marginTop: '20px',
               padding: '16px 20px',
-              background: importState.status === 'cancelled' ? 'rgba(234, 179, 8, 0.08)' : 'rgba(239, 68, 68, 0.08)',
-              border: importState.status === 'cancelled' ? '1px solid rgba(234, 179, 8, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
+              background: importState.status === 'cancelled' ? 'rgba(234, 179, 8, 0.08)' : 'rgba(174,54,67,0.08)',
+              border: importState.status === 'cancelled' ? '1px solid rgba(234, 179, 8, 0.3)' : '1px solid rgba(174,54,67,0.3)',
               borderRadius: '12px',
-              color: importState.status === 'cancelled' ? '#FACC15' : '#F87171'
+              color: importState.status === 'cancelled' ? '#FACC15' : 'var(--accent-rose)'
             }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                 <div>
@@ -550,12 +550,12 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                     </span>
                   </div>
 
-                  <p style={{ fontSize: '0.84rem', color: '#E2E8F0', margin: '0 0 6px', lineHeight: '1.4' }}>
+                  <p style={{ fontSize: '0.84rem', color: 'var(--text-main)', margin: '0 0 6px', lineHeight: '1.4' }}>
                     {importState.error?.message || importState.message}
                   </p>
 
                   {importState.error?.suggestedAction && (
-                    <div style={{ fontSize: '0.78rem', color: '#94A3B8' }}>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                       Suggested action: {importState.error.suggestedAction}
                     </div>
                   )}
@@ -603,30 +603,30 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
           style={{
             padding: '48px 24px',
             textAlign: 'center',
-            border: isDragOver ? '2px dashed #00F2FE' : '2px dashed rgba(255, 255, 255, 0.15)',
-            background: isDragOver ? 'rgba(0, 242, 254, 0.05)' : 'transparent',
+            border: isDragOver ? '2px dashed var(--accent-cyan)' : '2px dashed rgba(21,51,60,0.15)',
+            background: isDragOver ? 'rgba(34,104,88,0.05)' : 'transparent',
             borderRadius: '16px'
           }}
         >
-          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(0, 242, 254, 0.1)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#00F2FE', marginBottom: '16px' }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(34,104,88,0.1)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-cyan)', marginBottom: '16px' }}>
             <Upload size={32} />
           </div>
 
-          <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: '#FFFFFF', marginBottom: '8px' }}>
+          <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px' }}>
             Drag and Drop Patent PDF Specification
           </h2>
-          <p style={{ fontSize: '0.88rem', color: '#94A3B8', marginBottom: '24px', lineHeight: '1.5' }}>
+          <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '24px', lineHeight: '1.5' }}>
             Upload real patent PDFs. First-page header parser extracts Title, Assignee, Inventors, and Claims.
           </p>
 
           {isParsing ? (
-            <div style={{ padding: '20px', background: '#0B0F19', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.15)', maxWidth: '450px', margin: '0 auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.86rem', fontWeight: 600, color: '#00F2FE' }}>
+            <div style={{ padding: '20px', background: 'var(--bg-card-solid)', borderRadius: '12px', border: '1px solid rgba(21,51,60,0.15)', maxWidth: '450px', margin: '0 auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.86rem', fontWeight: 600, color: 'var(--accent-cyan)' }}>
                 <span>Parsing Specification & Claims Scope...</span>
                 <span>{uploadProgress}%</span>
               </div>
-              <div style={{ width: '100%', height: '8px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '4px', overflow: 'hidden' }}>
-                <div style={{ width: `${uploadProgress}%`, height: '100%', background: 'linear-gradient(90deg, #00F2FE, #4FACFE)', transition: 'width 0.3s ease' }} />
+              <div style={{ width: '100%', height: '8px', background: 'rgba(21,51,60,0.08)', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{ width: `${uploadProgress}%`, height: '100%', background: 'linear-gradient(90deg, var(--accent-cyan), #4FACFE)', transition: 'width 0.3s ease' }} />
               </div>
             </div>
           ) : (
@@ -661,13 +661,13 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
           {storePatents.length === 0 ? (
             /* Empty Workspace UI */
             <div className="glass-panel" style={{ padding: '60px 24px', textAlign: 'center', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.05)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#64748B', marginBottom: '16px' }}>
+              <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(21,51,60,0.05)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', marginBottom: '16px' }}>
                 <FolderOpen size={32} />
               </div>
-              <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: '#FFFFFF', marginBottom: '8px' }}>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px' }}>
                 No patents in your workspace
               </h2>
-              <p style={{ fontSize: '0.9rem', color: '#94A3B8', marginBottom: '24px', maxWidth: '420px', margin: '0 auto 24px', lineHeight: '1.5' }}>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '24px', maxWidth: '420px', margin: '0 auto 24px', lineHeight: '1.5' }}>
                 Import a patent or upload a specification to begin claim analysis and prior-art comparison.
               </p>
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
@@ -691,12 +691,12 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                 gap: '12px'
               }}>
                 {/* Header & Search Bar inside Sidebar */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', borderBottom: '1px solid rgba(21,51,60,0.08)', paddingBottom: '12px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#00F2FE', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--accent-cyan)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                       WORKSPACE PATENTS ({filteredPatents.length})
                     </span>
-                    <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
                       {storePatents.length} Total
                     </span>
                   </div>
@@ -711,19 +711,19 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                       style={{
                         width: '100%',
                         padding: '8px 12px 8px 34px',
-                        background: '#0F172A',
-                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        background: 'var(--bg-card-solid)',
+                        border: '1px solid rgba(21,51,60,0.12)',
                         borderRadius: '8px',
-                        color: '#FFFFFF',
+                        color: 'var(--text-main)',
                         fontSize: '0.82rem',
                         outline: 'none'
                       }}
                     />
-                    <Search size={14} color="#64748B" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
+                    <Search size={14} color="var(--text-muted)" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
                     {searchQuery && (
                       <button
                         onClick={() => setSearchQuery('')}
-                        style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}
+                        style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
                       >
                         <X size={13} />
                       </button>
@@ -732,8 +732,8 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
 
                   {/* Filter & Sort Controls Side-by-Side */}
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between' }}>
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '4px', background: '#0F172A', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '6px', padding: '0 6px' }}>
-                      <Filter size={12} color="#00F2FE" />
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--bg-card-solid)', border: '1px solid rgba(21,51,60,0.12)', borderRadius: '6px', padding: '0 6px' }}>
+                      <Filter size={12} color="var(--accent-cyan)" />
                       <select
                         value={sourceFilter}
                         onChange={(e: any) => setSourceFilter(e.target.value)}
@@ -741,20 +741,20 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                           width: '100%',
                           background: 'transparent',
                           border: 'none',
-                          color: '#F8FAFC',
+                          color: 'var(--text-main)',
                           padding: '5px 0',
                           fontSize: '0.76rem',
                           outline: 'none'
                         }}
                       >
-                        <option value="all" style={{ background: '#0F172A' }}>All Sources</option>
-                        <option value="uspto" style={{ background: '#0F172A' }}>External Patent Sources</option>
-                        <option value="pdf" style={{ background: '#0F172A' }}>PDF Upload</option>
+                        <option value="all" style={{ background: 'var(--bg-card-solid)' }}>All Sources</option>
+                        <option value="uspto" style={{ background: 'var(--bg-card-solid)' }}>External Patent Sources</option>
+                        <option value="pdf" style={{ background: 'var(--bg-card-solid)' }}>PDF Upload</option>
                       </select>
                     </div>
 
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '4px', background: '#0F172A', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '6px', padding: '0 6px' }}>
-                      <ArrowUpDown size={12} color="#10B981" />
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--bg-card-solid)', border: '1px solid rgba(21,51,60,0.12)', borderRadius: '6px', padding: '0 6px' }}>
+                      <ArrowUpDown size={12} color="var(--accent-emerald)" />
                       <select
                         value={sortBy}
                         onChange={(e: any) => setSortBy(e.target.value)}
@@ -762,15 +762,15 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                           width: '100%',
                           background: 'transparent',
                           border: 'none',
-                          color: '#F8FAFC',
+                          color: 'var(--text-main)',
                           padding: '5px 0',
                           fontSize: '0.76rem',
                           outline: 'none'
                         }}
                       >
-                        <option value="recent" style={{ background: '#0F172A' }}>Recent</option>
-                        <option value="patentNumber" style={{ background: '#0F172A' }}>Patent #</option>
-                        <option value="title" style={{ background: '#0F172A' }}>Title</option>
+                        <option value="recent" style={{ background: 'var(--bg-card-solid)' }}>Recent</option>
+                        <option value="patentNumber" style={{ background: 'var(--bg-card-solid)' }}>Patent #</option>
+                        <option value="title" style={{ background: 'var(--bg-card-solid)' }}>Title</option>
                       </select>
                     </div>
                   </div>
@@ -779,7 +779,7 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                 {/* Scrollable List of Workspace Patent Cards */}
                 <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '4px' }}>
                   {filteredPatents.length === 0 ? (
-                    <div style={{ padding: '30px 12px', textAlign: 'center', color: '#64748B' }}>
+                    <div style={{ padding: '30px 12px', textAlign: 'center', color: 'var(--text-muted)' }}>
                       <FileX size={24} style={{ marginBottom: '6px' }} />
                       <div style={{ fontSize: '0.82rem' }}>No matching patents found</div>
                     </div>
@@ -801,22 +801,22 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                             cursor: 'pointer',
                             width: '100%',
                             border: '1px solid',
-                            borderColor: isSelected ? '#00F2FE' : 'rgba(255, 255, 255, 0.08)',
-                            background: isSelected ? 'rgba(0, 242, 254, 0.08)' : 'rgba(15, 23, 42, 0.5)',
-                            boxShadow: isSelected ? '0 0 15px rgba(0, 242, 254, 0.15)' : 'none',
+                            borderColor: isSelected ? 'var(--accent-cyan)' : 'rgba(21,51,60,0.08)',
+                            background: isSelected ? 'rgba(34,104,88,0.08)' : 'var(--bg-card-solid)',
+                            boxShadow: isSelected ? '0 0 15px rgba(34,104,88,0.15)' : 'none',
                             transition: 'all 0.2s ease'
                           }}
                         >
                           {/* Top Bar: Patent ID, Source Badge, and Action Menu Trigger [⋮] */}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                            <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#00F2FE', letterSpacing: '0.02em' }}>
+                            <span style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--accent-cyan)', letterSpacing: '0.02em' }}>
                               {dispNum}
                             </span>
 
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <span style={{
-                                background: isPdf ? 'rgba(168, 85, 247, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                                color: isPdf ? '#C084FC' : '#10B981',
+                                background: isPdf ? 'rgba(112,76,135,0.15)' : 'rgba(34,104,88,0.15)',
+                                color: isPdf ? 'var(--accent-purple)' : 'var(--accent-emerald)',
                                 padding: '2px 7px',
                                 borderRadius: '4px',
                                 fontSize: '0.68rem',
@@ -831,9 +831,9 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                                   setActiveMenuPatentId(isMenuOpen ? null : p.id);
                                 }}
                                 style={{
-                                  background: isMenuOpen ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
+                                  background: isMenuOpen ? 'rgba(21,51,60,0.15)' : 'transparent',
                                   border: 'none',
-                                  color: '#94A3B8',
+                                  color: 'var(--text-muted)',
                                   padding: '3px 6px',
                                   borderRadius: '4px',
                                   cursor: 'pointer'
@@ -853,10 +853,10 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                                   top: '36px',
                                   right: '12px',
                                   width: '190px',
-                                  background: '#0F172A',
-                                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                                  background: 'var(--bg-card-solid)',
+                                  border: '1px solid rgba(21,51,60,0.15)',
                                   borderRadius: '8px',
-                                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.5)',
+                                  boxShadow: 'var(--shadow-sm)',
                                   zIndex: 100,
                                   padding: '6px 0'
                                 }}
@@ -868,7 +868,7 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                                     padding: '8px 14px',
                                     background: 'none',
                                     border: 'none',
-                                    color: '#F8FAFC',
+                                    color: 'var(--text-main)',
                                     fontSize: '0.82rem',
                                     display: 'flex',
                                     alignItems: 'center',
@@ -877,7 +877,7 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                                     textAlign: 'left'
                                   }}
                                 >
-                                  <Eye size={14} color="#00F2FE" /> Open Patent
+                                  <Eye size={14} color="var(--accent-cyan)" /> Open Patent
                                 </button>
                                 <button
                                   onClick={() => { setSelectedPatent(p.id); setActiveMenuPatentId(null); }}
@@ -886,7 +886,7 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                                     padding: '8px 14px',
                                     background: 'none',
                                     border: 'none',
-                                    color: '#F8FAFC',
+                                    color: 'var(--text-main)',
                                     fontSize: '0.82rem',
                                     display: 'flex',
                                     alignItems: 'center',
@@ -895,7 +895,7 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                                     textAlign: 'left'
                                   }}
                                 >
-                                  <BarChart2 size={14} color="#A855F7" /> Analyze Claims
+                                  <BarChart2 size={14} color="var(--accent-purple)" /> Analyze Claims
                                 </button>
                                 <button
                                   onClick={() => { setSelectedPatent(p.id); setActiveMenuPatentId(null); }}
@@ -904,7 +904,7 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                                     padding: '8px 14px',
                                     background: 'none',
                                     border: 'none',
-                                    color: '#F8FAFC',
+                                    color: 'var(--text-main)',
                                     fontSize: '0.82rem',
                                     display: 'flex',
                                     alignItems: 'center',
@@ -913,7 +913,7 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                                     textAlign: 'left'
                                   }}
                                 >
-                                  <GitCompare size={14} color="#10B981" /> Compare
+                                  <GitCompare size={14} color="var(--accent-emerald)" /> Compare
                                 </button>
                                 {p.sourceUrl && (
                                   <button
@@ -923,7 +923,7 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                                       padding: '8px 14px',
                                       background: 'none',
                                       border: 'none',
-                                      color: '#F8FAFC',
+                                      color: 'var(--text-main)',
                                       fontSize: '0.82rem',
                                       display: 'flex',
                                       alignItems: 'center',
@@ -932,11 +932,11 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                                       textAlign: 'left'
                                     }}
                                   >
-                                    <ExternalLink size={14} color="#3B82F6" /> View Official Source
+                                    <ExternalLink size={14} color="var(--accent-blue)" /> View Official Source
                                   </button>
                                 )}
 
-                                <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.1)', margin: '4px 0' }} />
+                                <div style={{ height: '1px', background: 'rgba(21,51,60,0.1)', margin: '4px 0' }} />
 
                                 <button
                                   onClick={() => {
@@ -948,7 +948,7 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                                     padding: '8px 14px',
                                     background: 'none',
                                     border: 'none',
-                                    color: '#F87171',
+                                    color: 'var(--accent-rose)',
                                     fontSize: '0.82rem',
                                     display: 'flex',
                                     alignItems: 'center',
@@ -957,19 +957,19 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                                     textAlign: 'left'
                                   }}
                                 >
-                                  <Trash2 size={14} color="#F87171" /> Remove from Workspace
+                                  <Trash2 size={14} color="var(--accent-rose)" /> Remove from Workspace
                                 </button>
                               </div>
                             )}
                           </div>
 
                           {/* Card Content: Title */}
-                          <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#F8FAFC', lineHeight: '1.35', marginBottom: '8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word' }}>
+                          <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: '1.35', marginBottom: '8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word' }}>
                             {p.title}
                           </div>
 
                           {/* Footer: Assignee, Date & Claims count */}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.76rem', color: '#94A3B8' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.76rem', color: 'var(--text-muted)' }}>
                             <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>
                               {p.assignee || 'Assignee Disclosed'}
                             </span>
@@ -993,14 +993,14 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                   minWidth: 0
                 }}>
                   {/* HEADER AREA */}
-                  <div style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '20px', marginBottom: '20px' }}>
+                  <div style={{ borderBottom: '1px solid rgba(21,51,60,0.08)', paddingBottom: '20px', marginBottom: '20px' }}>
                     {/* Top Row: Badges on Left, Action Buttons on Right */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '12px' }}>
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                         <span style={{
-                          background: 'rgba(0, 242, 254, 0.12)',
-                          color: '#00F2FE',
-                          border: '1px solid rgba(0, 242, 254, 0.3)',
+                          background: 'rgba(34,104,88,0.12)',
+                          color: 'var(--accent-cyan)',
+                          border: '1px solid rgba(34,104,88,0.3)',
                           padding: '4px 12px',
                           borderRadius: '6px',
                           fontSize: '0.85rem',
@@ -1010,9 +1010,9 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                         </span>
 
                         <span style={{
-                          background: currentPatentDoc.source === 'Uploaded PDF Specification' ? 'rgba(168, 85, 247, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                          color: currentPatentDoc.source === 'Uploaded PDF Specification' ? '#C084FC' : '#10B981',
-                          border: currentPatentDoc.source === 'Uploaded PDF Specification' ? '1px solid rgba(168, 85, 247, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)',
+                          background: currentPatentDoc.source === 'Uploaded PDF Specification' ? 'rgba(112,76,135,0.15)' : 'rgba(34,104,88,0.15)',
+                          color: currentPatentDoc.source === 'Uploaded PDF Specification' ? 'var(--accent-purple)' : 'var(--accent-emerald)',
+                          border: currentPatentDoc.source === 'Uploaded PDF Specification' ? '1px solid rgba(112,76,135,0.3)' : '1px solid rgba(34,104,88,0.3)',
                           padding: '4px 10px',
                           borderRadius: '6px',
                           fontSize: '0.76rem',
@@ -1034,9 +1034,9 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                         <button
                           onClick={() => setPatentToRemove(currentPatentDoc)}
                           className="btn-secondary"
-                          style={{ padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', color: '#F87171', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                          style={{ padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-rose)', borderColor: 'rgba(174,54,67,0.3)' }}
                         >
-                          <Trash2 size={14} color="#F87171" /> Remove
+                          <Trash2 size={14} color="var(--accent-rose)" /> Remove
                         </button>
                       </div>
                     </div>
@@ -1045,7 +1045,7 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                     <h1 style={{
                       fontSize: '1.4rem',
                       fontWeight: 800,
-                      color: '#FFFFFF',
+                      color: 'var(--text-main)',
                       margin: '0 0 20px 0',
                       lineHeight: '1.35',
                       wordBreak: 'break-word',
@@ -1058,10 +1058,10 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                     {/* Responsive Metadata Grid */}
                     <div style={{
                       display: 'grid',
-                      gridTemplateColumns: 'minmax(220px, 1fr) minmax(320px, 1.5fr)',
+                      gridTemplateColumns: 'minmax(min(220px, 100%), 1fr) minmax(320px, 1.5fr)',
                       gap: '20px 32px',
-                      background: 'rgba(15, 23, 42, 0.4)',
-                      border: '1px solid rgba(255, 255, 255, 0.06)',
+                      background: 'var(--bg-card-solid)',
+                      border: '1px solid rgba(21,51,60,0.06)',
                       borderRadius: '12px',
                       padding: '20px',
                       minWidth: 0
@@ -1069,22 +1069,22 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                       {/* Left: Assignee */}
                       <PatentMetadataItem
                         label="Assignee"
-                        icon={<Building size={15} color="#00F2FE" />}
+                        icon={<Building size={15} color="var(--accent-cyan)" />}
                         value={currentPatentDoc.assignee || 'Assignee Disclosed'}
                       />
 
                       {/* Right: Inventors (Badge Cloud or Tag List) */}
                       <PatentMetadataItem
                         label="Inventors"
-                        icon={<Users size={15} color="#A855F7" />}
+                        icon={<Users size={15} color="var(--accent-purple)" />}
                         value={
                           currentPatentDoc.inventors && currentPatentDoc.inventors.length > 0 ? (
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                               {currentPatentDoc.inventors.map((inv, idx) => (
                                 <span key={idx} style={{
-                                  background: 'rgba(168, 85, 247, 0.12)',
-                                  border: '1px solid rgba(168, 85, 247, 0.25)',
-                                  color: '#E9D5FF',
+                                  background: 'rgba(112,76,135,0.12)',
+                                  border: '1px solid rgba(112,76,135,0.25)',
+                                  color: 'var(--accent-purple)',
                                   padding: '3px 10px',
                                   borderRadius: '6px',
                                   fontSize: '0.8rem',
@@ -1095,7 +1095,7 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                               ))}
                             </div>
                           ) : (
-                            <span style={{ color: '#94A3B8' }}>Disclosed Inventors</span>
+                            <span style={{ color: 'var(--text-muted)' }}>Disclosed Inventors</span>
                           )
                         }
                       />
@@ -1103,13 +1103,13 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                       {/* Dates: Filing Date & Issue / Grant Date */}
                       <PatentMetadataItem
                         label="Filing Date"
-                        icon={<Calendar size={15} color="#10B981" />}
+                        icon={<Calendar size={15} color="var(--accent-emerald)" />}
                         value={currentPatentDoc.filingDate || 'N/A'}
                       />
 
                       <PatentMetadataItem
                         label="Issue / Grant Date"
-                        icon={<Calendar size={15} color="#3B82F6" />}
+                        icon={<Calendar size={15} color="var(--accent-blue)" />}
                         value={currentPatentDoc.issueDate || 'N/A'}
                       />
 
@@ -1117,14 +1117,14 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                       {currentPatentDoc.cpcCodes && currentPatentDoc.cpcCodes.length > 0 && (
                         <PatentMetadataItem
                           label="Classification Codes (CPC / IPC)"
-                          icon={<Layers size={15} color="#C084FC" />}
+                          icon={<Layers size={15} color="var(--accent-purple)" />}
                           fullWidth
                           value={
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                               {currentPatentDoc.cpcCodes.map((code, idx) => (
                                 <span key={idx} style={{
-                                  background: 'rgba(0, 242, 254, 0.1)',
-                                  border: '1px solid rgba(0, 242, 254, 0.25)',
+                                  background: 'rgba(34,104,88,0.1)',
+                                  border: '1px solid rgba(34,104,88,0.25)',
                                   color: '#38BDF8',
                                   padding: '3px 10px',
                                   borderRadius: '6px',
@@ -1143,45 +1143,45 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
 
                   {/* Source Verification Panel */}
                   <div style={{
-                    background: 'rgba(16, 185, 129, 0.06)',
-                    border: '1px solid rgba(16, 185, 129, 0.25)',
+                    background: 'rgba(34,104,88,0.06)',
+                    border: '1px solid rgba(34,104,88,0.25)',
                     borderRadius: '12px',
                     padding: '16px 20px',
                     marginBottom: '24px',
                     minWidth: 0
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 700, color: '#10B981' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--accent-emerald)' }}>
                         <CheckCircle2 size={16} /> SOURCE VERIFICATION & RECORD INTEGRITY
                       </div>
-                      <span style={{ fontSize: '0.72rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10B981', padding: '3px 10px', borderRadius: '6px', fontWeight: 700 }}>
+                      <span style={{ fontSize: '0.72rem', background: 'rgba(34,104,88,0.15)', color: 'var(--accent-emerald)', padding: '3px 10px', borderRadius: '6px', fontWeight: 700 }}>
                         {currentPatentDoc.isSample ? 'Sample · not verified' : 'Review source provenance'}
                       </span>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px 24px', fontSize: '0.82rem', color: '#94A3B8' }}>
-                      <div>Requested ID: <strong style={{ color: '#00F2FE' }}>{currentPatentDoc.sourceIdentifier || currentPatentDoc.id}</strong></div>
-                      <div>Retrieved Record: <strong style={{ color: '#F8FAFC' }}>{currentPatentDoc.displayNumber || currentPatentDoc.id}</strong></div>
-                      <div>Identity Source: <strong style={{ color: '#F8FAFC' }}>{currentPatentDoc.fileHash ? 'Uploaded document text' : 'Source record'}</strong></div>
-                      <div>Source Registry: <strong style={{ color: '#10B981' }}>{currentPatentDoc.source || 'Unavailable'}</strong></div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '12px 24px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                      <div>Requested ID: <strong style={{ color: 'var(--accent-cyan)' }}>{currentPatentDoc.sourceIdentifier || currentPatentDoc.id}</strong></div>
+                      <div>Retrieved Record: <strong style={{ color: 'var(--text-main)' }}>{currentPatentDoc.displayNumber || currentPatentDoc.id}</strong></div>
+                      <div>Identity Source: <strong style={{ color: 'var(--text-main)' }}>{currentPatentDoc.fileHash ? 'Uploaded document text' : 'Source record'}</strong></div>
+                      <div>Source Registry: <strong style={{ color: 'var(--accent-emerald)' }}>{currentPatentDoc.source || 'Unavailable'}</strong></div>
                       <div>Retrieved: <strong>{currentPatentDoc.retrievedAt || 'No retrieval timestamp'}</strong></div>
-                      <div>Data Quality: <strong style={{ color: '#10B981' }}>{currentPatentDoc.importQuality || 'Not assessed'}</strong></div>
+                      <div>Data Quality: <strong style={{ color: 'var(--accent-emerald)' }}>{currentPatentDoc.importQuality || 'Not assessed'}</strong></div>
                     </div>
                   </div>
 
                   {/* Abstract Section */}
                   <div style={{ marginBottom: '24px' }}>
-                    <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#F8FAFC', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <FileText size={16} color="#00F2FE" /> Abstract Specification
+                    <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <FileText size={16} color="var(--accent-cyan)" /> Abstract Specification
                     </h3>
                     <p style={{
                       fontSize: '0.9rem',
-                      color: '#CBD5E1',
+                      color: 'var(--text-muted)',
                       lineHeight: '1.6',
-                      background: 'rgba(15, 23, 42, 0.6)',
+                      background: 'var(--bg-card-solid)',
                       padding: '16px',
                       borderRadius: '10px',
-                      border: '1px solid rgba(255, 255, 255, 0.06)',
+                      border: '1px solid rgba(21,51,60,0.06)',
                       wordBreak: 'break-word',
                       overflowWrap: 'anywhere'
                     }}>
@@ -1191,8 +1191,8 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
 
                   {/* Extracted Claims Trees */}
                   <div>
-                    <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#F8FAFC', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Layers size={16} color="#A855F7" /> Extracted Claims Scope ({currentPatentDoc.claims?.length || 0})
+                    <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Layers size={16} color="var(--accent-purple)" /> Extracted Claims Scope ({currentPatentDoc.claims?.length || 0})
                     </h3>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1201,13 +1201,13 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                           key={claim.number}
                           style={{
                             padding: '14px',
-                            background: 'rgba(15, 23, 42, 0.7)',
-                            border: '1px solid rgba(255, 255, 255, 0.08)',
+                            background: 'var(--bg-card-solid)',
+                            border: '1px solid rgba(21,51,60,0.08)',
                             borderRadius: '10px'
                           }}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: claim.isIndependent ? '#00F2FE' : '#A855F7' }}>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: claim.isIndependent ? 'var(--accent-cyan)' : 'var(--accent-purple)' }}>
                               Claim {claim.number} ({claim.isIndependent ? 'Independent' : 'Dependent'})
                             </span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1220,12 +1220,12 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                                   <Languages size={12} /> Translate Claim
                                 </button>
                               )}
-                              <span style={{ fontSize: '0.72rem', background: 'rgba(255, 255, 255, 0.05)', color: '#94A3B8', padding: '2px 6px', borderRadius: '4px' }}>
+                              <span style={{ fontSize: '0.72rem', background: 'rgba(21,51,60,0.05)', color: 'var(--text-muted)', padding: '2px 6px', borderRadius: '4px' }}>
                                 {claim.elements?.length || 1} Elements Defined
                               </span>
                             </div>
                           </div>
-                          <p style={{ fontSize: '0.88rem', color: '#E2E8F0', lineHeight: '1.5', margin: 0, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                          <p style={{ fontSize: '0.88rem', color: 'var(--text-main)', lineHeight: '1.5', margin: 0, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                             {claim.text}
                           </p>
                         </div>
@@ -1247,7 +1247,7 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(11, 15, 25, 0.85)',
+          background: 'var(--bg-card-solid)',
           backdropFilter: 'blur(6px)',
           display: 'flex',
           alignItems: 'center',
@@ -1258,37 +1258,37 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
           <div style={{
             width: '100%',
             maxWidth: '460px',
-            background: '#0F172A',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
+            background: 'var(--bg-card-solid)',
+            border: '1px solid rgba(21,51,60,0.15)',
             borderRadius: '16px',
             padding: '24px',
-            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6)'
+            boxShadow: 'var(--shadow-sm)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F87171' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(174,54,67,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-rose)' }}>
                 <Trash2 size={20} />
               </div>
               <div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
                   Remove Patent from Workspace?
                 </h3>
-                <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                   {patentToRemove.displayNumber || patentToRemove.sourceIdentifier || patentToRemove.id}
                 </span>
               </div>
             </div>
 
-            <p style={{ fontSize: '0.88rem', color: '#CBD5E1', lineHeight: '1.5', marginBottom: '12px' }}>
-              Are you sure you want to remove <strong style={{ color: '#00F2FE' }}>{patentToRemove.displayNumber || patentToRemove.id}</strong> from your workspace?
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: '1.5', marginBottom: '12px' }}>
+              Are you sure you want to remove <strong style={{ color: 'var(--accent-cyan)' }}>{patentToRemove.displayNumber || patentToRemove.id}</strong> from your workspace?
             </p>
 
             <div style={{
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'rgba(21,51,60,0.04)',
+              border: '1px solid rgba(21,51,60,0.08)',
               borderRadius: '8px',
               padding: '10px 14px',
               fontSize: '0.78rem',
-              color: '#94A3B8',
+              color: 'var(--text-muted)',
               lineHeight: '1.4',
               marginBottom: '20px'
             }}>
@@ -1307,8 +1307,8 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
                 onClick={confirmRemovePatent}
                 style={{
                   padding: '9px 18px',
-                  background: '#EF4444',
-                  color: '#FFFFFF',
+                  background: 'var(--accent-rose)',
+                  color: 'var(--text-main)',
                   border: 'none',
                   borderRadius: '8px',
                   fontSize: '0.85rem',
@@ -1329,29 +1329,29 @@ export const PatentWorkspaceView: React.FC<Props> = ({ onOpenClaimTranslator }) 
           position: 'fixed',
           bottom: '24px',
           right: '24px',
-          background: '#0F172A',
-          border: '1px solid rgba(16, 185, 129, 0.4)',
+          background: 'var(--bg-card-solid)',
+          border: '1px solid rgba(34,104,88,0.4)',
           borderRadius: '12px',
           padding: '12px 20px',
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
+          boxShadow: 'var(--shadow-sm)',
           display: 'flex',
           alignItems: 'center',
           gap: '14px',
           zIndex: 1000,
-          color: '#FFFFFF',
+          color: 'var(--text-main)',
           fontSize: '0.88rem'
         }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <CheckCircle2 size={16} color="#10B981" />
+            <CheckCircle2 size={16} color="var(--accent-emerald)" />
             <span><strong>{undoToast.patent.displayNumber || undoToast.patent.id}</strong> removed from workspace.</span>
           </span>
 
           <button
             onClick={handleUndoRemove}
             style={{
-              background: 'rgba(16, 185, 129, 0.2)',
-              border: '1px solid rgba(16, 185, 129, 0.4)',
-              color: '#10B981',
+              background: 'rgba(34,104,88,0.2)',
+              border: '1px solid rgba(34,104,88,0.4)',
+              color: 'var(--accent-emerald)',
               padding: '4px 12px',
               borderRadius: '6px',
               fontWeight: 700,

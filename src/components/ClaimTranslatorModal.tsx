@@ -332,7 +332,7 @@ export const ClaimTranslatorModal: React.FC<Props> = ({
           overflow: 'hidden',
           borderRadius: '16px',
           border: '1px solid var(--border-color)',
-          boxShadow: '0 24px 48px rgba(0,0,0,0.5)',
+          boxShadow: 'var(--shadow-sm)',
         }}
       >
         {/* MODAL HEADER */}
@@ -356,7 +356,7 @@ export const ClaimTranslatorModal: React.FC<Props> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#0B0F19',
+                color: 'var(--text-main)',
               }}
             >
               <Languages size={24} />
@@ -383,7 +383,7 @@ export const ClaimTranslatorModal: React.FC<Props> = ({
                   borderRadius: '6px',
                   border: 'none',
                   background: activeTab === 'translator' ? 'var(--accent-cyan)' : 'transparent',
-                  color: activeTab === 'translator' ? '#0B0F19' : 'var(--text-muted)',
+                  color: activeTab === 'translator' ? 'var(--bg-card-solid)' : 'var(--text-muted)',
                   fontWeight: 700,
                   cursor: 'pointer',
                 }}
@@ -400,7 +400,7 @@ export const ClaimTranslatorModal: React.FC<Props> = ({
                   borderRadius: '6px',
                   border: 'none',
                   background: activeTab === 'alignment' ? 'var(--accent-cyan)' : 'transparent',
-                  color: activeTab === 'alignment' ? '#0B0F19' : 'var(--text-muted)',
+                  color: activeTab === 'alignment' ? 'var(--bg-card-solid)' : 'var(--text-muted)',
                   fontWeight: 700,
                   cursor: 'pointer',
                 }}
@@ -417,7 +417,7 @@ export const ClaimTranslatorModal: React.FC<Props> = ({
                   borderRadius: '6px',
                   border: 'none',
                   background: activeTab === 'batch' ? 'var(--accent-cyan)' : 'transparent',
-                  color: activeTab === 'batch' ? '#0B0F19' : 'var(--text-muted)',
+                  color: activeTab === 'batch' ? 'var(--bg-card-solid)' : 'var(--text-muted)',
                   fontWeight: 700,
                   cursor: 'pointer',
                 }}
@@ -434,7 +434,7 @@ export const ClaimTranslatorModal: React.FC<Props> = ({
                   borderRadius: '6px',
                   border: 'none',
                   background: activeTab === 'history' ? 'var(--accent-cyan)' : 'transparent',
-                  color: activeTab === 'history' ? '#0B0F19' : 'var(--text-muted)',
+                  color: activeTab === 'history' ? 'var(--bg-card-solid)' : 'var(--text-muted)',
                   fontWeight: 700,
                   cursor: 'pointer',
                 }}

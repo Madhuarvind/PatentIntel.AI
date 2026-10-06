@@ -119,7 +119,7 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
             PILOT ↗
           </span>
         </a>
-        <p className="sidebar-workspace-note" style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.75rem', lineHeight: 1.5 }}>
+        <p className="sidebar-workspace-note" style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.75rem', lineHeight: 1.5 }}>
           Experimental local tools. Browser records can be shared across accounts on this device.
           Use the Review Pilot for private, server-persisted proposals and assigned decisions.
         </p>

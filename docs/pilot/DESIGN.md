@@ -98,3 +98,16 @@ At the user's request, the original 12-module platform remains the default entry
 | Saved PDF matches selected version | Pilot report | Existing version-bound report snapshot | PDF inspection still unavailable | Pending |
 
 Academic request bodies are JSON: search accepts filters, authors accepts query, author-works accepts author plus optional filters. Existing academic result types are retained; responses include per-provider status and retrieval timestamps. Calls require the existing HttpOnly session; no replacement auth or database migration is introduced here. Research experiments are retained outside the application import graph. PatentsView keyword search remains a separate compatibility gate.
+
+
+## Shared UI checkpoint — 6 October 2026
+
+Both workspaces and authentication consume a single light theme: ivory surfaces, navy foreground/primary controls and mint accents; Inter body text and Outfit headings. Existing dark preferences no longer control the page, and the theme switch is removed. Legacy semantic chart/status colours remain distinct but are muted for light surfaces. Navigation, focus, disabled controls and responsive cards share the same treatment. Route/API/data contracts are unchanged.
+
+| Requirement | Screen / interface | Observed acceptance | Status |
+|---|---|---|---|
+| Consistent theme | Authentication, 12 legacy routes, six pilot routes; shared CSS tokens | Desktop/tablet/mobile route checks and representative screenshots, 5 October | Implemented; complete populated-state visual audit pending |
+| Private document upload | Proposal Documents / authenticated documents API | In-app browser TXT upload and excerpt; owner 200, other researcher 404, signed-out 401, 6 October | Locally verified for TXT |
+| Version export and persistence | Report / version-bound JSON | Version-2 ID, text and features match; retained after QA restart | JSON locally verified; actual PDF pending |
+
+Preserve both workspaces and all research documents. PR #9 is already merged upstream; publish these UI changes as a follow-up pull request. Do not merge or deploy as part of this checkpoint. Newer unrelated authentication and development-script changes remain separate working-tree work.

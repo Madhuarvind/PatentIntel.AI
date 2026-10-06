@@ -1,0 +1,47 @@
+/* Shared light theme for authentication and both research workspaces. */
+:root {
+  color-scheme: light;
+  --navy: #15333c;
+  --mint: #d4f1df;
+  --bg-main: #f6f7f2;
+  --bg-card: #ffffff;
+  --bg-card-solid: #ffffff;
+  --bg-card-hover: #edf3ed;
+  --bg-surface: #edf3ed;
+  --bg-input: #ffffff;
+  --border-color: #cad7cf;
+  --border-glow: #6f9b87;
+  --border-accent: #6f9b87;
+  --text-main: #15333c;
+  --text-muted: #52696d;
+  --text-dim: #5d7275;
+  --accent-cyan: #226858;
+  --accent-emerald: #226858;
+  --accent-blue: #315f87;
+  --accent-indigo: #37567d;
+  --accent-purple: #704c87;
+  --accent-amber: #915e10;
+  --accent-rose: #ae3643;
+  --gradient-primary: linear-gradient(135deg, #d4f1df, #e7f3eb);
+  --gradient-accent: linear-gradient(135deg, #dce9e4, #edf3ed);
+  --gradient-emerald: linear-gradient(135deg, #d4f1df, #e7f3eb);
+  --gradient-amber: linear-gradient(135deg, #faf0d5, #fff8e9);
+  --gradient-glow: none;
+  --shadow-sm: 0 1px 3px rgb(21 51 60 / 6%);
+  --shadow-md: 0 4px 16px rgb(21 51 60 / 7%);
+  --shadow-lg: 0 12px 32px rgb(21 51 60 / 12%);
+  --shadow-glow: none;
+  --shadow-purple-glow: none;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-heading: 'Outfit', 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-control: 9px;
+  --radius-panel: 13px;
+  --focus-ring: 3px solid #226858;
+}

@@ -72,9 +72,9 @@ export const VectorClusterVisualizer: React.FC<Props> = ({ onSelectPatentForComp
   const getNodeColor = (cat: EmbeddingNode['category']) => {
     switch (cat) {
       case 'target': return 'var(--accent-cyan)';
-      case 'high': return '#10B981'; // Emerald
-      case 'moderate': return '#6366F1'; // Indigo
-      case 'distant': return '#F43F5E'; // Rose
+      case 'high': return 'var(--accent-emerald)'; // Emerald
+      case 'moderate': return 'var(--accent-indigo)'; // Indigo
+      case 'distant': return 'var(--accent-rose)'; // Rose
     }
   };
 
@@ -97,19 +97,19 @@ export const VectorClusterVisualizer: React.FC<Props> = ({ onSelectPatentForComp
         {/* Legend Pills */}
         <div style={{ display: 'flex', gap: '10px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--accent-cyan)', boxShadow: '0 0 8px var(--accent-cyan)' }} />
+            <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--accent-cyan)', boxShadow: 'var(--shadow-sm)' }} />
             Target Patent
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10B981' }} />
+            <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--accent-emerald)' }} />
             High Match (&gt;85%)
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#6366F1' }} />
+            <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--accent-indigo)' }} />
             Moderate (70-85%)
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#F43F5E' }} />
+            <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--accent-rose)' }} />
             Distant (&lt;70%)
           </span>
         </div>
@@ -119,7 +119,7 @@ export const VectorClusterVisualizer: React.FC<Props> = ({ onSelectPatentForComp
       <div style={{
         position: 'relative',
         height: '380px',
-        background: 'radial-gradient(circle at center, rgba(0, 242, 254, 0.05) 0%, rgba(11, 15, 25, 0.95) 100%)',
+        background: 'radial-gradient(circle at center, rgba(34,104,88,0.05) 0%, var(--bg-card-solid) 100%)',
         border: '1px solid var(--border-color)',
         borderRadius: '16px',
         overflow: 'hidden',
@@ -129,12 +129,12 @@ export const VectorClusterVisualizer: React.FC<Props> = ({ onSelectPatentForComp
       }}>
         {/* Background Concentric Distance Circles */}
         <svg style={{ position: 'absolute', width: '100%', height: '100%', pointerEvents: 'none' }}>
-          <circle cx="50%" cy="50%" r="60" fill="none" stroke="rgba(0, 242, 254, 0.15)" strokeDasharray="4 4" />
-          <circle cx="50%" cy="50%" r="120" fill="none" stroke="rgba(99, 102, 241, 0.15)" strokeDasharray="4 4" />
-          <circle cx="50%" cy="50%" r="170" fill="none" stroke="rgba(244, 63, 94, 0.1)" strokeDasharray="4 4" />
+          <circle cx="50%" cy="50%" r="60" fill="none" stroke="rgba(34,104,88,0.15)" strokeDasharray="4 4" />
+          <circle cx="50%" cy="50%" r="120" fill="none" stroke="rgba(55,86,125,0.15)" strokeDasharray="4 4" />
+          <circle cx="50%" cy="50%" r="170" fill="none" stroke="rgba(174,54,67,0.1)" strokeDasharray="4 4" />
           {/* Axis lines */}
-          <line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(255, 255, 255, 0.05)" />
-          <line x1="50%" y1="0" x2="50%" y2="100%" stroke="rgba(255, 255, 255, 0.05)" />
+          <line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(21,51,60,0.05)" />
+          <line x1="50%" y1="0" x2="50%" y2="100%" stroke="rgba(21,51,60,0.05)" />
         </svg>
 
         {/* Render Vector Nodes */}
@@ -166,7 +166,7 @@ export const VectorClusterVisualizer: React.FC<Props> = ({ onSelectPatentForComp
                   width: '36px',
                   height: '36px',
                   borderRadius: '50%',
-                  background: 'rgba(0, 242, 254, 0.25)',
+                  background: 'rgba(34,104,88,0.25)',
                   animation: 'pulse 2s infinite',
                   transform: 'translate(-50%, -50%)',
                   left: '50%',
@@ -180,7 +180,7 @@ export const VectorClusterVisualizer: React.FC<Props> = ({ onSelectPatentForComp
                 height: isTarget ? '22px' : '16px',
                 borderRadius: '50%',
                 background: color,
-                border: '2px solid #0B0F19',
+                border: '2px solid var(--bg-card-solid)',
                 boxShadow: `0 0 12px ${color}`,
                 transition: 'transform 0.2s ease',
                 transform: hoveredNode?.id === node.id ? 'scale(1.4)' : 'scale(1)'
@@ -196,10 +196,10 @@ export const VectorClusterVisualizer: React.FC<Props> = ({ onSelectPatentForComp
                 fontSize: '0.72rem',
                 fontWeight: 700,
                 color: color,
-                background: 'rgba(11, 15, 25, 0.85)',
+                background: 'var(--bg-card-solid)',
                 padding: '2px 6px',
                 borderRadius: '4px',
-                border: `1px solid ${color}40`,
+                border: `1px solid color-mix(in srgb, ${color} 25%, transparent)`,
                 backdropFilter: 'blur(4px)'
               }}>
                 {node.patentNumber}
@@ -219,7 +219,7 @@ export const VectorClusterVisualizer: React.FC<Props> = ({ onSelectPatentForComp
             border: `1px solid ${getNodeColor(hoveredNode.category)}`,
             borderRadius: '12px',
             padding: '16px',
-            boxShadow: 'var(--shadow-glow)',
+            boxShadow: 'var(--shadow-sm)',
             zIndex: 30,
             animation: 'fadeIn 0.2s ease'
           }}>
@@ -274,7 +274,7 @@ export const VectorClusterVisualizer: React.FC<Props> = ({ onSelectPatentForComp
 
         <div style={{ background: 'var(--bg-surface)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
           <span style={{ color: 'var(--text-dim)' }}>Workspace Candidates:</span>
-          <div style={{ fontWeight: 700, color: '#10B981' }}>{workspacePatents.length} Patents Active</div>
+          <div style={{ fontWeight: 700, color: 'var(--accent-emerald)' }}>{workspacePatents.length} Patents Active</div>
         </div>
       </div>
     </div>

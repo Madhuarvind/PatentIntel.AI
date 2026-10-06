@@ -99,3 +99,22 @@ On isolated port 5183, created a synthetic proposal, typed unsaved text, cancell
 Browser file upload was blocked by the Chrome extension's missing Allow access to file URLs permission. Private-upload browser acceptance remains pending; existing document API tests pass. No new saved proposal PDF was available. Hosted verification remains pending Render/Supabase/Resend configuration and verified sender. PatentsView protocol tests pass, but live keyword retrieval requires PATENTSVIEW_API_KEY and is not claimed as verified.
 
 After reviewing print changes: four affected report/patent tests pass; TypeScript and production build pass. Full suite baseline is 125 passing tests. Browser-control reconnection failed during the upload retry, so that gate remains open.
+
+
+## Shared UI verification — 5–6 October 2026
+
+Shared `src/theme.css` supplies the single ivory/navy/mint palette, Inter body and Outfit heading fonts, control radii, shadows and focus treatment. The legacy dark-mode toggle is removed. Legacy page colours and graph opacity composition now use the shared palette; mobile navigation is compact with accessible names. Print foreground colour was corrected after reviewing the colour migration. APIs, ownership and version semantics were not changed.
+
+Observed on the isolated built Node application at http://127.0.0.1:5184:
+- All 12 original-platform routes and all six pilot routes opened at 1440, 768 and 320 px. Document width matched the viewport. This is route/layout smoke coverage, not certification of every nested experimental tool or dialog. Screenshots exposed sidebar crowding and claim-page clipping; responsive fixes were applied. A complete post-fix visual audit of every populated dialog remains open.
+- Synthetic researcher registration through the API returned 201. Browser sign-in, sign-out, proposal creation and saving version 2 succeeded. The proposal and selected-version report remained available after the QA server restarted on 6 October.
+- Mobile pilot navigation closed on Escape and returned focus to Toggle navigation.
+- Downloaded proposal-v2.json matched version ID 10d0eff0-ce3d-4015-a02c-d92b5b067067, its proposal text and two confirmed features. This version has no analysis or review; those empty states were displayed honestly. No actual saved PDF was supplied, so PDF pagination remains unverified.
+- Chrome extension upload was blocked by its file-URL permission. The supported in-app-browser chooser subsequently uploaded scratch/private-acceptance.txt successfully on 6 October. The UI displayed the matching extracted passage and a private Download original link. HTTP checks of that uploaded document returned 200 and 105 bytes for the owner, 404 for a separate researcher, and 401 when signed out. This closes the local TXT browser-upload gate; it does not verify every PDF upload variation or hosted storage.
+- Screenshot evidence remains in ignored scratch/theme-platform-dashboard.jpg, theme-pilot-report.jpg, theme-mobile-settings.jpg and theme-private-upload.jpg. These contain only synthetic QA data.
+
+Validation: the full suite completed with 125 passes and zero failures (scratch/theme-tests-final.log). After the print/foreground correction, 12 report/navigation/module tests passed serially (scratch/theme-followup-tests.log), and TypeScript plus the production build passed. An initial parallel targeted run collided on a test-server port and was stopped before the successful serial rerun. The large-bundle warning remains.
+
+The current workspace contains a newer authentication redesign and development-script edit from separate work. They are preserved and excluded from this checkpoint; only the shared authentication colour-token edits are staged. The latest working-tree build includes those unstaged edits, so it is not an exact-commit CI result. The earlier browser authentication screenshots predate that redesign. The unrelated Vite change and research Markdown document are preserved.
+
+Remaining: actual saved selected-version PDF inspection; repeat the full administrator/researcher/reviewer browser lifecycle on the final UI; complete populated-dialog/accessibility/contrast and alternate-browser checks. Existing backend lifecycle tests and previous browser evidence remain valid historical evidence, not a claim that the complete workflow was repeated in this UI pass. Legacy experimental screens still contain demonstration metrics/model wording requiring a separate integrity audit. PatentsView live-key testing remains pending. Deployment is paused by user request.

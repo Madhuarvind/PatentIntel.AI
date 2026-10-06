@@ -17,7 +17,7 @@ export const AnalyticsView: React.FC = () => {
         <p>{patents.length} patents · {claims} stored claims · {withClaims} patents with claim text</p>
         <p>These counts describe the stored records; they do not establish retrieval accuracy or source verification.</p>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 18 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))', gap: 18 }}>
         {['Precision @ 10', 'Recall @ 10', 'Mean Reciprocal Rank (MRR)', 'Claim Matching F1 Score'].map(label => (
           <div key={label} className="glass-panel" style={{ padding: 20 }}>
             <h3>{label}</h3><strong>Not measured</strong>

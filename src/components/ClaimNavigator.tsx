@@ -212,12 +212,12 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             style={{
               width: '100%',
-              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.75) 100%)',
+              background: 'linear-gradient(135deg, var(--bg-card-solid) 0%, rgba(30, 41, 59, 0.75) 100%)',
               border: isDropdownOpen 
                 ? '1px solid var(--accent-indigo)' 
-                : '1px solid rgba(255, 255, 255, 0.12)',
+                : '1px solid rgba(21,51,60,0.12)',
               boxShadow: isDropdownOpen 
-                ? '0 0 0 3px rgba(99, 102, 241, 0.2), 0 8px 24px rgba(0, 0, 0, 0.4)' 
+                ? '0 0 0 3px rgba(55,86,125,0.2), 0 8px 24px rgba(0, 0, 0, 0.4)'
                 : '0 4px 16px rgba(0, 0, 0, 0.25)',
               borderRadius: '12px',
               padding: '12px 18px',
@@ -236,12 +236,12 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
               {/* Claim Number Badge */}
               <div style={{
                 background: currentClaim?.isIndependent 
-                  ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.25) 0%, rgba(59, 130, 246, 0.25) 100%)' 
-                  : 'linear-gradient(135deg, rgba(168, 85, 247, 0.25) 0%, rgba(139, 92, 246, 0.25) 100%)',
+                  ? 'linear-gradient(135deg, rgba(34,104,88,0.25) 0%, rgba(59, 130, 246, 0.25) 100%)'
+                  : 'linear-gradient(135deg, rgba(112,76,135,0.25) 0%, rgba(139, 92, 246, 0.25) 100%)',
                 border: currentClaim?.isIndependent 
                   ? '1px solid var(--accent-cyan)' 
                   : '1px solid var(--accent-purple)',
-                color: currentClaim?.isIndependent ? '#38bdf8' : '#c084fc',
+                color: currentClaim?.isIndependent ? '#38bdf8' : 'var(--accent-purple)',
                 borderRadius: '8px',
                 padding: '5px 12px',
                 fontWeight: 900,
@@ -252,8 +252,8 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
                 gap: '6px',
                 flexShrink: 0,
                 boxShadow: currentClaim?.isIndependent 
-                  ? '0 0 12px rgba(6, 182, 212, 0.25)' 
-                  : '0 0 12px rgba(168, 85, 247, 0.25)'
+                  ? '0 0 12px rgba(34,104,88,0.25)'
+                  : '0 0 12px rgba(112,76,135,0.25)'
               }}>
                 {currentClaim?.isIndependent ? <Sparkles size={13} /> : <GitBranch size={13} />}
                 <span>Claim {currentClaim?.number}</span>
@@ -268,7 +268,7 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
                     textTransform: 'uppercase',
                     letterSpacing: '0.04em',
                     color: currentClaim?.isIndependent ? 'var(--accent-cyan)' : 'var(--accent-purple)',
-                    background: currentClaim?.isIndependent ? 'rgba(6, 182, 212, 0.12)' : 'rgba(168, 85, 247, 0.12)',
+                    background: currentClaim?.isIndependent ? 'rgba(34,104,88,0.12)' : 'rgba(112,76,135,0.12)',
                     padding: '2px 8px',
                     borderRadius: '4px'
                   }}>
@@ -307,7 +307,7 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
               alignItems: 'center',
               gap: '8px',
               paddingLeft: '12px',
-              borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
+              borderLeft: '1px solid rgba(21,51,60,0.08)',
               color: 'var(--text-muted)',
               flexShrink: 0
             }}>
@@ -335,10 +335,10 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
                 left: 0,
                 width: '100%',
                 maxWidth: '680px',
-                background: 'rgba(15, 23, 42, 0.98)',
-                border: '1px solid rgba(99, 102, 241, 0.35)',
+                background: 'var(--bg-card-solid)',
+                border: '1px solid rgba(55,86,125,0.35)',
                 borderRadius: '14px',
-                boxShadow: '0 20px 50px rgba(0, 0, 0, 0.75), 0 0 20px rgba(99, 102, 241, 0.15)',
+                boxShadow: 'var(--shadow-sm)',
                 backdropFilter: 'blur(24px)',
                 zIndex: 9999,
                 display: 'flex',
@@ -350,11 +350,11 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
               {/* Dropdown Search & Filter Header */}
               <div style={{
                 padding: '14px 16px',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                borderBottom: '1px solid rgba(21,51,60,0.08)',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '10px',
-                background: 'rgba(255, 255, 255, 0.02)'
+                background: 'rgba(21,51,60,0.02)'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                   {/* Search Input */}
@@ -363,7 +363,7 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
                     alignItems: 'center',
                     gap: '8px',
                     background: 'rgba(0, 0, 0, 0.3)',
-                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    border: '1px solid rgba(21,51,60,0.12)',
                     borderRadius: '8px',
                     padding: '8px 12px',
                     flex: 1
@@ -378,7 +378,7 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
                       style={{
                         background: 'transparent',
                         border: 'none',
-                        color: '#fff',
+                        color: 'var(--text-main)',
                         fontSize: '0.84rem',
                         outline: 'none',
                         width: '100%'
@@ -395,7 +395,7 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
                   </div>
 
                   {/* View Mode Toggle: Tree vs Flat */}
-                  <div style={{ display: 'flex', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', padding: '3px', gap: '2px' }}>
+                  <div style={{ display: 'flex', background: 'rgba(21,51,60,0.05)', borderRadius: '8px', padding: '3px', gap: '2px' }}>
                     <button
                       onClick={() => setViewStyle('tree')}
                       style={{
@@ -434,7 +434,7 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
                   <button
                     onClick={() => setActiveTab('all')}
                     style={{
-                      background: activeTab === 'all' ? 'rgba(99, 102, 241, 0.25)' : 'transparent',
+                      background: activeTab === 'all' ? 'rgba(55,86,125,0.25)' : 'transparent',
                       border: activeTab === 'all' ? '1px solid var(--accent-indigo)' : '1px solid transparent',
                       color: activeTab === 'all' ? '#fff' : 'var(--text-muted)',
                       padding: '3px 10px',
@@ -449,7 +449,7 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
                   <button
                     onClick={() => setActiveTab('independent')}
                     style={{
-                      background: activeTab === 'independent' ? 'rgba(6, 182, 212, 0.2)' : 'transparent',
+                      background: activeTab === 'independent' ? 'rgba(34,104,88,0.2)' : 'transparent',
                       border: activeTab === 'independent' ? '1px solid var(--accent-cyan)' : '1px solid transparent',
                       color: activeTab === 'independent' ? 'var(--accent-cyan)' : 'var(--text-muted)',
                       padding: '3px 10px',
@@ -464,7 +464,7 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
                   <button
                     onClick={() => setActiveTab('dependent')}
                     style={{
-                      background: activeTab === 'dependent' ? 'rgba(168, 85, 247, 0.2)' : 'transparent',
+                      background: activeTab === 'dependent' ? 'rgba(112,76,135,0.2)' : 'transparent',
                       border: activeTab === 'dependent' ? '1px solid var(--accent-purple)' : '1px solid transparent',
                       color: activeTab === 'dependent' ? 'var(--accent-purple)' : 'var(--text-muted)',
                       padding: '3px 10px',
@@ -488,7 +488,7 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
                 flexDirection: 'column',
                 gap: '8px',
                 scrollbarWidth: 'thin',
-                scrollbarColor: 'rgba(99, 102, 241, 0.4) transparent'
+                scrollbarColor: 'rgba(55,86,125,0.4) transparent'
               }}>
                 {viewStyle === 'tree' ? (
                   // Tree View
@@ -498,8 +498,8 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
                       <div 
                         key={parent.number}
                         style={{
-                          background: 'rgba(255, 255, 255, 0.02)',
-                          border: '1px solid rgba(255, 255, 255, 0.05)',
+                          background: 'rgba(21,51,60,0.02)',
+                          border: '1px solid rgba(21,51,60,0.05)',
                           borderRadius: '10px',
                           padding: '8px 10px',
                           display: 'flex',
@@ -519,8 +519,8 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
                             justifyContent: 'space-between',
                             padding: '8px 12px',
                             borderRadius: '8px',
-                            background: isParentSelected ? 'rgba(6, 182, 212, 0.2)' : 'rgba(255, 255, 255, 0.03)',
-                            border: isParentSelected ? '1px solid var(--accent-cyan)' : '1px solid rgba(255, 255, 255, 0.08)',
+                            background: isParentSelected ? 'rgba(34,104,88,0.2)' : 'rgba(21,51,60,0.03)',
+                            border: isParentSelected ? '1px solid var(--accent-cyan)' : '1px solid rgba(21,51,60,0.08)',
                             cursor: 'pointer',
                             transition: 'all 0.15s ease'
                           }}
@@ -532,7 +532,7 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
                             <span style={{
                               fontSize: '0.68rem',
                               fontWeight: 800,
-                              background: 'rgba(6, 182, 212, 0.15)',
+                              background: 'rgba(34,104,88,0.15)',
                               color: 'var(--accent-cyan)',
                               padding: '2px 6px',
                               borderRadius: '4px'
@@ -578,7 +578,7 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
                                     justifyContent: 'space-between',
                                     padding: '6px 10px',
                                     borderRadius: '6px',
-                                    background: isChildSelected ? 'rgba(168, 85, 247, 0.2)' : 'transparent',
+                                    background: isChildSelected ? 'rgba(112,76,135,0.2)' : 'transparent',
                                     border: isChildSelected ? '1px solid var(--accent-purple)' : '1px solid transparent',
                                     cursor: 'pointer',
                                     transition: 'all 0.12s ease'
@@ -625,8 +625,8 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
                           justifyContent: 'space-between',
                           padding: '8px 12px',
                           borderRadius: '8px',
-                          background: isSelected ? 'rgba(99, 102, 241, 0.25)' : 'rgba(255, 255, 255, 0.02)',
-                          border: isSelected ? '1px solid var(--accent-indigo)' : '1px solid rgba(255, 255, 255, 0.06)',
+                          background: isSelected ? 'rgba(55,86,125,0.25)' : 'rgba(21,51,60,0.02)',
+                          border: isSelected ? '1px solid var(--accent-indigo)' : '1px solid rgba(21,51,60,0.06)',
                           cursor: 'pointer'
                         }}
                       >
@@ -639,7 +639,7 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
                             fontWeight: 700,
                             padding: '1px 6px',
                             borderRadius: '4px',
-                            background: clm.isIndependent ? 'rgba(6, 182, 212, 0.15)' : 'rgba(168, 85, 247, 0.15)',
+                            background: clm.isIndependent ? 'rgba(34,104,88,0.15)' : 'rgba(112,76,135,0.15)',
                             color: clm.isIndependent ? 'var(--accent-cyan)' : 'var(--accent-purple)'
                           }}>
                             {clm.isIndependent ? 'Independent' : `Dep on ${clm.parentClaimNumber || '1'}`}
@@ -671,8 +671,8 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
-            background: 'rgba(15, 23, 42, 0.8)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
+            background: 'var(--bg-card-solid)',
+            border: '1px solid rgba(21,51,60,0.12)',
             borderRadius: '10px',
             padding: '3px 4px'
           }}>
@@ -739,8 +739,8 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
                 gap: 6,
                 fontWeight: 700,
                 borderRadius: '10px',
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.12)'
+                background: 'rgba(21,51,60,0.05)',
+                border: '1px solid rgba(21,51,60,0.12)'
               }}
             >
               <Languages size={15} style={{ color: 'var(--accent-cyan)' }} />
@@ -757,9 +757,9 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
         gap: '12px',
         flexWrap: 'wrap',
         padding: '10px 14px',
-        background: 'rgba(255, 255, 255, 0.02)',
+        background: 'rgba(21,51,60,0.02)',
         borderRadius: '10px',
-        border: '1px solid rgba(255, 255, 255, 0.05)'
+        border: '1px solid rgba(21,51,60,0.05)'
       }}>
         <span style={{
           fontSize: '0.74rem',
@@ -791,16 +791,16 @@ export const ClaimNavigator: React.FC<ClaimNavigatorProps> = ({
                   gap: '6px',
                   border: isSelected 
                     ? (clm.isIndependent ? '1.5px solid var(--accent-cyan)' : '1.5px solid var(--accent-purple)')
-                    : '1px solid rgba(255, 255, 255, 0.08)',
+                    : '1px solid rgba(21,51,60,0.08)',
                   background: isSelected 
-                    ? (clm.isIndependent ? 'rgba(6, 182, 212, 0.25)' : 'rgba(168, 85, 247, 0.25)')
-                    : 'rgba(255, 255, 255, 0.04)',
+                    ? (clm.isIndependent ? 'rgba(34,104,88,0.25)' : 'rgba(112,76,135,0.25)')
+                    : 'rgba(21,51,60,0.04)',
                   color: isSelected 
                     ? '#fff' 
                     : (clm.isIndependent ? 'var(--accent-cyan)' : 'var(--text-muted)'),
                   transition: 'all 0.15s ease',
                   boxShadow: isSelected 
-                    ? (clm.isIndependent ? '0 0 10px rgba(6, 182, 212, 0.3)' : '0 0 10px rgba(168, 85, 247, 0.3)')
+                    ? (clm.isIndependent ? '0 0 10px rgba(34,104,88,0.3)' : '0 0 10px rgba(112,76,135,0.3)')
                     : 'none'
                 }}
               >

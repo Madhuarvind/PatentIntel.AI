@@ -361,27 +361,27 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
   const getCategoryStyles = (category: ClaimLimitationCategory) => {
     switch (category) {
       case 'HARDWARE_COMPONENT':
-        return { color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.12)', border: 'rgba(6, 182, 212, 0.4)', label: 'Hardware Component' };
+        return { color: '#06b6d4', bg: 'rgba(34,104,88,0.12)', border: 'rgba(34,104,88,0.4)', label: 'Hardware Component' };
       case 'FUNCTIONAL_LIMITATION':
-        return { color: '#10b981', bg: 'rgba(16, 185, 129, 0.12)', border: 'rgba(16, 185, 129, 0.4)', label: 'Functional Limitation' };
+        return { color: 'var(--accent-emerald)', bg: 'rgba(34,104,88,0.12)', border: 'rgba(34,104,88,0.4)', label: 'Functional Limitation' };
       case 'DATA_INTERFACE':
-        return { color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.12)', border: 'rgba(59, 130, 246, 0.4)', label: 'Data Interface' };
+        return { color: 'var(--accent-blue)', bg: 'rgba(59, 130, 246, 0.12)', border: 'rgba(59, 130, 246, 0.4)', label: 'Data Interface' };
       case 'OPERATIONAL_CONSTRAINT':
-        return { color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)', border: 'rgba(245, 158, 11, 0.4)', label: 'Operational Constraint' };
+        return { color: 'var(--accent-amber)', bg: 'rgba(145,94,16,0.12)', border: 'rgba(145,94,16,0.4)', label: 'Operational Constraint' };
       case 'PROCESS_STEP':
         return { color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.12)', border: 'rgba(139, 92, 246, 0.4)', label: 'Process Step' };
       case 'PREAMBLE':
       default:
-        return { color: '#6366f1', bg: 'rgba(99, 102, 241, 0.12)', border: 'rgba(99, 102, 241, 0.4)', label: 'Preamble / Scope' };
+        return { color: 'var(--accent-indigo)', bg: 'rgba(55,86,125,0.12)', border: 'rgba(55,86,125,0.4)', label: 'Preamble / Scope' };
     }
   };
 
   const getCriticalityBadge = (crit: LimitationCriticality) => {
     if (crit === 'CORE') {
-      return { label: 'CORE', bg: 'rgba(16, 185, 129, 0.18)', color: 'var(--accent-emerald)', border: 'rgba(16, 185, 129, 0.4)' };
+      return { label: 'CORE', bg: 'rgba(34,104,88,0.18)', color: 'var(--accent-emerald)', border: 'rgba(34,104,88,0.4)' };
     }
     if (crit === 'SUPPORTING') {
-      return { label: 'SUPPORTING', bg: 'rgba(6, 182, 212, 0.18)', color: 'var(--accent-cyan)', border: 'rgba(6, 182, 212, 0.4)' };
+      return { label: 'SUPPORTING', bg: 'rgba(34,104,88,0.18)', color: 'var(--accent-cyan)', border: 'rgba(34,104,88,0.4)' };
     }
     return { label: 'CONTEXTUAL', bg: 'rgba(139, 92, 246, 0.18)', color: 'var(--accent-purple)', border: 'rgba(139, 92, 246, 0.4)' };
   };
@@ -395,12 +395,12 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
           bottom: 24,
           right: 24,
           background: 'var(--accent-indigo)',
-          color: '#fff',
+          color: 'var(--text-main)',
           padding: '12px 20px',
           borderRadius: 8,
           fontSize: '0.88rem',
           fontWeight: 700,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+          boxShadow: 'var(--shadow-sm)',
           zIndex: 9999,
           display: 'flex',
           alignItems: 'center',
@@ -416,10 +416,10 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
           <div style={{ flex: 1, minWidth: '320px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
               <h1 style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.02em' }}>
-                AI-Powered Claim Structure & Reasoning Engine
+                Experimental Claim Structure & Reasoning
               </h1>
-              <span style={{ fontSize: '0.78rem', background: 'rgba(6, 182, 212, 0.15)', color: 'var(--accent-cyan)', border: '1px solid rgba(6, 182, 212, 0.3)', padding: '4px 10px', borderRadius: 6, fontWeight: 700 }}>
-                35 U.S.C. § 112 & EPC ART. 84 COMPLIANT
+              <span style={{ fontSize: '0.78rem', background: 'rgba(34,104,88,0.15)', color: 'var(--accent-cyan)', border: '1px solid rgba(34,104,88,0.3)', padding: '4px 10px', borderRadius: 6, fontWeight: 700 }}>
+                EXPERIMENTAL · HUMAN REVIEW REQUIRED
               </span>
             </div>
 
@@ -449,14 +449,14 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
         {/* 4-Layer Architecture Spacious Strip */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))',
           gap: '14px',
           width: '100%'
         }}>
           {/* L1 Card */}
           <div style={{
-            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(99, 102, 241, 0.03) 100%)',
-            border: '1px solid rgba(99, 102, 241, 0.3)',
+            background: 'linear-gradient(135deg, rgba(55,86,125,0.12) 0%, rgba(55,86,125,0.03) 100%)',
+            border: '1px solid rgba(55,86,125,0.3)',
             borderRadius: '10px',
             padding: '14px 18px',
             display: 'flex',
@@ -479,8 +479,8 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
 
           {/* L2 Card */}
           <div style={{
-            background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.12) 0%, rgba(6, 182, 212, 0.03) 100%)',
-            border: '1px solid rgba(6, 182, 212, 0.3)',
+            background: 'linear-gradient(135deg, rgba(34,104,88,0.12) 0%, rgba(34,104,88,0.03) 100%)',
+            border: '1px solid rgba(34,104,88,0.3)',
             borderRadius: '10px',
             padding: '14px 18px',
             display: 'flex',
@@ -503,8 +503,8 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
 
           {/* L3 Card */}
           <div style={{
-            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(16, 185, 129, 0.03) 100%)',
-            border: '1px solid rgba(16, 185, 129, 0.3)',
+            background: 'linear-gradient(135deg, rgba(34,104,88,0.12) 0%, rgba(34,104,88,0.03) 100%)',
+            border: '1px solid rgba(34,104,88,0.3)',
             borderRadius: '10px',
             padding: '14px 18px',
             display: 'flex',
@@ -527,8 +527,8 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
 
           {/* L4 Card */}
           <div style={{
-            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(245, 158, 11, 0.03) 100%)',
-            border: '1px solid rgba(245, 158, 11, 0.3)',
+            background: 'linear-gradient(135deg, rgba(145,94,16,0.12) 0%, rgba(145,94,16,0.03) 100%)',
+            border: '1px solid rgba(145,94,16,0.3)',
             borderRadius: '10px',
             padding: '14px 18px',
             display: 'flex',
@@ -563,15 +563,15 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
             NLP (POS & Syntactic Chunks)
           </span>
           <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>+</span>
-          <span style={{ fontSize: '0.76rem', background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent-emerald)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '3px 9px', borderRadius: 5, fontWeight: 700 }}>
+          <span style={{ fontSize: '0.76rem', background: 'rgba(34,104,88,0.12)', color: 'var(--accent-emerald)', border: '1px solid rgba(34,104,88,0.3)', padding: '3px 9px', borderRadius: 5, fontWeight: 700 }}>
             EMBEDDING MODEL (MultiSim-SBERT v2.1)
           </span>
           <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>+</span>
-          <span style={{ fontSize: '0.76rem', background: 'rgba(99, 102, 241, 0.12)', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.3)', padding: '3px 9px', borderRadius: 5, fontWeight: 700 }}>
+          <span style={{ fontSize: '0.76rem', background: 'rgba(55,86,125,0.12)', color: 'var(--accent-indigo)', border: '1px solid rgba(55,86,125,0.3)', padding: '3px 9px', borderRadius: 5, fontWeight: 700 }}>
             LLM (Skeleton & Mutations)
           </span>
           <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>+</span>
-          <span style={{ fontSize: '0.76rem', background: 'rgba(6, 182, 212, 0.12)', color: 'var(--accent-cyan)', border: '1px solid rgba(6, 182, 212, 0.3)', padding: '3px 9px', borderRadius: 5, fontWeight: 700 }}>
+          <span style={{ fontSize: '0.76rem', background: 'rgba(34,104,88,0.12)', color: 'var(--accent-cyan)', border: '1px solid rgba(34,104,88,0.3)', padding: '3px 9px', borderRadius: 5, fontWeight: 700 }}>
             GRAPH REASONING (Topology)
           </span>
           <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>+</span>
@@ -608,7 +608,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
         </div>
 
         {/* Sleek Studio Divider */}
-        <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.07)', margin: '2px 0' }} />
+        <div style={{ height: '1px', background: 'rgba(21,51,60,0.07)', margin: '2px 0' }} />
 
         {/* Modern Claim Intelligence Navigator (Elevated Layout & Theme) */}
         <ClaimNavigator
@@ -645,7 +645,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                 borderRadius: '8px 8px 0 0',
                 border: 'none',
                 borderBottom: isActive ? '3px solid var(--accent-indigo)' : '3px solid transparent',
-                background: isActive ? 'rgba(99, 102, 241, 0.12)' : 'transparent',
+                background: isActive ? 'rgba(55,86,125,0.12)' : 'transparent',
                 color: isActive ? 'var(--text-main)' : 'var(--text-muted)',
                 fontWeight: isActive ? 800 : 600,
                 fontSize: '0.90rem',
@@ -668,8 +668,8 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
           
           {/* AI Hallucination Guard 3-Tier Spacious Panel */}
           <div style={{
-            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(6, 182, 212, 0.06) 100%)',
-            border: '1px solid rgba(16, 185, 129, 0.35)',
+            background: 'linear-gradient(135deg, rgba(34,104,88,0.12) 0%, rgba(34,104,88,0.06) 100%)',
+            border: '1px solid rgba(34,104,88,0.35)',
             borderRadius: '12px',
             padding: '20px 24px',
             display: 'flex',
@@ -687,9 +687,9 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               <span style={{
                 fontSize: '0.76rem',
                 fontWeight: 800,
-                background: 'rgba(16, 185, 129, 0.2)',
+                background: 'rgba(34,104,88,0.2)',
                 color: 'var(--accent-emerald)',
-                border: '1px solid rgba(16, 185, 129, 0.4)',
+                border: '1px solid rgba(34,104,88,0.4)',
                 padding: '4px 12px',
                 borderRadius: 6,
                 letterSpacing: '0.05em'
@@ -706,8 +706,8 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
             {/* Metrics Row */}
             <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap', paddingTop: '4px' }}>
               <div style={{
-                background: 'rgba(16, 185, 129, 0.15)',
-                border: '1px solid rgba(16, 185, 129, 0.35)',
+                background: 'rgba(34,104,88,0.15)',
+                border: '1px solid rgba(34,104,88,0.35)',
                 borderRadius: '8px',
                 padding: '7px 14px',
                 fontSize: '0.84rem',
@@ -720,8 +720,8 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                 ✓ {decomposedClaim.limitations.filter(l => l.hallucinationValidation && !l.hallucinationValidation.isGrounded).length} Ungrounded Terms
               </div>
               <div style={{
-                background: 'rgba(6, 182, 212, 0.15)',
-                border: '1px solid rgba(6, 182, 212, 0.35)',
+                background: 'rgba(34,104,88,0.15)',
+                border: '1px solid rgba(34,104,88,0.35)',
                 borderRadius: '8px',
                 padding: '7px 14px',
                 fontSize: '0.84rem',
@@ -734,8 +734,8 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                 ✓ Entailment Score: {(decomposedClaim.limitations.reduce((acc, l) => acc + (l.hallucinationValidation?.confidence || 0.94), 0) / (decomposedClaim.limitations.length || 1) * 100).toFixed(1)}%
               </div>
               <div style={{
-                background: 'rgba(99, 102, 241, 0.15)',
-                border: '1px solid rgba(99, 102, 241, 0.35)',
+                background: 'rgba(55,86,125,0.15)',
+                border: '1px solid rgba(55,86,125,0.35)',
                 borderRadius: '8px',
                 padding: '7px 14px',
                 fontSize: '0.84rem',
@@ -771,7 +771,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                     fontWeight: 800,
                     padding: '4px 14px',
                     borderRadius: 6,
-                    background: decomposedClaim.evidenceCoverage.coverageRating === 'HIGH' ? 'rgba(16, 185, 129, 0.18)' : 'rgba(245, 158, 11, 0.18)',
+                    background: decomposedClaim.evidenceCoverage.coverageRating === 'HIGH' ? 'rgba(34,104,88,0.18)' : 'rgba(145,94,16,0.18)',
                     color: decomposedClaim.evidenceCoverage.coverageRating === 'HIGH' ? 'var(--accent-emerald)' : 'var(--accent-amber)',
                     border: '1px solid var(--border-color)',
                     letterSpacing: '0.04em'
@@ -782,7 +782,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               </div>
 
               {/* Metric Pillars */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '14px' }}>
                 <div style={{ background: 'var(--bg-input)', padding: '16px 18px', borderRadius: '10px', border: '1px solid var(--border-color)', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Claim Limitations</div>
                   <div style={{ fontSize: '1.65rem', fontWeight: 900, color: 'var(--accent-emerald)' }}>
@@ -876,7 +876,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                 <div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span>Analysis Run: {decomposedClaim.runSnapshot.runId}</span>
-                    <span style={{ fontSize: '0.72rem', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-emerald)', padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>
+                    <span style={{ fontSize: '0.72rem', background: 'rgba(34,104,88,0.15)', color: 'var(--accent-emerald)', padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>
                       {decomposedClaim.runSnapshot.driftStatus === 'STABLE' ? '✓ ANALYSIS DRIFT: STABLE' : '⚠ DRIFT DETECTED'}
                     </span>
                   </div>
@@ -963,9 +963,9 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                       fontWeight: 800,
                       padding: '2px 8px',
                       borderRadius: 4,
-                      background: decomposedClaim.transitionalScope === 'OPEN' ? 'rgba(16, 185, 129, 0.18)' : 'rgba(245, 158, 11, 0.18)',
+                      background: decomposedClaim.transitionalScope === 'OPEN' ? 'rgba(34,104,88,0.18)' : 'rgba(145,94,16,0.18)',
                       color: decomposedClaim.transitionalScope === 'OPEN' ? 'var(--accent-emerald)' : 'var(--accent-amber)',
-                      border: `1px solid ${decomposedClaim.transitionalScope === 'OPEN' ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`
+                      border: `1px solid ${decomposedClaim.transitionalScope === 'OPEN' ? 'rgba(34,104,88,0.4)' : 'rgba(145,94,16,0.4)'}`
                     }}>
                       Transition: "{decomposedClaim.transitionalPhrase}" ({decomposedClaim.transitionalScope}-ENDED SCOPE)
                     </span>
@@ -995,8 +995,8 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                       onClick={() => handleSelectLimitation('E1')}
                       style={{
                         cursor: 'pointer',
-                        background: selectedLimitationId === 'E1' ? 'rgba(99, 102, 241, 0.3)' : 'rgba(99, 102, 241, 0.12)',
-                        borderBottom: selectedLimitationId === 'E1' ? '2px solid var(--accent-indigo)' : '1px dashed rgba(99, 102, 241, 0.5)',
+                        background: selectedLimitationId === 'E1' ? 'rgba(55,86,125,0.3)' : 'rgba(55,86,125,0.12)',
+                        borderBottom: selectedLimitationId === 'E1' ? '2px solid var(--accent-indigo)' : '1px dashed rgba(55,86,125,0.5)',
                         padding: '2px 4px',
                         borderRadius: 4
                       }}
@@ -1011,7 +1011,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                         padding: '1px 4px',
                         borderRadius: 3,
                         marginRight: 4,
-                        border: '1px solid rgba(99, 102, 241, 0.4)'
+                        border: '1px solid rgba(55,86,125,0.4)'
                       }}>
                         E1
                       </span>
@@ -1091,9 +1091,9 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                     fontWeight: 800,
                     padding: '3px 10px',
                     borderRadius: 6,
-                    background: 'rgba(6, 182, 212, 0.15)',
+                    background: 'rgba(34,104,88,0.15)',
                     color: 'var(--accent-cyan)',
-                    border: '1px solid rgba(6, 182, 212, 0.3)'
+                    border: '1px solid rgba(34,104,88,0.3)'
                   }}>
                     {decomposedClaim.complexityMetrics.breadthScore >= 75 ? 'BROAD SCOPE' : decomposedClaim.complexityMetrics.breadthScore >= 50 ? 'MODERATE SCOPE' : 'NARROW SCOPE'}
                   </span>
@@ -1134,7 +1134,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
 
               {/* Universal Reproducibility Run Snapshot & Evidence Freshness */}
               {decomposedClaim.runSnapshot && (
-                <div className="glass-panel" style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '14px', border: decomposedClaim.runSnapshot.evidenceFreshness.overallStatus !== 'CURRENT' ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid var(--border-color)' }}>
+                <div className="glass-panel" style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '14px', border: decomposedClaim.runSnapshot.evidenceFreshness.overallStatus !== 'CURRENT' ? '1px solid rgba(145,94,16,0.4)' : '1px solid var(--border-color)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1154,9 +1154,9 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                         fontWeight: 800,
                         padding: '3px 8px',
                         borderRadius: 4,
-                        background: decomposedClaim.runSnapshot.evidenceFreshness.overallStatus === 'CURRENT' ? 'rgba(16, 185, 129, 0.18)' : 'rgba(245, 158, 11, 0.18)',
+                        background: decomposedClaim.runSnapshot.evidenceFreshness.overallStatus === 'CURRENT' ? 'rgba(34,104,88,0.18)' : 'rgba(145,94,16,0.18)',
                         color: decomposedClaim.runSnapshot.evidenceFreshness.overallStatus === 'CURRENT' ? 'var(--accent-emerald)' : 'var(--accent-amber)',
-                        border: decomposedClaim.runSnapshot.evidenceFreshness.overallStatus === 'CURRENT' ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(245, 158, 11, 0.4)'
+                        border: decomposedClaim.runSnapshot.evidenceFreshness.overallStatus === 'CURRENT' ? '1px solid rgba(34,104,88,0.4)' : '1px solid rgba(145,94,16,0.4)'
                       }}>
                         {decomposedClaim.runSnapshot.evidenceFreshness.overallStatus === 'CURRENT' ? `✓ CURRENT (${decomposedClaim.runSnapshot.runId})` : '⚠ STALE — RE-RUN RECOMMENDED'}
                       </span>
@@ -1252,9 +1252,9 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                       <div style={{
                         marginTop: 4,
                         padding: '8px 10px',
-                        background: 'rgba(245, 158, 11, 0.12)',
+                        background: 'rgba(145,94,16,0.12)',
                         borderRadius: 4,
-                        border: '1px solid rgba(245, 158, 11, 0.3)',
+                        border: '1px solid rgba(145,94,16,0.3)',
                         fontSize: '0.68rem',
                         color: 'var(--accent-amber)'
                       }}>
@@ -1370,7 +1370,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                         fontWeight: 700,
                         cursor: 'pointer',
                         border: isSelected ? '1px solid var(--accent-indigo)' : '1px solid var(--border-color)',
-                        background: isSelected ? 'rgba(99, 102, 241, 0.25)' : 'var(--bg-input)',
+                        background: isSelected ? 'rgba(55,86,125,0.25)' : 'var(--bg-input)',
                         color: isSelected ? '#fff' : 'var(--text-muted)',
                         transition: 'all 0.15s ease'
                       }}
@@ -1395,9 +1395,9 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                       style={{
                         padding: '18px 20px',
                         borderRadius: '12px',
-                        background: isSelected ? 'rgba(99, 102, 241, 0.12)' : 'var(--bg-surface)',
+                        background: isSelected ? 'rgba(55,86,125,0.12)' : 'var(--bg-surface)',
                         border: isSelected ? `2px solid ${styles.color}` : '1px solid var(--border-color)',
-                        boxShadow: isSelected ? `0 0 18px ${styles.color}33` : 'none',
+                        boxShadow: isSelected ? `0 0 18px color-mix(in srgb, ${styles.color} 20%, transparent)` : 'none',
                         display: 'flex',
                         gap: '16px',
                         alignItems: 'flex-start',
@@ -1408,7 +1408,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                       {/* Element Number Badge */}
                       <div style={{
                         background: styles.color,
-                        color: '#0B0F19',
+                        color: 'var(--text-main)',
                         fontWeight: 900,
                         fontFamily: 'var(--font-mono)',
                         fontSize: '0.90rem',
@@ -1431,9 +1431,9 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                               fontFamily: 'var(--font-mono)',
                               padding: '2px 7px',
                               borderRadius: 4,
-                              background: 'rgba(6, 182, 212, 0.12)',
+                              background: 'rgba(34,104,88,0.12)',
                               color: 'var(--accent-cyan)',
-                              border: '1px solid rgba(6, 182, 212, 0.3)',
+                              border: '1px solid rgba(34,104,88,0.3)',
                               fontWeight: 800
                             }}>
                               [{elem.provenanceTag}]
@@ -1444,9 +1444,9 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                                 fontFamily: 'var(--font-mono)',
                                 padding: '2px 7px',
                                 borderRadius: 4,
-                                background: 'rgba(99, 102, 241, 0.12)',
+                                background: 'rgba(55,86,125,0.12)',
                                 color: 'var(--accent-indigo)',
-                                border: '1px solid rgba(99, 102, 241, 0.3)',
+                                border: '1px solid rgba(55,86,125,0.3)',
                                 fontWeight: 700
                               }} title="Statutory Grounding Source ID">
                                 {elem.provenanceSourceId}
@@ -1473,9 +1473,9 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                                   fontWeight: 800,
                                   padding: '3px 8px',
                                   borderRadius: 5,
-                                  background: 'rgba(239, 68, 68, 0.2)',
-                                  color: '#f87171',
-                                  border: '1px solid rgba(239, 68, 68, 0.4)'
+                                  background: 'rgba(174,54,67,0.2)',
+                                  color: 'var(--accent-rose)',
+                                  border: '1px solid rgba(174,54,67,0.4)'
                                 }}
                               >
                                 ⚠ ABSTAIN: PRESUMPTION WITHHELD
@@ -1488,9 +1488,9 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                                   fontWeight: 800,
                                   padding: '3px 8px',
                                   borderRadius: 5,
-                                  background: 'rgba(245, 158, 11, 0.18)',
+                                  background: 'rgba(145,94,16,0.18)',
                                   color: 'var(--accent-amber)',
-                                  border: '1px solid rgba(245, 158, 11, 0.4)'
+                                  border: '1px solid rgba(145,94,16,0.4)'
                                 }}
                               >
                                 ⚠ REVIEW RECOMMENDED
@@ -1503,9 +1503,9 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                                   fontWeight: 800,
                                   padding: '3px 8px',
                                   borderRadius: 5,
-                                  background: 'rgba(16, 185, 129, 0.18)',
+                                  background: 'rgba(34,104,88,0.18)',
                                   color: 'var(--accent-emerald)',
-                                  border: '1px solid rgba(16, 185, 129, 0.4)'
+                                  border: '1px solid rgba(34,104,88,0.4)'
                                 }}
                               >
                                 ✓ SUPPORTED
@@ -1518,7 +1518,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                                 fontWeight: 700,
                                 padding: '3px 8px',
                                 borderRadius: 5,
-                                background: elem.multiAgentConsensus.consensusStatus === 'CONSENSUS_ESTABLISHED' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+                                background: elem.multiAgentConsensus.consensusStatus === 'CONSENSUS_ESTABLISHED' ? 'rgba(34,104,88,0.12)' : 'rgba(145,94,16,0.12)',
                                 color: elem.multiAgentConsensus.consensusStatus === 'CONSENSUS_ESTABLISHED' ? 'var(--accent-emerald)' : 'var(--accent-amber)',
                                 border: '1px solid var(--border-color)'
                               }}>
@@ -1559,9 +1559,9 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                                 fontWeight: 700,
                                 padding: '3px 8px',
                                 borderRadius: 5,
-                                background: 'rgba(16, 185, 129, 0.12)',
+                                background: 'rgba(34,104,88,0.12)',
                                 color: 'var(--accent-emerald)',
-                                border: '1px solid rgba(16, 185, 129, 0.3)',
+                                border: '1px solid rgba(34,104,88,0.3)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: 4
@@ -1585,8 +1585,8 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                         {/* Hidden Limitation Alert Box if detected */}
                         {elem.hiddenConstraints && elem.hiddenConstraints.length > 0 && (
                           <div style={{
-                            background: 'rgba(245, 158, 11, 0.08)',
-                            border: '1px solid rgba(245, 158, 11, 0.3)',
+                            background: 'rgba(145,94,16,0.08)',
+                            border: '1px solid rgba(145,94,16,0.3)',
                             borderRadius: '8px',
                             padding: '10px 14px',
                             marginTop: '6px',
@@ -1598,7 +1598,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <AlertTriangle size={14} /> Grounded Limitation Dependency Audit
                               </span>
-                              <span style={{ fontSize: '0.72rem', background: 'rgba(245, 158, 11, 0.2)', padding: '2px 7px', borderRadius: 4 }}>
+                              <span style={{ fontSize: '0.72rem', background: 'rgba(145,94,16,0.2)', padding: '2px 7px', borderRadius: 4 }}>
                                 Phrase: "{elem.hiddenConstraints[0].triggerPhrase}"
                               </span>
                             </div>
@@ -1613,7 +1613,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                             {/* Hypothetical constraint alert */}
                             {elem.hiddenConstraints[0].additionalHypotheticalConstraint && (
                               <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg-input)', padding: '6px 8px', borderRadius: 5 }}>
-                                <span style={{ color: '#f87171', fontWeight: 700 }}>⚠ NOT ESTABLISHED:</span>
+                                <span style={{ color: 'var(--accent-rose)', fontWeight: 700 }}>⚠ NOT ESTABLISHED:</span>
                                 <span>{elem.hiddenConstraints[0].additionalHypotheticalConstraint} (Unstated secondary assumption)</span>
                               </div>
                             )}
@@ -1623,7 +1623,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                                 <span key={cond.conditionId} style={{
                                   fontSize: '0.72rem',
                                   background: 'var(--bg-input)',
-                                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                                  border: '1px solid rgba(145,94,16,0.3)',
                                   color: 'var(--text-main)',
                                   padding: '3px 8px',
                                   borderRadius: 5
@@ -1638,8 +1638,8 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                         {/* Evidence Conflict Warning if detected */}
                         {elem.evidenceConflicts && elem.evidenceConflicts.length > 0 && (
                           <div style={{
-                            background: 'rgba(239, 68, 68, 0.08)',
-                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            background: 'rgba(174,54,67,0.08)',
+                            border: '1px solid rgba(174,54,67,0.3)',
                             borderRadius: '8px',
                             padding: '10px 14px',
                             marginTop: '6px',
@@ -1647,7 +1647,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                             flexDirection: 'column',
                             gap: 4
                           }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.80rem', fontWeight: 800, color: '#f87171' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.80rem', fontWeight: 800, color: 'var(--accent-rose)' }}>
                               <AlertTriangle size={14} /> Potential Evidence Tension ({elem.evidenceConflicts[0].specParagraphRef})
                             </div>
                             <div style={{ fontSize: '0.80rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
@@ -1714,7 +1714,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(420px, 100%), 1fr))', gap: '20px' }}>
               {dependencyTree.map(node => (
                 <div 
                   key={node.claimNumber} 
@@ -1732,7 +1732,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <span style={{
                         background: node.claimType === 'independent' ? 'var(--accent-cyan)' : 'var(--accent-purple)',
-                        color: '#0B0F19',
+                        color: 'var(--text-main)',
                         fontWeight: 900,
                         fontSize: '0.88rem',
                         padding: '5px 12px',
@@ -1761,9 +1761,9 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                           <span key={i} style={{
                             fontSize: '0.80rem',
                             fontWeight: 700,
-                            background: 'rgba(99, 102, 241, 0.15)',
+                            background: 'rgba(55,86,125,0.15)',
                             color: 'var(--accent-indigo)',
-                            border: '1px solid rgba(99, 102, 241, 0.3)',
+                            border: '1px solid rgba(55,86,125,0.3)',
                             padding: '5px 10px',
                             borderRadius: 6,
                             lineHeight: 1.4
@@ -1802,7 +1802,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                   <h3 style={{ fontSize: '1.28rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
                     Claim Dependency "Impact Propagation" Simulator
                   </h3>
-                  <span style={{ fontSize: '0.76rem', background: 'rgba(245, 158, 11, 0.18)', color: 'var(--accent-amber)', padding: '3px 10px', borderRadius: 6, fontWeight: 800, letterSpacing: '0.04em' }}>
+                  <span style={{ fontSize: '0.76rem', background: 'rgba(145,94,16,0.18)', color: 'var(--accent-amber)', padding: '3px 10px', borderRadius: 6, fontWeight: 800, letterSpacing: '0.04em' }}>
                     AMENDMENT BLAST RADIUS
                   </span>
                 </div>
@@ -1837,9 +1837,9 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
             </div>
 
             {/* Impact Results Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
-              <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '12px', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <div style={{ fontSize: '0.80rem', fontWeight: 800, color: '#f87171', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: '16px' }}>
+              <div style={{ background: 'rgba(174,54,67,0.1)', border: '1px solid rgba(174,54,67,0.3)', borderRadius: '12px', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ fontSize: '0.80rem', fontWeight: 800, color: 'var(--accent-rose)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Direct Amendment Target
                 </div>
                 <div style={{ fontSize: '1.60rem', fontWeight: 900, color: 'var(--text-main)' }}>
@@ -1850,7 +1850,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                 </p>
               </div>
 
-              <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '12px', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ background: 'rgba(145,94,16,0.1)', border: '1px solid rgba(145,94,16,0.3)', borderRadius: '12px', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <div style={{ fontSize: '0.80rem', fontWeight: 800, color: 'var(--accent-amber)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Inherited Impact Cascade
                 </div>
@@ -1862,7 +1862,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                 </p>
               </div>
 
-              <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '12px', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ background: 'rgba(34,104,88,0.1)', border: '1px solid rgba(34,104,88,0.3)', borderRadius: '12px', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <div style={{ fontSize: '0.80rem', fontWeight: 800, color: 'var(--accent-emerald)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Unaffected Decoupled Branches
                 </div>
@@ -1896,7 +1896,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                     <span style={{
                       fontWeight: 800,
                       fontSize: '0.84rem',
-                      color: p.status === 'DIRECTLY_AFFECTED' ? '#f87171' : p.status === 'INHERITED_AFFECTED' ? 'var(--accent-amber)' : 'var(--accent-emerald)',
+                      color: p.status === 'DIRECTLY_AFFECTED' ? 'var(--accent-rose)' : p.status === 'INHERITED_AFFECTED' ? 'var(--accent-amber)' : 'var(--accent-emerald)',
                       background: 'var(--bg-input)',
                       padding: '4px 10px',
                       borderRadius: 6
@@ -1912,8 +1912,8 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                     fontWeight: 800,
                     padding: '4px 10px',
                     borderRadius: 6,
-                    background: p.status === 'DIRECTLY_AFFECTED' ? 'rgba(239, 68, 68, 0.18)' : p.status === 'INHERITED_AFFECTED' ? 'rgba(245, 158, 11, 0.18)' : 'rgba(16, 185, 129, 0.18)',
-                    color: p.status === 'DIRECTLY_AFFECTED' ? '#f87171' : p.status === 'INHERITED_AFFECTED' ? 'var(--accent-amber)' : 'var(--accent-emerald)',
+                    background: p.status === 'DIRECTLY_AFFECTED' ? 'rgba(174,54,67,0.18)' : p.status === 'INHERITED_AFFECTED' ? 'rgba(145,94,16,0.18)' : 'rgba(34,104,88,0.18)',
+                    color: p.status === 'DIRECTLY_AFFECTED' ? 'var(--accent-rose)' : p.status === 'INHERITED_AFFECTED' ? 'var(--accent-amber)' : 'var(--accent-emerald)',
                     letterSpacing: '0.04em'
                   }}>
                     {p.status}
@@ -2010,7 +2010,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               
               {/* Root System Node */}
               <div style={{
-                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(6, 182, 212, 0.12) 100%)',
+                background: 'linear-gradient(135deg, rgba(55,86,125,0.15) 0%, rgba(34,104,88,0.12) 100%)',
                 border: '2px solid var(--accent-indigo)',
                 borderRadius: '12px',
                 padding: '18px 22px',
@@ -2043,7 +2043,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               </div>
 
               {/* Subsystems Tree */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(420px, 100%), 1fr))', gap: '16px' }}>
                 {claimSkeleton.children.map(sub => (
                   <div 
                     key={sub.id} 
@@ -2061,7 +2061,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span style={{
                           background: 'var(--accent-indigo)',
-                          color: '#fff',
+                          color: 'var(--text-main)',
                           fontWeight: 800,
                           fontSize: '0.72rem',
                           padding: '3px 7px',
@@ -2073,7 +2073,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                           {sub.title}
                         </h4>
                       </div>
-                      <span style={{ fontSize: '0.68rem', color: 'var(--accent-cyan)', background: 'rgba(6, 182, 212, 0.12)', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--accent-cyan)', background: 'rgba(34,104,88,0.12)', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>
                         {sub.nodeType}
                       </span>
                     </div>
@@ -2097,8 +2097,8 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                         </span>
                         {sub.children.map(cap => (
                           <div key={cap.id} style={{
-                            background: 'rgba(99, 102, 241, 0.08)',
-                            border: '1px solid rgba(99, 102, 241, 0.25)',
+                            background: 'rgba(55,86,125,0.08)',
+                            border: '1px solid rgba(55,86,125,0.25)',
                             borderRadius: '6px',
                             padding: '8px 10px',
                             display: 'flex',
@@ -2157,7 +2157,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <span style={{
                             background: getCategoryStyles(lim.category).color,
-                            color: '#0B0F19',
+                            color: 'var(--text-main)',
                             fontWeight: 900,
                             fontSize: '0.82rem',
                             fontFamily: 'var(--font-mono)',
@@ -2206,9 +2206,9 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                             fontWeight: 800,
                             padding: '2px 10px',
                             borderRadius: 12,
-                            background: 'rgba(99, 102, 241, 0.2)',
+                            background: 'rgba(55,86,125,0.2)',
                             color: 'var(--accent-indigo)',
-                            border: '1px solid rgba(99, 102, 241, 0.4)'
+                            border: '1px solid rgba(55,86,125,0.4)'
                           }}>
                             -- {rel ? rel.relationshipType.replace(/_/g, ' ') : 'couples to'} --➔
                           </span>
@@ -2239,8 +2239,8 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                   <div 
                     key={contra.id}
                     style={{
-                      background: 'rgba(245, 158, 11, 0.08)',
-                      border: '1px solid rgba(245, 158, 11, 0.35)',
+                      background: 'rgba(145,94,16,0.08)',
+                      border: '1px solid rgba(145,94,16,0.35)',
                       borderRadius: '12px',
                       padding: '18px',
                       display: 'flex',
@@ -2252,7 +2252,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                       <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.82rem', fontWeight: 800, color: 'var(--accent-amber)' }}>
                         <AlertTriangle size={15} /> Potential Internal Conflict ({contra.conflictType})
                       </span>
-                      <span style={{ fontSize: '0.68rem', background: 'rgba(245, 158, 11, 0.2)', padding: '2px 8px', borderRadius: 4, color: 'var(--accent-amber)', fontWeight: 700 }}>
+                      <span style={{ fontSize: '0.68rem', background: 'rgba(145,94,16,0.2)', padding: '2px 8px', borderRadius: 4, color: 'var(--accent-amber)', fontWeight: 700 }}>
                         Human Review Recommended
                       </span>
                     </div>
@@ -2303,7 +2303,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                   <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
                     Counterfactual Claim Scope & What-If Simulator
                   </h3>
-                  <span style={{ fontSize: '0.68rem', background: 'rgba(99, 102, 241, 0.18)', color: 'var(--accent-indigo)', padding: '2px 8px', borderRadius: 4, fontWeight: 800 }}>
+                  <span style={{ fontSize: '0.68rem', background: 'rgba(55,86,125,0.18)', color: 'var(--accent-indigo)', padding: '2px 8px', borderRadius: 4, fontWeight: 800 }}>
                     AI-ASSISTED WHAT-IF ENGINE
                   </span>
                 </div>
@@ -2394,11 +2394,11 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               <div style={{ background: 'var(--bg-surface)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                   <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 800 }}>Structural Scope Shift</span>
-                  <span style={{ fontSize: '0.65rem', background: 'rgba(99, 102, 241, 0.18)', color: 'var(--accent-indigo)', padding: '1px 6px', borderRadius: 4, fontWeight: 800 }}>
+                  <span style={{ fontSize: '0.65rem', background: 'rgba(55,86,125,0.18)', color: 'var(--accent-indigo)', padding: '1px 6px', borderRadius: 4, fontWeight: 800 }}>
                     COMPUTED
                   </span>
                 </div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: counterfactualComparison.structuralBreadthShift === 'EXPANDED' ? '#f87171' : 'var(--accent-cyan)' }}>
+                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: counterfactualComparison.structuralBreadthShift === 'EXPANDED' ? 'var(--accent-rose)' : 'var(--accent-cyan)' }}>
                   {counterfactualComparison.structuralBreadthShift}
                 </div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
@@ -2409,7 +2409,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               <div style={{ background: 'var(--bg-surface)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                   <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 800 }}>Retrieval Re-Run (R₀ → R₁)</span>
-                  <span style={{ fontSize: '0.65rem', background: 'rgba(16, 185, 129, 0.18)', color: 'var(--accent-emerald)', padding: '1px 6px', borderRadius: 4, fontWeight: 800 }}>
+                  <span style={{ fontSize: '0.65rem', background: 'rgba(34,104,88,0.18)', color: 'var(--accent-emerald)', padding: '1px 6px', borderRadius: 4, fontWeight: 800 }}>
                     REAL RE-QUERY
                   </span>
                 </div>
@@ -2424,11 +2424,11 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               <div style={{ background: 'var(--bg-surface)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                   <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 800 }}>Newly Surfaced (R₁ \ R₀)</span>
-                  <span style={{ fontSize: '0.65rem', background: 'rgba(239, 68, 68, 0.18)', color: '#f87171', padding: '1px 6px', borderRadius: 4, fontWeight: 800 }}>
+                  <span style={{ fontSize: '0.65rem', background: 'rgba(174,54,67,0.18)', color: 'var(--accent-rose)', padding: '1px 6px', borderRadius: 4, fontWeight: 800 }}>
                     EXPOSURE
                   </span>
                 </div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#f87171' }}>
+                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--accent-rose)' }}>
                   +{counterfactualComparison.newlySurfacedPatents.length} Documents
                 </div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
@@ -2459,7 +2459,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                     <span>{b}</span>
                   </div>
                 ))}
-                <div style={{ marginTop: 6, fontSize: '0.74rem', color: '#f87171' }}>
+                <div style={{ marginTop: 6, fontSize: '0.74rem', color: 'var(--accent-rose)' }}>
                   <strong>Examiner Scrutiny Forecast:</strong> {counterfactualComparison.examinerScrutinyForecast}
                 </div>
               </div>
@@ -2473,7 +2473,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                 {/* Newly surfaced patents */}
                 {counterfactualComparison.newlySurfacedPatents.length > 0 && (
                   <div>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#f87171', marginBottom: 2 }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-rose)', marginBottom: 2 }}>
                       Newly Surfaced (+{counterfactualComparison.newlySurfacedPatents.length}):
                     </div>
                     {counterfactualComparison.newlySurfacedPatents.map(p => (
@@ -2509,8 +2509,8 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
             {/* Retrieval Parity Controls (Reproducibility Controls) */}
             {counterfactualComparison.parityControls && (
               <div style={{
-                background: 'rgba(99, 102, 241, 0.07)',
-                border: '1px solid rgba(99, 102, 241, 0.25)',
+                background: 'rgba(55,86,125,0.07)',
+                border: '1px solid rgba(55,86,125,0.25)',
                 borderRadius: '8px',
                 padding: '12px 14px',
                 display: 'flex',
@@ -2521,7 +2521,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                   <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--accent-indigo)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <ShieldCheck size={13} /> Retrieval Parity Controls (Reproducibility Controls)
                   </span>
-                  <span style={{ fontSize: '0.64rem', background: 'rgba(99, 102, 241, 0.18)', color: 'var(--accent-indigo)', padding: '1px 6px', borderRadius: 3, fontWeight: 700 }}>
+                  <span style={{ fontSize: '0.64rem', background: 'rgba(55,86,125,0.18)', color: 'var(--accent-indigo)', padding: '1px 6px', borderRadius: 3, fontWeight: 700 }}>
                     PARITY ENFORCED
                   </span>
                 </div>
@@ -2541,7 +2541,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '0.7rem', color: 'var(--text-muted)', borderTop: '1px dashed rgba(99, 102, 241, 0.2)', paddingTop: '6px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '0.7rem', color: 'var(--text-muted)', borderTop: '1px dashed rgba(55,86,125,0.2)', paddingTop: '6px' }}>
                   <span><strong>Corpus:</strong> {counterfactualComparison.parityControls.corpusSnapshot}</span>
                   <span><strong>Provider:</strong> {counterfactualComparison.parityControls.retrievalProvider}</span>
                   <span><strong>Default Top-K:</strong> {counterfactualComparison.parityControls.defaultTopK || 25}</span>
@@ -2562,7 +2562,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                   <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
                     AI Claim Mutation Laboratory
                   </h3>
-                  <span style={{ fontSize: '0.68rem', background: 'rgba(16, 185, 129, 0.18)', color: 'var(--accent-emerald)', padding: '2px 8px', borderRadius: 4, fontWeight: 800 }}>
+                  <span style={{ fontSize: '0.68rem', background: 'rgba(34,104,88,0.18)', color: 'var(--accent-emerald)', padding: '2px 8px', borderRadius: 4, fontWeight: 800 }}>
                     DESIGN-SPACE EXPLORATION
                   </span>
                 </div>
@@ -2576,7 +2576,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(340px, 100%), 1fr))', gap: '16px' }}>
               {claimMutations.map(mut => (
                 <div 
                   key={mut.variantId}
@@ -2599,7 +2599,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                       fontWeight: 800,
                       padding: '2px 7px',
                       borderRadius: 4,
-                      background: mut.retrievalOverlapShift === 'DECREASED_OVERLAP' ? 'rgba(16, 185, 129, 0.18)' : 'rgba(245, 158, 11, 0.18)',
+                      background: mut.retrievalOverlapShift === 'DECREASED_OVERLAP' ? 'rgba(34,104,88,0.18)' : 'rgba(145,94,16,0.18)',
                       color: mut.retrievalOverlapShift === 'DECREASED_OVERLAP' ? 'var(--accent-emerald)' : 'var(--accent-amber)'
                     }}>
                       Overlap: {mut.retrievalOverlapShift.replace('_', ' ')} ({mut.retrievalOverlapDeltaCount > 0 ? `+${mut.retrievalOverlapDeltaCount}` : mut.retrievalOverlapDeltaCount})
@@ -2622,8 +2622,8 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                   {/* Downstream Impact Tracking */}
                   {mut.downstreamTracking && (
                     <div style={{
-                      background: 'rgba(99, 102, 241, 0.08)',
-                      border: '1px solid rgba(99, 102, 241, 0.25)',
+                      background: 'rgba(55,86,125,0.08)',
+                      border: '1px solid rgba(55,86,125,0.25)',
                       borderRadius: '8px',
                       padding: '10px 12px',
                       display: 'flex',
@@ -2663,7 +2663,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                             padding: '1px 5px',
                             borderRadius: 3,
                             fontWeight: 800,
-                            background: mut.downstreamTracking.evidenceCoverageDelta.deltaCount < 0 ? 'rgba(245, 158, 11, 0.18)' : 'rgba(16, 185, 129, 0.18)',
+                            background: mut.downstreamTracking.evidenceCoverageDelta.deltaCount < 0 ? 'rgba(145,94,16,0.18)' : 'rgba(34,104,88,0.18)',
                             color: mut.downstreamTracking.evidenceCoverageDelta.deltaCount < 0 ? 'var(--accent-amber)' : 'var(--accent-emerald)'
                           }}>
                             {mut.downstreamTracking.evidenceCoverageDelta.deltaCount > 0 
@@ -2766,7 +2766,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
               {Object.entries(heatmapData.coverageSummary).map(([patId, summary]) => {
                 const isComplete = summary.coverageStatus === 'COMPLETE COVERAGE ESTABLISHED';
                 return (
@@ -2774,7 +2774,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                     background: 'var(--bg-surface)',
                     padding: '14px',
                     borderRadius: '10px',
-                    border: `1px solid ${isComplete ? 'rgba(244, 63, 94, 0.4)' : 'var(--border-color)'}`,
+                    border: `1px solid ${isComplete ? 'rgba(174,54,67,0.4)' : 'var(--border-color)'}`,
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '6px'
@@ -2786,7 +2786,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                         fontWeight: 800,
                         padding: '2px 8px',
                         borderRadius: 4,
-                        background: isComplete ? 'rgba(244, 63, 94, 0.18)' : 'rgba(16, 185, 129, 0.18)',
+                        background: isComplete ? 'rgba(174,54,67,0.18)' : 'rgba(34,104,88,0.18)',
                         color: isComplete ? 'var(--accent-rose)' : 'var(--accent-emerald)'
                       }}>
                         {summary.coverageStatus}
@@ -2841,8 +2841,8 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                     {Object.keys(heatmapData.coverageSummary).map(patId => {
                       const cell = row.scores[patId] || { score: 0, status: 'NONE', evidence: '' };
                       const isAbstain = cell.status === 'ABSTAIN_UNRESOLVED';
-                      const bg = isAbstain ? 'rgba(239, 68, 68, 0.18)' : cell.status === 'HIGH' ? 'rgba(244, 63, 94, 0.2)' : cell.status === 'PARTIAL' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.1)';
-                      const color = isAbstain ? '#f87171' : cell.status === 'HIGH' ? '#f87171' : cell.status === 'PARTIAL' ? 'var(--accent-amber)' : 'var(--accent-emerald)';
+                      const bg = isAbstain ? 'rgba(174,54,67,0.18)' : cell.status === 'HIGH' ? 'rgba(174,54,67,0.2)' : cell.status === 'PARTIAL' ? 'rgba(145,94,16,0.2)' : 'rgba(34,104,88,0.1)';
+                      const color = isAbstain ? 'var(--accent-rose)' : cell.status === 'HIGH' ? 'var(--accent-rose)' : cell.status === 'PARTIAL' ? 'var(--accent-amber)' : 'var(--accent-emerald)';
 
                       return (
                         <td key={patId} style={{ padding: '10px 12px', textAlign: 'center' }}>
@@ -2885,7 +2885,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                   <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
                     Search Failure Diagnosis & Intelligent Auto-Retry Loop
                   </h3>
-                  <span style={{ fontSize: '0.68rem', background: 'rgba(6, 182, 212, 0.18)', color: 'var(--accent-cyan)', padding: '2px 8px', borderRadius: 4, fontWeight: 800 }}>
+                  <span style={{ fontSize: '0.68rem', background: 'rgba(34,104,88,0.18)', color: 'var(--accent-cyan)', padding: '2px 8px', borderRadius: 4, fontWeight: 800 }}>
                     MPEP CPC & SYNONYM EXPANSION
                   </span>
                 </div>
@@ -2921,7 +2921,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               </p>
 
               {/* Recommended Transformations */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '10px', marginTop: 4 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '10px', marginTop: 4 }}>
                 {searchDiagnosis.recommendedTransformations.map((t, idx) => (
                   <div key={idx} style={{ background: 'var(--bg-input)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-dim)' }}>
@@ -2956,7 +2956,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
 
               {/* Retrieval Improvement Delta */}
               {autoRetryExecuted && (
-                <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.35)', borderRadius: '8px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ background: 'rgba(34,104,88,0.1)', border: '1px solid rgba(34,104,88,0.35)', borderRadius: '8px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem', color: 'var(--text-main)' }}>
                     <CheckCircle2 size={16} color="var(--accent-emerald)" />
                     <span><strong>Auto-Retry Succeeded:</strong> {searchDiagnosis.retrievalQualityDelta}</span>
@@ -2989,7 +2989,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(340px, 100%), 1fr))', gap: '16px' }}>
               {familyComparison.familyMembers.map((fam, i) => (
                 <div key={i} style={{
                   background: 'var(--bg-surface)',
@@ -3004,7 +3004,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{
                         background: fam.jurisdiction === 'US' ? 'var(--accent-cyan)' : fam.jurisdiction === 'EP' ? 'var(--accent-indigo)' : 'var(--accent-purple)',
-                        color: '#0B0F19',
+                        color: 'var(--text-main)',
                         fontWeight: 900,
                         fontSize: '0.74rem',
                         padding: '3px 8px',
@@ -3041,7 +3041,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))', gap: '14px' }}>
               {glossaryTerms.map((term, i) => (
                 <div key={i} style={{
                   background: 'var(--bg-surface)',
@@ -3059,7 +3059,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                       fontWeight: 700,
                       padding: '2px 6px',
                       borderRadius: 4,
-                      background: term.consistencyStatus === 'CONSISTENT' ? 'rgba(16, 185, 129, 0.18)' : 'rgba(245, 158, 11, 0.18)',
+                      background: term.consistencyStatus === 'CONSISTENT' ? 'rgba(34,104,88,0.18)' : 'rgba(145,94,16,0.18)',
                       color: term.consistencyStatus === 'CONSISTENT' ? 'var(--accent-emerald)' : 'var(--accent-amber)'
                     }}>
                       {term.consistencyStatus}
@@ -3116,7 +3116,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                     fontWeight: 800,
                     padding: '2px 8px',
                     borderRadius: 4,
-                    background: diff.diffType === 'ADDED' ? 'rgba(16, 185, 129, 0.18)' : diff.diffType === 'MODIFIED' ? 'rgba(245, 158, 11, 0.18)' : 'rgba(148, 163, 184, 0.1)',
+                    background: diff.diffType === 'ADDED' ? 'rgba(34,104,88,0.18)' : diff.diffType === 'MODIFIED' ? 'rgba(145,94,16,0.18)' : 'rgba(148, 163, 184, 0.1)',
                     color: diff.diffType === 'ADDED' ? 'var(--accent-emerald)' : diff.diffType === 'MODIFIED' ? 'var(--accent-amber)' : 'var(--text-dim)'
                   }}>
                     {diff.diffType}
@@ -3152,7 +3152,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
             height: '100%',
             background: 'var(--bg-main)',
             borderLeft: '1px solid var(--border-color)',
-            boxShadow: '-8px 0 32px rgba(0,0,0,0.6)',
+            boxShadow: 'var(--shadow-sm)',
             padding: '24px',
             overflowY: 'auto',
             display: 'flex',
@@ -3165,7 +3165,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <span style={{
                   background: getCategoryStyles(activeLimitation.category).color,
-                  color: '#0B0F19',
+                  color: 'var(--text-main)',
                   fontWeight: 900,
                   fontSize: '0.9rem',
                   fontFamily: 'var(--font-mono)',
@@ -3212,8 +3212,8 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
             {/* Multi-Agent Consensus & ABSTAIN Gate */}
             {activeLimitation.multiAgentConsensus && (
               <div style={{
-                background: activeLimitation.multiAgentConsensus.consensusStatus === 'ABSTAIN' ? 'rgba(239, 68, 68, 0.08)' : 'var(--bg-surface)',
-                border: activeLimitation.multiAgentConsensus.consensusStatus === 'ABSTAIN' ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid var(--border-color)',
+                background: activeLimitation.multiAgentConsensus.consensusStatus === 'ABSTAIN' ? 'rgba(174,54,67,0.08)' : 'var(--bg-surface)',
+                border: activeLimitation.multiAgentConsensus.consensusStatus === 'ABSTAIN' ? '1px solid rgba(174,54,67,0.4)' : '1px solid var(--border-color)',
                 borderRadius: '10px',
                 padding: '16px',
                 display: 'flex',
@@ -3229,8 +3229,8 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                     fontWeight: 800,
                     padding: '2px 8px',
                     borderRadius: 4,
-                    background: activeLimitation.multiAgentConsensus.consensusStatus === 'CONSENSUS_ESTABLISHED' ? 'rgba(16, 185, 129, 0.2)' : activeLimitation.multiAgentConsensus.consensusStatus === 'ABSTAIN' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                    color: activeLimitation.multiAgentConsensus.consensusStatus === 'CONSENSUS_ESTABLISHED' ? 'var(--accent-emerald)' : activeLimitation.multiAgentConsensus.consensusStatus === 'ABSTAIN' ? '#f87171' : 'var(--accent-amber)'
+                    background: activeLimitation.multiAgentConsensus.consensusStatus === 'CONSENSUS_ESTABLISHED' ? 'rgba(34,104,88,0.2)' : activeLimitation.multiAgentConsensus.consensusStatus === 'ABSTAIN' ? 'rgba(174,54,67,0.2)' : 'rgba(145,94,16,0.2)',
+                    color: activeLimitation.multiAgentConsensus.consensusStatus === 'CONSENSUS_ESTABLISHED' ? 'var(--accent-emerald)' : activeLimitation.multiAgentConsensus.consensusStatus === 'ABSTAIN' ? 'var(--accent-rose)' : 'var(--accent-amber)'
                   }}>
                     {activeLimitation.multiAgentConsensus.consensusStatus === 'ABSTAIN' ? '⚠ ABSTAIN (AMBIGUOUS)' : activeLimitation.multiAgentConsensus.consensusStatus.replace('_', ' ')}
                   </span>
@@ -3238,8 +3238,8 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
 
                 {/* Abstain Warning if ambiguity detected */}
                 {activeLimitation.multiAgentConsensus.consensusStatus === 'ABSTAIN' && (
-                  <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '6px', padding: '10px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <div style={{ fontSize: '0.76rem', fontWeight: 800, color: '#f87171' }}>
+                  <div style={{ background: 'rgba(174,54,67,0.12)', border: '1px solid rgba(174,54,67,0.3)', borderRadius: '6px', padding: '10px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--accent-rose)' }}>
                       Reliability Guard: Interpretation Withheld
                     </div>
                     <div style={{ fontSize: '0.73rem', color: 'var(--text-main)' }}>
@@ -3294,7 +3294,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                   <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--accent-cyan)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <Cpu size={14} /> Structured Decision Trace (Auditable Factors)
                   </span>
-                  <span style={{ fontSize: '0.65rem', background: 'rgba(6, 182, 212, 0.18)', color: 'var(--accent-cyan)', padding: '1px 6px', borderRadius: 4, fontWeight: 800 }}>
+                  <span style={{ fontSize: '0.65rem', background: 'rgba(34,104,88,0.18)', color: 'var(--accent-cyan)', padding: '1px 6px', borderRadius: 4, fontWeight: 800 }}>
                     FACTOR-BASED AUDIT
                   </span>
                 </div>
@@ -3313,7 +3313,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                     <span style={{ color: 'var(--text-dim)', minWidth: '110px' }}>2. Parser Signals:</span>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                       {activeLimitation.reasoningTrace.parserSignals.map((sig, sIdx) => (
-                        <span key={sIdx} style={{ background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.3)', padding: '1px 6px', borderRadius: 3, color: 'var(--accent-indigo)', fontSize: '0.7rem' }}>
+                        <span key={sIdx} style={{ background: 'rgba(55,86,125,0.15)', border: '1px solid rgba(55,86,125,0.3)', padding: '1px 6px', borderRadius: 3, color: 'var(--accent-indigo)', fontSize: '0.7rem' }}>
                           {sig}
                         </span>
                       ))}
@@ -3378,7 +3378,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                   <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--accent-emerald)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <ShieldCheck size={14} /> Calibrated Confidence: {activeLimitation.calibratedConfidence.compositeScore}%
                   </span>
-                  <span style={{ fontSize: '0.68rem', background: 'rgba(16, 185, 129, 0.2)', color: 'var(--accent-emerald)', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>
+                  <span style={{ fontSize: '0.68rem', background: 'rgba(34,104,88,0.2)', color: 'var(--accent-emerald)', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>
                     Tier: {activeLimitation.calibratedConfidence.confidenceTier}
                   </span>
                 </div>
@@ -3395,13 +3395,13 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
 
             {/* Grounded Limitation Dependency vs Inferred Constraint */}
             {activeLimitation.hiddenConstraints && activeLimitation.hiddenConstraints.length > 0 && (
-              <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ background: 'rgba(145,94,16,0.08)', border: '1px solid rgba(145,94,16,0.3)', borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--accent-amber)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <AlertTriangle size={14} /> Grounded Limitation Dependency vs Inferred Constraint
                 </span>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.74rem', color: 'var(--text-dim)' }}>Primary Limitation:</span>
-                  <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '1px 6px', borderRadius: 4, background: 'rgba(16, 185, 129, 0.18)', color: 'var(--accent-emerald)' }}>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '1px 6px', borderRadius: 4, background: 'rgba(34,104,88,0.18)', color: 'var(--accent-emerald)' }}>
                     [SUPPORTED]
                   </span>
                 </div>
@@ -3409,10 +3409,10 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
                   <strong>Explicit Dependency:</strong> {activeLimitation.hiddenConstraints[0].hiddenDependency}
                 </div>
                 {activeLimitation.hiddenConstraints[0].additionalHypotheticalConstraint && (
-                  <div style={{ background: 'var(--bg-input)', padding: '8px 10px', borderRadius: '6px', fontSize: '0.74rem', border: '1px dashed rgba(245, 158, 11, 0.4)' }}>
+                  <div style={{ background: 'var(--bg-input)', padding: '8px 10px', borderRadius: '6px', fontSize: '0.74rem', border: '1px dashed rgba(145,94,16,0.4)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
                       <span style={{ color: 'var(--accent-amber)', fontWeight: 700 }}>Additional Inferred Hypothesis:</span>
-                      <span style={{ fontSize: '0.65rem', background: 'rgba(245, 158, 11, 0.2)', color: 'var(--accent-amber)', padding: '1px 5px', borderRadius: 3, fontWeight: 800 }}>
+                      <span style={{ fontSize: '0.65rem', background: 'rgba(145,94,16,0.2)', color: 'var(--accent-amber)', padding: '1px 5px', borderRadius: 3, fontWeight: 800 }}>
                         [NOT ESTABLISHED]
                       </span>
                     </div>
@@ -3517,7 +3517,7 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
             display: 'flex',
             flexDirection: 'column',
             gap: '16px',
-            boxShadow: '0 12px 36px rgba(0,0,0,0.6)'
+            boxShadow: 'var(--shadow-sm)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)' }}>
@@ -3533,8 +3533,8 @@ export const ClaimIntelligenceView: React.FC<Props> = ({ onNavigate, onOpenClaim
             </div>
 
             {heatmapCellDetail.status === 'ABSTAIN_UNRESOLVED' ? (
-              <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#f87171' }}>
+              <div style={{ background: 'rgba(174,54,67,0.12)', border: '1px solid rgba(174,54,67,0.3)', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent-rose)' }}>
                   Downstream Safety Guard: Classification Presumption Withheld
                 </div>
                 <div style={{ fontSize: '0.74rem', color: 'var(--text-main)', lineHeight: 1.4 }}>

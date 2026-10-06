@@ -6,6 +6,7 @@ import PilotApp from './PilotApp.tsx'
 import { removeDraft } from './services/pilotDrafts'
 import { getStoredSettings } from './services/llmService'
 
+document.documentElement.dataset.theme = 'light';
 getStoredSettings(); // Purge obsolete browser provider credentials on startup.
 
 function RootApp() {

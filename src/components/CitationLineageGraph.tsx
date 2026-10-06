@@ -184,10 +184,10 @@ export const CitationLineageGraph: React.FC<Props> = ({
   const getNodeColor = (type: DynamicCitationNode['type']) => {
     switch (type) {
       case 'target': return 'var(--accent-cyan)';
-      case 'backward': return '#10B981'; // Emerald for eligible prior art
-      case 'forward': return '#F59E0B'; // Amber for subsequent art
-      case 'cpc_peer': return '#6366F1'; // Indigo for peers
-      case 'unassessed': return '#94A3B8'; // Slate for unassessed
+      case 'backward': return 'var(--accent-emerald)'; // Emerald for eligible prior art
+      case 'forward': return 'var(--accent-amber)'; // Amber for subsequent art
+      case 'cpc_peer': return 'var(--accent-indigo)'; // Indigo for peers
+      case 'unassessed': return 'var(--text-muted)'; // Slate for unassessed
     }
   };
 
@@ -233,8 +233,8 @@ export const CitationLineageGraph: React.FC<Props> = ({
 
       {/* Provenance Notice */}
       <div style={{
-        background: 'rgba(99, 102, 241, 0.08)',
-        border: '1px solid rgba(99, 102, 241, 0.25)',
+        background: 'rgba(55,86,125,0.08)',
+        border: '1px solid rgba(55,86,125,0.25)',
         borderRadius: '8px',
         padding: '8px 14px',
         fontSize: '0.78rem',
@@ -255,7 +255,7 @@ export const CitationLineageGraph: React.FC<Props> = ({
         <div style={{
           position: 'relative',
           height: '420px',
-          background: 'radial-gradient(circle at center, rgba(99, 102, 241, 0.06) 0%, rgba(11, 15, 25, 0.96) 100%)',
+          background: 'radial-gradient(circle at center, rgba(55,86,125,0.06) 0%, var(--bg-card-solid) 100%)',
           borderRadius: '16px',
           border: '1px solid var(--border-color)',
           overflow: 'hidden'
@@ -315,21 +315,21 @@ export const CitationLineageGraph: React.FC<Props> = ({
                   height: isTarget ? '36px' : '26px',
                   borderRadius: '50%',
                   background: color,
-                  border: '3px solid #0B0F19',
-                  boxShadow: isSelected ? `0 0 20px ${color}` : `0 0 8px ${color}80`,
+                  border: '3px solid var(--bg-card-solid)',
+                  boxShadow: isSelected ? `0 0 20px ${color}` : `0 0 8px color-mix(in srgb, ${color} 50%, transparent)`,
                   transition: 'all 0.2s ease',
                   transform: isSelected ? 'scale(1.2)' : 'scale(1)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#0B0F19'
+                  color: 'var(--text-main)'
                 }}>
                   <GitCommit size={isTarget ? 20 : 14} />
                 </div>
 
                 {/* Node Pill Tag */}
                 <div style={{
-                  background: 'rgba(11, 15, 25, 0.92)',
+                  background: 'var(--bg-card-solid)',
                   border: `1px solid ${color}`,
                   padding: '4px 10px',
                   borderRadius: '8px',
@@ -338,7 +338,7 @@ export const CitationLineageGraph: React.FC<Props> = ({
                   color: color,
                   whiteSpace: 'nowrap',
                   backdropFilter: 'blur(6px)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+                  boxShadow: 'var(--shadow-sm)'
                 }}>
                   {node.patentNumber}
                 </div>
@@ -350,7 +350,7 @@ export const CitationLineageGraph: React.FC<Props> = ({
         {/* Selected Node Details Inspector Card */}
         <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div>
-            <span className="badge" style={{ background: `${getNodeColor(selectedNode.type)}20`, color: getNodeColor(selectedNode.type), border: `1px solid ${getNodeColor(selectedNode.type)}40`, marginBottom: '6px' }}>
+            <span className="badge" style={{ background: `color-mix(in srgb, ${getNodeColor(selectedNode.type)} 13%, transparent)`, color: getNodeColor(selectedNode.type), border: `1px solid color-mix(in srgb, ${getNodeColor(selectedNode.type)} 25%, transparent)`, marginBottom: '6px' }}>
               {selectedNode.relation}
             </span>
             <h4 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)', margin: '4px 0 6px', lineHeight: '1.35' }}>
@@ -385,12 +385,12 @@ export const CitationLineageGraph: React.FC<Props> = ({
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', textAlign: 'center' }}>
             <div style={{ background: 'var(--bg-card-solid)', padding: '10px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
               <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>Earlier Publications</div>
-              <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#10B981' }}>{backwardList.length}</div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--accent-emerald)' }}>{backwardList.length}</div>
             </div>
 
             <div style={{ background: 'var(--bg-card-solid)', padding: '10px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
               <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>Subsequent Art</div>
-              <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#F59E0B' }}>{forwardList.length}</div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--accent-amber)' }}>{forwardList.length}</div>
             </div>
           </div>
 

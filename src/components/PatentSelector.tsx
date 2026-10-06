@@ -306,7 +306,7 @@ export const PatentSelector: React.FC<Props> = ({
           alignItems: 'center',
           justifyContent: 'space-between',
           cursor: 'pointer',
-          boxShadow: isOpen ? '0 0 15px rgba(0, 242, 254, 0.2)' : 'none',
+          boxShadow: isOpen ? '0 0 15px rgba(34,104,88,0.2)' : 'none',
           transition: 'all 0.2s ease',
           textAlign: 'left'
         }}
@@ -360,7 +360,7 @@ export const PatentSelector: React.FC<Props> = ({
             background: 'var(--bg-card-solid)',
             border: '1px solid var(--accent-cyan)',
             borderRadius: '12px',
-            boxShadow: '0 16px 36px rgba(0,0,0,0.75), 0 0 25px rgba(0, 242, 254, 0.25)',
+            boxShadow: 'var(--shadow-sm)',
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
@@ -502,8 +502,8 @@ export const PatentSelector: React.FC<Props> = ({
           marginTop: '8px',
           padding: '10px 14px',
           borderRadius: '8px',
-          background: 'rgba(0, 242, 254, 0.04)',
-          border: '1px solid rgba(0, 242, 254, 0.2)',
+          background: 'rgba(34,104,88,0.04)',
+          border: '1px solid rgba(34,104,88,0.2)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -544,10 +544,10 @@ const PatentCardItem: React.FC<{
         borderColor: isSelected 
           ? 'var(--accent-cyan)' 
           : isFocused 
-          ? 'rgba(0, 242, 254, 0.3)' 
+          ? 'rgba(34,104,88,0.3)'
           : 'transparent',
         background: isSelected 
-          ? 'rgba(0, 242, 254, 0.10)' 
+          ? 'rgba(34,104,88,0.10)'
           : isFocused 
           ? 'var(--bg-surface)' 
           : 'transparent',

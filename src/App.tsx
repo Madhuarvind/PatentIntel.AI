@@ -59,7 +59,6 @@ export const App: React.FC = () => {
     return match ? match[1] : undefined;
   });
 
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [isLiteratureOpen, setIsLiteratureOpen] = useState<boolean>(false);
   const [literatureQuery, setLiteratureQuery] = useState<string>('patent claim similarity SBERT');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -103,9 +102,7 @@ export const App: React.FC = () => {
   const [translatorClaimText, setTranslatorClaimText] = useState<string | undefined>(undefined);
   const [translatorSearchQuery, setTranslatorSearchQuery] = useState<string | undefined>(undefined);
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
+
 
   const handleSelectView = (view: ModuleView) => {
     setActiveView(view);
@@ -162,9 +159,7 @@ export const App: React.FC = () => {
     catch { setSessionError('Sign-out failed. Please retry to revoke your session.'); }
   };
 
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
-  };
+
 
   if (checkingSession) return <main role="status" style={{ padding: 48 }}>Checking your session…</main>;
   if (!isAuthenticated || new URLSearchParams(window.location.search).has('reset')) {
@@ -174,7 +169,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div style={{
+    <div className="platform-app" style={{
       height: '100vh',
       width: '100vw',
       display: 'flex',
@@ -187,8 +182,6 @@ export const App: React.FC = () => {
         {sessionError && <div role="alert">{sessionError}</div>}
         <Header
           user={user}
-          theme={theme}
-          onToggleTheme={toggleTheme}
           onOpenLiterature={() => openLiteratureWithQuery()}
           onLogout={handleLogout}
           searchQuery={searchQuery}

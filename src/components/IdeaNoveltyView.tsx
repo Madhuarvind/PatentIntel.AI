@@ -37,7 +37,9 @@ import {
   Archive,
   RotateCcw,
   ArrowDown,
-  GitBranch
+  GitBranch,
+  Zap,
+  FileUp
 } from 'lucide-react';
 
 import type { 
@@ -62,6 +64,7 @@ import {
   generateStatutoryEligibilityAnalysis
 } from '../services/noveltyBenchmarkService';
 import { extractPdfTextPageByPage } from '../services/pdfParser';
+import { extractProposalMetadata } from '../services/documentProposalExtractor';
 
 interface IdeaNoveltyViewProps {
   onNavigate?: (view: ModuleView, metadata?: any) => void;
@@ -100,6 +103,17 @@ export const IdeaNoveltyView: React.FC<IdeaNoveltyViewProps> = ({
 
   // Wizard Creation State
   const [wizardStep, setWizardStep] = useState<number>(1);
+  const [ingestionMode, setIngestionMode] = useState<'smart' | 'stepwise'>('smart');
+  const [isExtractingDoc, setIsExtractingDoc] = useState<boolean>(false);
+  const [uploadedDocMeta, setUploadedDocMeta] = useState<{
+    fileName: string;
+    wordCount: number;
+    keywords: string[];
+    featuresCount: number;
+  } | null>(null);
+  const [showPasteText, setShowPasteText] = useState<boolean>(false);
+  const [smartCategoryFilter, setSmartCategoryFilter] = useState<string>('ALL');
+
   const [activePresetId, setActivePresetId] = useState<number | null>(null);
   const [proposalTitle, setProposalTitle] = useState<string>('');
   const [proposalDomain, setProposalDomain] = useState<string>('Artificial Intelligence & IoT Systems');
@@ -118,6 +132,18 @@ export const IdeaNoveltyView: React.FC<IdeaNoveltyViewProps> = ({
     setProposedSolution(preset.proposedSolution);
     setExpectedTechnicalEffect(preset.expectedTechnicalEffect);
     setProposalText(preset.proposalText);
+
+    // Auto-extract components immediately so user can benchmark in 1 click
+    const combinedText = `${preset.title}\n${preset.technicalProblem}\n${preset.proposedSolution}\n${preset.expectedTechnicalEffect}\n${preset.proposalText}`;
+    const { components, relationships } = extractInnovationComponents(combinedText, `temp_${Date.now()}`);
+    setValidatedComponents(components);
+    setValidatedRelationships(relationships);
+    setUploadedDocMeta({
+      fileName: `${preset.title} (${preset.badge})`,
+      wordCount: preset.proposalText.split(/\s+/).length,
+      keywords: [preset.badge],
+      featuresCount: components.length
+    });
   };
 
   const handleClearForm = () => {
@@ -128,6 +154,8 @@ export const IdeaNoveltyView: React.FC<IdeaNoveltyViewProps> = ({
     setProposedSolution('');
     setExpectedTechnicalEffect('');
     setProposalText('');
+    setValidatedComponents([]);
+    setUploadedDocMeta(null);
   };
   
   // Human Feature Validation Step State
@@ -699,21 +727,74 @@ const RESEARCH_PRESETS: RDPreset[] = [
   }
 ];
 
-  // Handle PDF Upload via pdfParser.ts
+  // Handle Document Upload (PDF, TXT) with Automated Intelligent Extraction
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
-      const { fullText } = await extractPdfTextPageByPage(file);
-      setProposalText(fullText);
-      if (!proposalTitle) {
-        const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-        setProposalTitle(cleanName);
+      setIsExtractingDoc(true);
+      let fullText = '';
+      if (file.name.toLowerCase().endsWith('.pdf')) {
+        const parsed = await extractPdfTextPageByPage(file);
+        fullText = parsed.fullText;
+      } else {
+        fullText = await file.text();
       }
+
+      setProposalText(fullText);
+
+      // Intelligent Auto-Extraction from Document Text
+      const extracted = extractProposalMetadata(fullText, file.name);
+      setProposalTitle(extracted.title);
+      setProposalDomain(extracted.domain);
+      setTechnicalProblem(extracted.technicalProblem);
+      setProposedSolution(extracted.proposedSolution);
+      setExpectedTechnicalEffect(extracted.expectedTechnicalEffect);
+
+      // Automatically extract and validate technical components
+      const combinedText = `${extracted.title}\n${extracted.technicalProblem}\n${extracted.proposedSolution}\n${extracted.expectedTechnicalEffect}\n${fullText}`;
+      const { components, relationships } = extractInnovationComponents(combinedText, `temp_${Date.now()}`);
+      setValidatedComponents(components);
+      setValidatedRelationships(relationships);
+
+      setUploadedDocMeta({
+        fileName: file.name,
+        wordCount: extracted.wordCount,
+        keywords: extracted.detectedKeywords,
+        featuresCount: components.length
+      });
+      setIsExtractingDoc(false);
     } catch (err) {
       console.error('File parsing error:', err);
+      setIsExtractingDoc(false);
     }
+  };
+
+  // Handle Manual Text Pasted Auto-Extraction
+  const handleExtractFromPastedText = (rawText: string) => {
+    if (!rawText.trim()) return;
+    setIsExtractingDoc(true);
+    const extracted = extractProposalMetadata(rawText);
+    setProposalTitle(extracted.title);
+    setProposalDomain(extracted.domain);
+    setTechnicalProblem(extracted.technicalProblem);
+    setProposedSolution(extracted.proposedSolution);
+    setExpectedTechnicalEffect(extracted.expectedTechnicalEffect);
+    setProposalText(extracted.fullText);
+
+    const combinedText = `${extracted.title}\n${extracted.technicalProblem}\n${extracted.proposedSolution}\n${extracted.expectedTechnicalEffect}\n${extracted.fullText}`;
+    const { components, relationships } = extractInnovationComponents(combinedText, `temp_${Date.now()}`);
+    setValidatedComponents(components);
+    setValidatedRelationships(relationships);
+
+    setUploadedDocMeta({
+      fileName: 'Pasted Proposal Text Document',
+      wordCount: extracted.wordCount,
+      keywords: extracted.detectedKeywords,
+      featuresCount: components.length
+    });
+    setIsExtractingDoc(false);
   };
 
   // Step 3 -> Step 4: Extract Components for Human Feature Validation
@@ -2038,449 +2119,101 @@ const RESEARCH_PRESETS: RDPreset[] = [
       {/* SUB-VIEW 2: STEP-BY-STEP NEW INNOVATION WIZARD                           */}
       {/* ========================================================================= */}
       {activeTab === 'wizard' && (
-        <div className="glass-panel" style={{ maxWidth: '900px', margin: '0 auto', padding: '32px', display: 'flex', flexDirection: 'column', gap: '28px', width: '100%' }}>
-          {/* Progress Indicator */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '20px' }}>
-            {[
-              { step: 1, label: 'Basic Info & Presets' },
-              { step: 2, label: 'Technical Details' },
-              { step: 3, label: 'Document Upload' },
-              { step: 4, label: 'Human Feature Validation' },
-              { step: 5, label: 'Live Benchmark Run' }
-            ].map((s) => (
-              <div key={s.step} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div 
-                  style={{ 
-                    width: 32, 
-                    height: 32, 
-                    borderRadius: '50%', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    fontWeight: 700, 
-                    fontSize: '0.8rem',
-                    background: wizardStep === s.step ? 'var(--accent-indigo)' : wizardStep > s.step ? 'rgba(16, 185, 129, 0.2)' : 'var(--bg-surface)',
-                    color: wizardStep === s.step ? '#FFFFFF' : wizardStep > s.step ? 'var(--accent-emerald)' : 'var(--text-dim)',
-                    border: `1px solid ${wizardStep === s.step ? 'var(--accent-indigo)' : wizardStep > s.step ? 'rgba(16, 185, 129, 0.4)' : 'var(--border-color)'}`
-                  }}
-                >
-                  {wizardStep > s.step ? <Check size={16} /> : s.step}
-                </div>
-                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: wizardStep === s.step ? 'var(--text-main)' : 'var(--text-dim)' }}>
-                  {s.label}
+        <div 
+          className="glass-panel" 
+          style={{ 
+            maxWidth: ingestionMode === 'smart' ? '1140px' : '900px', 
+            margin: '0 auto', 
+            padding: '32px', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '24px', 
+            width: '100%',
+            transition: 'max-width 0.25s ease'
+          }}
+        >
+          {/* Top Ingestion Mode Switcher */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '20px' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4, background: 'rgba(55,86,125,0.15)', color: 'var(--accent-indigo)', letterSpacing: '0.06em' }}>
+                  R&D BENCHMARKER
                 </span>
+                <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                  {ingestionMode === 'smart' ? '1-Click Proposal Ingestion & Live Novelty Engine' : '5-Step Innovation Proposal Wizard'}
+                </h2>
               </div>
-            ))}
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                {ingestionMode === 'smart' 
+                  ? 'Upload any PDF/TXT proposal document or pick a preset — Title, Domain, Technical Problem, Solution, Effect & Features F1–FN are auto-extracted instantly.'
+                  : 'Follow the 5-step guided path to manually configure and validate each stage of your R&D proposal.'}
+              </p>
+            </div>
+
+            {/* Ingestion Mode Toggle */}
+            <div style={{ display: 'inline-flex', background: 'var(--bg-input)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+              <button
+                type="button"
+                onClick={() => setIngestionMode('smart')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '7px 14px',
+                  borderRadius: '7px',
+                  border: 'none',
+                  background: ingestionMode === 'smart' ? 'var(--accent-indigo)' : 'transparent',
+                  color: ingestionMode === 'smart' ? '#FFFFFF' : 'var(--text-dim)',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <Zap size={14} />
+                <span>1-Click Document Ingestion</span>
+                <span style={{ fontSize: '0.62rem', background: ingestionMode === 'smart' ? 'rgba(255,255,255,0.25)' : 'rgba(34,197,94,0.15)', color: ingestionMode === 'smart' ? '#FFF' : 'var(--accent-emerald)', padding: '1px 5px', borderRadius: '4px', fontWeight: 800 }}>FAST</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIngestionMode('stepwise')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '7px 14px',
+                  borderRadius: '7px',
+                  border: 'none',
+                  background: ingestionMode === 'stepwise' ? 'var(--accent-indigo)' : 'transparent',
+                  color: ingestionMode === 'stepwise' ? '#FFFFFF' : 'var(--text-dim)',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <Layers size={14} />
+                <span>5-Step Manual Wizard</span>
+              </button>
+            </div>
           </div>
 
-          {/* STEP 1: BASIC INFO & PRESETS */}
-          {wizardStep === 1 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Step 1: Innovation Proposal Overview</h3>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4, margin: 0 }}>
-                  Enter your project idea title or choose a pre-configured student research proposal preset below.
-                </p>
-              </div>
-
-              {/* Preset Buttons Header & Grid */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Quick Research Presets ({RESEARCH_PRESETS.length} Available)
-                  </label>
-                  {(activePresetId !== null || proposalTitle || technicalProblem) && (
-                    <button
-                      onClick={handleClearForm}
-                      style={{
-                        background: 'transparent',
-                        border: '1px solid var(--border-color)',
-                        borderRadius: '6px',
-                        padding: '4px 10px',
-                        fontSize: '0.75rem',
-                        color: 'var(--text-dim)',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Clear / Reset Form
-                    </button>
-                  )}
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px' }}>
-                  {RESEARCH_PRESETS.map((preset) => {
-                    const isSelected = activePresetId === preset.id;
-                    return (
-                      <button
-                        key={preset.id}
-                        onClick={() => applyPresetSample(preset.id)}
-                        style={{
-                          background: isSelected ? 'rgba(99, 102, 241, 0.12)' : 'var(--bg-surface)',
-                          border: `1.5px solid ${isSelected ? 'var(--accent-indigo)' : 'var(--border-color)'}`,
-                          borderRadius: '12px',
-                          padding: '14px',
-                          textAlign: 'left',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: 6,
-                          position: 'relative'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span 
-                            style={{ 
-                              fontSize: '0.68rem', 
-                              fontWeight: 700, 
-                              color: isSelected ? 'var(--accent-indigo)' : 'var(--accent-cyan)',
-                              background: 'var(--bg-card)',
-                              padding: '2px 8px',
-                              borderRadius: '4px',
-                              border: '1px solid var(--border-color)'
-                            }}
-                          >
-                            {preset.badge}
-                          </span>
-                          {isSelected && <Check size={14} color="var(--accent-indigo)" />}
-                        </div>
-                        <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: 1.3 }}>
-                          {preset.id}. {preset.title}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                          {preset.summary}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {activePresetId !== null && (
-                  <div 
-                    style={{ 
-                      background: 'rgba(99, 102, 241, 0.08)', 
-                      border: '1px solid rgba(99, 102, 241, 0.25)', 
-                      borderRadius: '10px', 
-                      padding: '10px 14px', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '10px', 
-                      fontSize: '0.82rem', 
-                      color: 'var(--text-main)' 
-                    }}
-                  >
-                    <Sparkles size={16} color="var(--accent-indigo)" style={{ flexShrink: 0 }} />
-                    <span>
-                      <strong>Preset Loaded:</strong> You can now edit or customize any title, domain, technical problem, solution architecture, or expected technical effect text below at any time!
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>Proposal Title</label>
-                  <input
-                    type="text"
-                    value={proposalTitle}
-                    onChange={(e) => setProposalTitle(e.target.value)}
-                    placeholder="e.g. IoT Autonomous Agriculture Telemetry & Predictive Shelf-Life Network"
-                    className="input-field"
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>Domain Field</label>
-                  <input
-                    type="text"
-                    value={proposalDomain}
-                    onChange={(e) => setProposalDomain(e.target.value)}
-                    placeholder="e.g. Smart Agriculture & IoT Sensors"
-                    className="input-field"
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '16px' }}>
-                <button
-                  disabled={!proposalTitle.trim()}
-                  onClick={() => setWizardStep(2)}
-                  className="btn-primary"
-                  style={{ opacity: !proposalTitle.trim() ? 0.5 : 1 }}
-                >
-                  <span>Next: Technical Specification</span>
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 2: TECHNICAL DETAILS */}
-          {wizardStep === 2 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Step 2: Technical Problem & Proposed Solution</h3>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4, margin: 0 }}>
-                  Clearly describe the core technical bottleneck, your proposed solution architecture, and expected technical effects.
-                </p>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>Technical Problem & Prior-Art Bottleneck</label>
-                  <textarea
-                    rows={3}
-                    value={technicalProblem}
-                    onChange={(e) => setTechnicalProblem(e.target.value)}
-                    placeholder="Describe the existing system limitations or unaddressed technical challenge..."
-                    className="input-field"
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>Proposed Technical Solution Architecture</label>
-                  <textarea
-                    rows={3}
-                    value={proposedSolution}
-                    onChange={(e) => setProposedSolution(e.target.value)}
-                    placeholder="Describe your hardware components, algorithms, data streams, and execution steps..."
-                    className="input-field"
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>Expected Technical Effect & Advantages</label>
-                  <input
-                    type="text"
-                    value={expectedTechnicalEffect}
-                    onChange={(e) => setExpectedTechnicalEffect(e.target.value)}
-                    placeholder="e.g. Reduces power consumption by 35% and maintains sub-50ms execution latency..."
-                    className="input-field"
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '16px' }}>
-                <button
-                  onClick={() => setWizardStep(1)}
-                  className="btn-secondary"
-                >
-                  Back
-                </button>
-                <button
-                  onClick={() => setWizardStep(3)}
-                  className="btn-primary"
-                >
-                  <span>Next: Upload Proposal PDF / Text</span>
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 3: DOCUMENT UPLOAD */}
-          {wizardStep === 3 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Step 3: Attach R&D Document / Paste Text</h3>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4, margin: 0 }}>
-                  Upload your proposal paper PDF or paste the full document text for automated component extraction.
-                </p>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-                {/* File Upload Box */}
-                <div 
-                  style={{ 
-                    border: '2px dashed var(--border-color)', 
-                    borderRadius: '16px', 
-                    padding: '32px', 
-                    textAlign: 'center', 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    gap: '12px', 
-                    background: 'var(--bg-input)' 
-                  }}
-                >
-                  <Upload size={32} color="var(--accent-indigo)" />
-                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>Upload PDF / TXT Proposal Document</div>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>Supports PDF text layer extraction via pdfParser</p>
-                  <label className="btn-primary" style={{ cursor: 'pointer', marginTop: 8 }}>
-                    <span>Browse Files</span>
-                    <input type="file" accept=".pdf,.txt" onChange={handleFileUpload} style={{ display: 'none' }} />
-                  </label>
-                </div>
-
-                {/* Paste Text */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Or Paste Document Text</label>
-                  <textarea
-                    rows={6}
-                    value={proposalText}
-                    onChange={(e) => setProposalText(e.target.value)}
-                    placeholder="Paste project abstract, methodology section, or proposal text..."
-                    className="input-field"
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '16px' }}>
-                <button
-                  onClick={() => setWizardStep(2)}
-                  className="btn-secondary"
-                >
-                  Back
-                </button>
-                <button
-                  onClick={proceedToFeatureValidation}
-                  className="btn-primary"
-                >
-                  <span>Extract Features & Validate</span>
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 4: HUMAN FEATURE VALIDATION STEP */}
-          {wizardStep === 4 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
-                <div>
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <FileCheck size={20} color="var(--accent-indigo)" />
-                    <span>Step 4: Human Feature Validation</span>
-                  </h3>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4, margin: 0 }}>
-                    Review and refine the extracted technical components before searching USPTO & OpenAlex prior-art databases.
-                  </p>
-                </div>
-
-                <button
-                  onClick={handleAddComponent}
-                  className="btn-secondary"
-                  style={{ padding: '6px 12px', fontSize: '0.78rem' }}
-                >
-                  <Plus size={14} />
-                  <span>Add Feature</span>
-                </button>
-              </div>
-
-              {/* Component Cards List */}
-              <div style={{ maxHeight: '420px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: 4 }}>
-                {validatedComponents.map((comp, idx) => (
-                  <div key={comp.id} style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 700, padding: '4px 8px', borderRadius: 6, background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
-                          {comp.featureCode}
-                        </span>
-                        <input
-                          type="text"
-                          value={comp.term}
-                          onChange={(e) => {
-                            const updated = [...validatedComponents];
-                            updated[idx].term = e.target.value;
-                            setValidatedComponents(updated);
-                          }}
-                          className="input-field"
-                          style={{ fontWeight: 700, width: '240px' }}
-                        />
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <select
-                          value={comp.category}
-                          onChange={(e) => {
-                            const updated = [...validatedComponents];
-                            updated[idx].category = e.target.value as any;
-                            setValidatedComponents(updated);
-                          }}
-                          className="input-field"
-                          style={{ width: 'auto' }}
-                        >
-                          <option value="COMPONENT">COMPONENT</option>
-                          <option value="FUNCTION">FUNCTION</option>
-                          <option value="DATA">DATA</option>
-                          <option value="PROCESS">PROCESS</option>
-                          <option value="RELATIONSHIP">RELATIONSHIP</option>
-                          <option value="CONSTRAINT">CONSTRAINT</option>
-                          <option value="TECHNICAL_EFFECT">TECHNICAL EFFECT</option>
-                        </select>
-
-                        <select
-                          value={comp.importance}
-                          onChange={(e) => {
-                            const updated = [...validatedComponents];
-                            updated[idx].importance = e.target.value as any;
-                            setValidatedComponents(updated);
-                          }}
-                          className="input-field"
-                          style={{ width: 'auto' }}
-                        >
-                          <option value="CORE">CORE</option>
-                          <option value="SUPPORTING">SUPPORTING</option>
-                          <option value="OPTIONAL">OPTIONAL</option>
-                        </select>
-
-                        <button
-                          onClick={() => setValidatedComponents(validatedComponents.filter(c => c.id !== comp.id))}
-                          style={{ background: 'transparent', border: 'none', color: 'var(--accent-rose)', cursor: 'pointer', padding: 4 }}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-
-                    <input
-                      type="text"
-                      value={comp.description}
-                      onChange={(e) => {
-                        const updated = [...validatedComponents];
-                        updated[idx].description = e.target.value;
-                        setValidatedComponents(updated);
-                      }}
-                      className="input-field"
-                      style={{ fontSize: '0.8rem' }}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
-                <button
-                  onClick={() => setWizardStep(3)}
-                  className="btn-secondary"
-                >
-                  Back
-                </button>
-                <button
-                  onClick={executeBenchmarkRun}
-                  className="btn-primary"
-                >
-                  <Sparkles size={16} />
-                  <span>Approve & Run Multi-Corpus Search</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 5: LIVE BENCHMARK EXECUTION */}
+          {/* ================================================================= */}
+          {/* BENCHMARK EXECUTION SPINNER (Active in both modes when step 5)   */}
+          {/* ================================================================= */}
           {wizardStep === 5 && (
             <div style={{ padding: '60px 0', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
-              <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(99, 102, 241, 0.15)', border: '2px solid var(--accent-indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(55,86,125,0.15)', border: '2px solid var(--accent-indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <RefreshCw size={36} color="var(--accent-indigo)" style={{ animation: 'spin 1.5s linear infinite' }} />
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Executing Prior-Art Benchmarking</h3>
-                <p style={{ fontSize: '0.82rem', color: 'var(--accent-indigo)', fontFamily: 'var(--font-mono)', margin: 0 }}>{analysisStage}</p>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Executing Prior-Art Multi-Corpus Benchmarking</h3>
+                <p style={{ fontSize: '0.84rem', color: 'var(--accent-indigo)', fontFamily: 'var(--font-mono)', margin: 0 }}>{analysisStage}</p>
               </div>
 
               {/* Progress Bar */}
-              <div style={{ width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ width: '100%', maxWidth: '440px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ width: '100%', background: 'var(--bg-input)', borderRadius: 999, height: 10, border: '1px solid var(--border-color)', overflow: 'hidden' }}>
                   <div 
                     style={{ 
@@ -2491,8 +2224,986 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     }}
                   />
                 </div>
-                <div style={{ textAlign: 'right', fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>{analysisProgress}%</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
+                  <span>Searching USPTO & OpenAlex Research Graphs</span>
+                  <span>{analysisProgress}%</span>
+                </div>
               </div>
+            </div>
+          )}
+
+          {/* ================================================================= */}
+          {/* SMART 1-CLICK DOCUMENT INGESTION VIEW                             */}
+          {/* ================================================================= */}
+          {ingestionMode === 'smart' && wizardStep !== 5 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {/* Top Banner & Quick Presets Section */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {/* 1. Document Upload & Raw Text Dropzone Area */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))', gap: '16px' }}>
+                  {/* Upload Box */}
+                  <div 
+                    style={{ 
+                      border: '2px dashed var(--accent-indigo)', 
+                      borderRadius: '16px', 
+                      padding: '28px 20px', 
+                      textAlign: 'center', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      gap: '12px', 
+                      background: 'rgba(55,86,125,0.06)',
+                      transition: 'all 0.2s ease',
+                      position: 'relative'
+                    }}
+                  >
+                    {isExtractingDoc ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '16px 0' }}>
+                        <RefreshCw size={32} color="var(--accent-indigo)" style={{ animation: 'spin 1.5s linear infinite' }} />
+                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)' }}>Extracting Metadata & Claims...</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Parsing document text and identifying technical components (F1–FN)</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ width: 48, height: 48, borderRadius: '12px', background: 'rgba(55,86,125,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <FileUp size={24} color="var(--accent-indigo)" />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>Upload Proposal Document (PDF, TXT, MD)</div>
+                          <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
+                            Auto-extracts Title, Domain, Problem, Solution Architecture, Expected Effects, and Key Features (F1–FN).
+                          </p>
+                        </div>
+                        <label 
+                          className="btn-primary" 
+                          style={{ 
+                            cursor: 'pointer', 
+                            display: 'inline-flex', 
+                            alignItems: 'center', 
+                            gap: '8px',
+                            padding: '8px 18px',
+                            fontSize: '0.84rem'
+                          }}
+                        >
+                          <Upload size={16} />
+                          <span>Browse Proposal Document</span>
+                          <input 
+                            type="file" 
+                            accept=".pdf,.txt,.md,.doc,.docx" 
+                            onChange={handleFileUpload} 
+                            style={{ display: 'none' }} 
+                          />
+                        </label>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Document Ingestion Status or Direct Paste Option */}
+                  <div 
+                    style={{ 
+                      borderRadius: '16px', 
+                      padding: '20px', 
+                      background: 'var(--bg-input)', 
+                      border: '1px solid var(--border-color)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      gap: '12px'
+                    }}
+                  >
+                    {uploadedDocMeta ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-emerald)', background: 'rgba(34,197,94,0.12)', padding: '3px 8px', borderRadius: 4 }}>
+                            <CheckCircle2 size={13} />
+                            Document Ingested & Parsed
+                          </span>
+                          <button
+                            onClick={handleClearForm}
+                            style={{ background: 'transparent', border: 'none', color: 'var(--accent-rose)', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 600 }}
+                          >
+                            Clear / Reset
+                          </button>
+                        </div>
+                        <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)', wordBreak: 'break-all' }}>
+                          📄 {uploadedDocMeta.fileName}
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                          <span style={{ padding: '2px 8px', background: 'var(--bg-card)', borderRadius: 4, border: '1px solid var(--border-color)' }}>
+                            {uploadedDocMeta.wordCount.toLocaleString()} words
+                          </span>
+                          <span style={{ padding: '2px 8px', background: 'rgba(55,86,125,0.15)', color: 'var(--accent-indigo)', borderRadius: 4, fontWeight: 700 }}>
+                            {uploadedDocMeta.featuresCount} Features Extracted
+                          </span>
+                          {uploadedDocMeta.keywords.slice(0, 3).map((kw, i) => (
+                            <span key={i} style={{ padding: '2px 8px', background: 'var(--bg-card)', borderRadius: 4, border: '1px solid var(--border-color)' }}>
+                              #{kw}
+                            </span>
+                          ))}
+                        </div>
+                        <div style={{ fontSize: '0.76rem', color: 'var(--accent-cyan)' }}>
+                          All fields and feature chips F1–F{uploadedDocMeta.featuresCount} have been auto-populated below for your review.
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            Or Paste Proposal Text Directly
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setShowPasteText(!showPasteText)}
+                            style={{ background: 'transparent', border: 'none', color: 'var(--accent-indigo)', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600 }}
+                          >
+                            {showPasteText ? 'Collapse Textarea' : 'Expand Textarea'}
+                          </button>
+                        </div>
+                        <textarea
+                          rows={showPasteText ? 5 : 2}
+                          value={proposalText}
+                          onChange={(e) => setProposalText(e.target.value)}
+                          placeholder="Paste proposal abstract, methodology section, or raw specification text..."
+                          className="input-field"
+                          style={{ resize: 'vertical', fontSize: '0.8rem' }}
+                        />
+                        <button
+                          type="button"
+                          disabled={!proposalText.trim() || isExtractingDoc}
+                          onClick={() => handleExtractFromPastedText(proposalText)}
+                          className="btn-secondary"
+                          style={{ padding: '6px 12px', fontSize: '0.78rem', alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '6px', opacity: !proposalText.trim() ? 0.5 : 1 }}
+                        >
+                          <Sparkles size={14} color="var(--accent-cyan)" />
+                          <span>Auto-Extract from Pasted Text</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 2. Quick Research Presets Grid */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      ⚡ 1-Click R&D Innovation Presets ({RESEARCH_PRESETS.length} Available)
+                    </label>
+                    {(activePresetId !== null || proposalTitle || technicalProblem) && (
+                      <button
+                        onClick={handleClearForm}
+                        style={{
+                          background: 'transparent',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                          padding: '3px 8px',
+                          fontSize: '0.72rem',
+                          color: 'var(--text-dim)',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Reset Form
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '10px' }}>
+                    {RESEARCH_PRESETS.map((preset) => {
+                      const isSelected = activePresetId === preset.id;
+                      return (
+                        <button
+                          key={preset.id}
+                          onClick={() => applyPresetSample(preset.id)}
+                          style={{
+                            background: isSelected ? 'rgba(55,86,125,0.14)' : 'var(--bg-surface)',
+                            border: `1.5px solid ${isSelected ? 'var(--accent-indigo)' : 'var(--border-color)'}`,
+                            borderRadius: '10px',
+                            padding: '12px',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 4
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span 
+                              style={{ 
+                                fontSize: '0.65rem', 
+                                fontWeight: 700, 
+                                color: isSelected ? 'var(--accent-indigo)' : 'var(--accent-cyan)',
+                                background: 'var(--bg-card)',
+                                padding: '1px 6px',
+                                borderRadius: '4px',
+                                border: '1px solid var(--border-color)'
+                              }}
+                            >
+                              {preset.badge}
+                            </span>
+                            {isSelected && <Check size={14} color="var(--accent-indigo)" />}
+                          </div>
+                          <div style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--text-main)', lineHeight: 1.3 }}>
+                            {preset.id}. {preset.title}
+                          </div>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: 1.35 }}>
+                            {preset.summary}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Section A: Auto-Extracted Innovation Specification */}
+              <div 
+                style={{ 
+                  borderRadius: '16px', 
+                  border: '1px solid var(--border-color)', 
+                  background: 'var(--bg-card)', 
+                  padding: '24px', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '18px' 
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FileText size={18} color="var(--accent-indigo)" />
+                    <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                      1. Innovation Proposal Specification
+                    </span>
+                    <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: 4, background: proposalTitle ? 'rgba(34,197,94,0.12)' : 'var(--bg-input)', color: proposalTitle ? 'var(--accent-emerald)' : 'var(--text-dim)', fontWeight: 600 }}>
+                      {proposalTitle ? 'Auto-Extracted & Editable' : 'Awaiting Input'}
+                    </span>
+                  </div>
+                  {proposalTitle && (
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      You can freely refine any field before benchmarking.
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>Proposal Title</label>
+                    <input
+                      type="text"
+                      value={proposalTitle}
+                      onChange={(e) => setProposalTitle(e.target.value)}
+                      placeholder="e.g. IoT Autonomous Agriculture Telemetry & Predictive Shelf-Life Network"
+                      className="input-field"
+                      style={{ fontWeight: 600 }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>Technical Domain</label>
+                    <input
+                      type="text"
+                      value={proposalDomain}
+                      onChange={(e) => setProposalDomain(e.target.value)}
+                      placeholder="e.g. Smart Agriculture & IoT Sensors"
+                      className="input-field"
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>Technical Problem & Prior-Art Bottleneck</label>
+                    <textarea
+                      rows={3}
+                      value={technicalProblem}
+                      onChange={(e) => setTechnicalProblem(e.target.value)}
+                      placeholder="Identified system limitations or technical deficiencies in existing state-of-the-art..."
+                      className="input-field"
+                      style={{ fontSize: '0.8rem', resize: 'vertical' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>Proposed Technical Solution Architecture</label>
+                    <textarea
+                      rows={3}
+                      value={proposedSolution}
+                      onChange={(e) => setProposedSolution(e.target.value)}
+                      placeholder="Key hardware components, algorithmic pipelines, data flow, and functional execution..."
+                      className="input-field"
+                      style={{ fontSize: '0.8rem', resize: 'vertical' }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>Expected Technical Effect & Quantitative Advantages</label>
+                  <input
+                    type="text"
+                    value={expectedTechnicalEffect}
+                    onChange={(e) => setExpectedTechnicalEffect(e.target.value)}
+                    placeholder="e.g. Extends transport shelf-life predictability by 45% and reduces supply chain degradation waste by 38%..."
+                    className="input-field"
+                    style={{ fontSize: '0.8rem' }}
+                  />
+                </div>
+              </div>
+
+              {/* 4. Section B: Auto-Extracted Key Innovation Components (F1–FN) */}
+              <div 
+                style={{ 
+                  borderRadius: '16px', 
+                  border: '1px solid var(--border-color)', 
+                  background: 'var(--bg-card)', 
+                  padding: '24px', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '16px' 
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CheckCircle2 size={18} color="var(--accent-emerald)" />
+                    <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                      2. Extracted Technical Components & Claims (F1–FN)
+                    </span>
+                    <span style={{ fontSize: '0.74rem', padding: '2px 8px', borderRadius: 4, background: 'rgba(55,86,125,0.15)', color: 'var(--accent-indigo)', fontWeight: 700 }}>
+                      {validatedComponents.length} Components
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      onClick={handleAddComponent}
+                      className="btn-secondary"
+                      style={{ padding: '5px 12px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <Plus size={14} />
+                      <span>Add Feature</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filter Pills for Categories */}
+                {validatedComponents.length > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', fontWeight: 600, marginRight: 4 }}>Filter:</span>
+                    {['ALL', 'COMPONENT', 'FUNCTION', 'DATA', 'PROCESS', 'RELATIONSHIP', 'CONSTRAINT', 'TECHNICAL_EFFECT'].map((cat) => {
+                      const count = cat === 'ALL' ? validatedComponents.length : validatedComponents.filter(c => c.category === cat).length;
+                      if (cat !== 'ALL' && count === 0) return null;
+                      const isActive = smartCategoryFilter === cat;
+                      return (
+                        <button
+                          key={cat}
+                          onClick={() => setSmartCategoryFilter(cat)}
+                          style={{
+                            background: isActive ? 'var(--accent-indigo)' : 'var(--bg-input)',
+                            color: isActive ? '#FFFFFF' : 'var(--text-dim)',
+                            border: `1px solid ${isActive ? 'var(--accent-indigo)' : 'var(--border-color)'}`,
+                            borderRadius: '6px',
+                            padding: '3px 8px',
+                            fontSize: '0.7rem',
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {cat} ({count})
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Component List */}
+                {validatedComponents.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '36px 16px', background: 'var(--bg-input)', borderRadius: '12px', border: '1px dashed var(--border-color)' }}>
+                    <Sparkles size={28} color="var(--accent-indigo)" style={{ marginBottom: 8, opacity: 0.8 }} />
+                    <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-main)' }}>No Technical Features Extracted Yet</div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                      Upload a proposal document above or click any of the 6 pre-configured presets to automatically extract decomposed features.
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ maxHeight: '440px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: 4 }}>
+                    {validatedComponents
+                      .filter(c => smartCategoryFilter === 'ALL' || c.category === smartCategoryFilter)
+                      .map((comp) => {
+                        const originalIndex = validatedComponents.findIndex(c => c.id === comp.id);
+                        return (
+                          <div 
+                            key={comp.id} 
+                            style={{ 
+                              background: 'var(--bg-input)', 
+                              border: '1px solid var(--border-color)', 
+                              borderRadius: '12px', 
+                              padding: '14px', 
+                              display: 'flex', 
+                              flexDirection: 'column', 
+                              gap: '10px' 
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: '220px' }}>
+                                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: 'rgba(55,86,125,0.15)', color: 'var(--accent-indigo)', border: '1px solid rgba(55,86,125,0.3)', flexShrink: 0 }}>
+                                  {comp.featureCode}
+                                </span>
+                                <input
+                                  type="text"
+                                  value={comp.term}
+                                  onChange={(e) => {
+                                    const updated = [...validatedComponents];
+                                    updated[originalIndex].term = e.target.value;
+                                    setValidatedComponents(updated);
+                                  }}
+                                  className="input-field"
+                                  style={{ fontWeight: 700, flex: 1 }}
+                                />
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <select
+                                  value={comp.category}
+                                  onChange={(e) => {
+                                    const updated = [...validatedComponents];
+                                    updated[originalIndex].category = e.target.value as any;
+                                    setValidatedComponents(updated);
+                                  }}
+                                  className="input-field"
+                                  style={{ width: 'auto', fontSize: '0.75rem', padding: '4px 8px' }}
+                                >
+                                  <option value="COMPONENT">COMPONENT</option>
+                                  <option value="FUNCTION">FUNCTION</option>
+                                  <option value="DATA">DATA</option>
+                                  <option value="PROCESS">PROCESS</option>
+                                  <option value="RELATIONSHIP">RELATIONSHIP</option>
+                                  <option value="CONSTRAINT">CONSTRAINT</option>
+                                  <option value="TECHNICAL_EFFECT">TECHNICAL EFFECT</option>
+                                </select>
+
+                                <select
+                                  value={comp.importance}
+                                  onChange={(e) => {
+                                    const updated = [...validatedComponents];
+                                    updated[originalIndex].importance = e.target.value as any;
+                                    setValidatedComponents(updated);
+                                  }}
+                                  className="input-field"
+                                  style={{ width: 'auto', fontSize: '0.75rem', padding: '4px 8px' }}
+                                >
+                                  <option value="CORE">CORE</option>
+                                  <option value="SUPPORTING">SUPPORTING</option>
+                                  <option value="OPTIONAL">OPTIONAL</option>
+                                </select>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setValidatedComponents(validatedComponents.filter(c => c.id !== comp.id))}
+                                  style={{ background: 'transparent', border: 'none', color: 'var(--accent-rose)', cursor: 'pointer', padding: 4 }}
+                                  title="Remove feature"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </div>
+
+                            <input
+                              type="text"
+                              value={comp.description}
+                              onChange={(e) => {
+                                const updated = [...validatedComponents];
+                                updated[originalIndex].description = e.target.value;
+                                setValidatedComponents(updated);
+                              }}
+                              className="input-field"
+                              style={{ fontSize: '0.8rem' }}
+                              placeholder="Feature technical description..."
+                            />
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
+
+              {/* 5. Section C: Prominent 1-Click Benchmark Action Card */}
+              <div 
+                style={{ 
+                  borderRadius: '16px', 
+                  border: '1px solid rgba(55,86,125,0.4)', 
+                  background: 'linear-gradient(135deg, rgba(55,86,125,0.14) 0%, rgba(34,197,94,0.06) 100%)', 
+                  padding: '20px 24px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between', 
+                  flexWrap: 'wrap', 
+                  gap: '16px' 
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Sparkles size={16} color="var(--accent-cyan)" />
+                    <span>Ready to Benchmark Against Prior-Art Graph</span>
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                    {proposalTitle 
+                      ? `${validatedComponents.length} validated features mapped for multi-corpus search against USPTO & OpenAlex.`
+                      : 'Upload a document or choose a preset above to begin novelty benchmarking.'}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={!proposalTitle.trim() || validatedComponents.length === 0}
+                  onClick={executeBenchmarkRun}
+                  className="btn-primary"
+                  style={{
+                    padding: '12px 28px',
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
+                    boxShadow: '0 4px 16px rgba(55,86,125,0.3)',
+                    opacity: !proposalTitle.trim() || validatedComponents.length === 0 ? 0.45 : 1,
+                    cursor: !proposalTitle.trim() || validatedComponents.length === 0 ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  <Sparkles size={18} />
+                  <span>🚀 Run Live Novelty Benchmark Now (1-Click)</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ================================================================= */}
+          {/* STEPWISE 5-STEP WIZARD (Available when switched to stepwise mode) */}
+          {/* ================================================================= */}
+          {ingestionMode === 'stepwise' && wizardStep !== 5 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {/* Stepper Progress Bar */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '20px' }}>
+                {[
+                  { step: 1, label: 'Basic Info & Presets' },
+                  { step: 2, label: 'Technical Details' },
+                  { step: 3, label: 'Document Upload' },
+                  { step: 4, label: 'Human Feature Validation' },
+                  { step: 5, label: 'Live Benchmark Run' }
+                ].map((s) => (
+                  <div key={s.step} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div 
+                      style={{ 
+                        width: 32, 
+                        height: 32, 
+                        borderRadius: '50%', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        fontWeight: 700, 
+                        fontSize: '0.8rem',
+                        background: wizardStep === s.step ? 'var(--accent-indigo)' : wizardStep > s.step ? 'rgba(34,104,88,0.2)' : 'var(--bg-surface)',
+                        color: wizardStep === s.step ? '#FFFFFF' : wizardStep > s.step ? 'var(--accent-emerald)' : 'var(--text-dim)',
+                        border: `1px solid ${wizardStep === s.step ? 'var(--accent-indigo)' : wizardStep > s.step ? 'rgba(34,104,88,0.4)' : 'var(--border-color)'}`
+                      }}
+                    >
+                      {wizardStep > s.step ? <Check size={16} /> : s.step}
+                    </div>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: wizardStep === s.step ? 'var(--text-main)' : 'var(--text-dim)' }}>
+                      {s.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* STEP 1: BASIC INFO & PRESETS */}
+              {wizardStep === 1 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Step 1: Innovation Proposal Overview</h3>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4, margin: 0 }}>
+                      Enter your project idea title or choose a pre-configured student research proposal preset below.
+                    </p>
+                  </div>
+
+                  {/* Preset Buttons Header & Grid */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Quick Research Presets ({RESEARCH_PRESETS.length} Available)
+                      </label>
+                      {(activePresetId !== null || proposalTitle || technicalProblem) && (
+                        <button
+                          onClick={handleClearForm}
+                          style={{
+                            background: 'transparent',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '6px',
+                            padding: '4px 10px',
+                            fontSize: '0.75rem',
+                            color: 'var(--text-dim)',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Clear / Reset Form
+                        </button>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: '12px' }}>
+                      {RESEARCH_PRESETS.map((preset) => {
+                        const isSelected = activePresetId === preset.id;
+                        return (
+                          <button
+                            key={preset.id}
+                            onClick={() => applyPresetSample(preset.id)}
+                            style={{
+                              background: isSelected ? 'rgba(55,86,125,0.12)' : 'var(--bg-surface)',
+                              border: `1.5px solid ${isSelected ? 'var(--accent-indigo)' : 'var(--border-color)'}`,
+                              borderRadius: '12px',
+                              padding: '14px',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 6,
+                              position: 'relative'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span 
+                                style={{ 
+                                  fontSize: '0.68rem', 
+                                  fontWeight: 700, 
+                                  color: isSelected ? 'var(--accent-indigo)' : 'var(--accent-cyan)',
+                                  background: 'var(--bg-card)',
+                                  padding: '2px 8px',
+                                  borderRadius: '4px',
+                                  border: '1px solid var(--border-color)'
+                                }}
+                              >
+                                {preset.badge}
+                              </span>
+                              {isSelected && <Check size={14} color="var(--accent-indigo)" />}
+                            </div>
+                            <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: 1.3 }}>
+                              {preset.id}. {preset.title}
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                              {preset.summary}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {activePresetId !== null && (
+                      <div 
+                        style={{ 
+                          background: 'rgba(55,86,125,0.08)', 
+                          border: '1px solid rgba(55,86,125,0.25)', 
+                          borderRadius: '10px', 
+                          padding: '10px 14px', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '10px', 
+                          fontSize: '0.82rem', 
+                          color: 'var(--text-main)' 
+                        }}
+                      >
+                        <Sparkles size={16} color="var(--accent-indigo)" style={{ flexShrink: 0 }} />
+                        <span>
+                          <strong>Preset Loaded:</strong> You can now edit or customize any title, domain, technical problem, solution architecture, or expected technical effect text below at any time!
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>Proposal Title</label>
+                      <input
+                        type="text"
+                        value={proposalTitle}
+                        onChange={(e) => setProposalTitle(e.target.value)}
+                        placeholder="e.g. IoT Autonomous Agriculture Telemetry & Predictive Shelf-Life Network"
+                        className="input-field"
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>Domain Field</label>
+                      <input
+                        type="text"
+                        value={proposalDomain}
+                        onChange={(e) => setProposalDomain(e.target.value)}
+                        placeholder="e.g. Smart Agriculture & IoT Sensors"
+                        className="input-field"
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '16px' }}>
+                    <button
+                      disabled={!proposalTitle.trim()}
+                      onClick={() => setWizardStep(2)}
+                      className="btn-primary"
+                      style={{ opacity: !proposalTitle.trim() ? 0.5 : 1 }}
+                    >
+                      <span>Next: Technical Specification</span>
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 2: TECHNICAL DETAILS */}
+              {wizardStep === 2 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Step 2: Technical Problem & Proposed Solution</h3>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4, margin: 0 }}>
+                      Clearly describe the core technical bottleneck, your proposed solution architecture, and expected technical effects.
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>Technical Problem & Prior-Art Bottleneck</label>
+                      <textarea
+                        rows={3}
+                        value={technicalProblem}
+                        onChange={(e) => setTechnicalProblem(e.target.value)}
+                        placeholder="Describe the existing system limitations or unaddressed technical challenge..."
+                        className="input-field"
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>Proposed Technical Solution Architecture</label>
+                      <textarea
+                        rows={3}
+                        value={proposedSolution}
+                        onChange={(e) => setProposedSolution(e.target.value)}
+                        placeholder="Describe your hardware components, algorithms, data streams, and execution steps..."
+                        className="input-field"
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>Expected Technical Effect & Advantages</label>
+                      <input
+                        type="text"
+                        value={expectedTechnicalEffect}
+                        onChange={(e) => setExpectedTechnicalEffect(e.target.value)}
+                        placeholder="e.g. Reduces power consumption by 35% and maintains sub-50ms execution latency..."
+                        className="input-field"
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '16px' }}>
+                    <button
+                      onClick={() => setWizardStep(1)}
+                      className="btn-secondary"
+                    >
+                      Back
+                    </button>
+                    <button
+                      onClick={() => setWizardStep(3)}
+                      className="btn-primary"
+                    >
+                      <span>Next: Upload Proposal PDF / Text</span>
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 3: DOCUMENT UPLOAD */}
+              {wizardStep === 3 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Step 3: Attach R&D Document / Paste Text</h3>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4, margin: 0 }}>
+                      Upload your proposal paper PDF or paste the full document text for automated component extraction.
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))', gap: '20px' }}>
+                    {/* File Upload Box */}
+                    <div 
+                      style={{ 
+                        border: '2px dashed var(--border-color)', 
+                        borderRadius: '16px', 
+                        padding: '32px', 
+                        textAlign: 'center', 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        gap: '12px', 
+                        background: 'var(--bg-input)' 
+                      }}
+                    >
+                      <Upload size={32} color="var(--accent-indigo)" />
+                      <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>Upload PDF / TXT Proposal Document</div>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>Supports PDF text layer extraction & smart metadata parsing</p>
+                      <label className="btn-primary" style={{ cursor: 'pointer', marginTop: 8 }}>
+                        <span>Browse Files</span>
+                        <input type="file" accept=".pdf,.txt,.md,.doc,.docx" onChange={handleFileUpload} style={{ display: 'none' }} />
+                      </label>
+                    </div>
+
+                    {/* Paste Text */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Or Paste Document Text</label>
+                      <textarea
+                        rows={6}
+                        value={proposalText}
+                        onChange={(e) => setProposalText(e.target.value)}
+                        placeholder="Paste project abstract, methodology section, or proposal text..."
+                        className="input-field"
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '16px' }}>
+                    <button
+                      onClick={() => setWizardStep(2)}
+                      className="btn-secondary"
+                    >
+                      Back
+                    </button>
+                    <button
+                      onClick={proceedToFeatureValidation}
+                      className="btn-primary"
+                    >
+                      <span>Extract Features & Validate</span>
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 4: HUMAN FEATURE VALIDATION STEP */}
+              {wizardStep === 4 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+                    <div>
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FileCheck size={20} color="var(--accent-indigo)" />
+                        <span>Step 4: Human Feature Validation</span>
+                      </h3>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4, margin: 0 }}>
+                        Review and refine the extracted technical components before searching USPTO & OpenAlex prior-art databases.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={handleAddComponent}
+                      className="btn-secondary"
+                      style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                    >
+                      <Plus size={14} />
+                      <span>Add Feature</span>
+                    </button>
+                  </div>
+
+                  {/* Component Cards List */}
+                  <div style={{ maxHeight: '420px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: 4 }}>
+                    {validatedComponents.map((comp, idx) => (
+                      <div key={comp.id} style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 700, padding: '4px 8px', borderRadius: 6, background: 'rgba(55,86,125,0.15)', color: 'var(--accent-indigo)', border: '1px solid rgba(55,86,125,0.3)' }}>
+                              {comp.featureCode}
+                            </span>
+                            <input
+                              type="text"
+                              value={comp.term}
+                              onChange={(e) => {
+                                const updated = [...validatedComponents];
+                                updated[idx].term = e.target.value;
+                                setValidatedComponents(updated);
+                              }}
+                              className="input-field"
+                              style={{ fontWeight: 700, width: '240px' }}
+                            />
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <select
+                              value={comp.category}
+                              onChange={(e) => {
+                                const updated = [...validatedComponents];
+                                updated[idx].category = e.target.value as any;
+                                setValidatedComponents(updated);
+                              }}
+                              className="input-field"
+                              style={{ width: 'auto' }}
+                            >
+                              <option value="COMPONENT">COMPONENT</option>
+                              <option value="FUNCTION">FUNCTION</option>
+                              <option value="DATA">DATA</option>
+                              <option value="PROCESS">PROCESS</option>
+                              <option value="RELATIONSHIP">RELATIONSHIP</option>
+                              <option value="CONSTRAINT">CONSTRAINT</option>
+                              <option value="TECHNICAL_EFFECT">TECHNICAL EFFECT</option>
+                            </select>
+
+                            <select
+                              value={comp.importance}
+                              onChange={(e) => {
+                                const updated = [...validatedComponents];
+                                updated[idx].importance = e.target.value as any;
+                                setValidatedComponents(updated);
+                              }}
+                              className="input-field"
+                              style={{ width: 'auto' }}
+                            >
+                              <option value="CORE">CORE</option>
+                              <option value="SUPPORTING">SUPPORTING</option>
+                              <option value="OPTIONAL">OPTIONAL</option>
+                            </select>
+
+                            <button
+                              onClick={() => setValidatedComponents(validatedComponents.filter(c => c.id !== comp.id))}
+                              style={{ background: 'transparent', border: 'none', color: 'var(--accent-rose)', cursor: 'pointer', padding: 4 }}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+
+                        <input
+                          type="text"
+                          value={comp.description}
+                          onChange={(e) => {
+                            const updated = [...validatedComponents];
+                            updated[idx].description = e.target.value;
+                            setValidatedComponents(updated);
+                          }}
+                          className="input-field"
+                          style={{ fontSize: '0.8rem' }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+                    <button
+                      onClick={() => setWizardStep(3)}
+                      className="btn-secondary"
+                    >
+                      Back
+                    </button>
+                    <button
+                      onClick={executeBenchmarkRun}
+                      className="btn-primary"
+                    >
+                      <Sparkles size={16} />
+                      <span>Approve & Run Multi-Corpus Search</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

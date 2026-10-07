@@ -93,29 +93,29 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
       }}>
         <div style={{ flex: '1 1 560px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-            <span className="badge badge-cyan" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600 }}>
-              <Zap size={12} /> Claim-Centric Patent Intelligence System
+            <span className="badge badge-cyan" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', fontSize: '0.78rem', fontWeight: 650 }}>
+              <Zap size={13} /> Claim-Centric Patent Intelligence System
             </span>
-            <span className="badge badge-emerald" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600 }}>
-              <CheckCircle2 size={12} /> Local Workspace
+            <span className="badge badge-emerald" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', fontSize: '0.78rem', fontWeight: 650 }}>
+              <CheckCircle2 size={13} /> Local Workspace
             </span>
           </div>
-          <h1 style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 8px', letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 8px', letterSpacing: '-0.02em' }}>
             PatentIntel R&D Executive Workspace
           </h1>
-          <p style={{ fontSize: '0.92rem', color: 'var(--text-muted)', maxWidth: '720px', lineHeight: '1.55', margin: 0 }}>
+          <p style={{ fontSize: '0.98rem', color: 'var(--text-muted)', maxWidth: '720px', lineHeight: '1.55', margin: 0 }}>
             Local research tools for source lookup, rule-based claim decomposition, lexical comparisons, and academic references. Provider availability and evidence coverage are shown in each workflow.
           </p>
         </div>
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <button className="btn-primary" onClick={() => onNavigate('search')} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontSize: '0.88rem' }}>
+          <button className="btn-primary" onClick={() => onNavigate('search')} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '11px 20px', fontSize: '0.92rem' }}>
             <Search size={16} /> Start Prior-Art Search
           </button>
-          <button className="btn-secondary" onClick={() => onNavigate('claims')} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontSize: '0.88rem' }}>
+          <button className="btn-secondary" onClick={() => onNavigate('claims')} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '11px 20px', fontSize: '0.92rem' }}>
             <FileText size={16} /> Decompose Claims
           </button>
-          <button className="btn-secondary" onClick={() => onOpenLiterature('patent claim decomposition semantic retrieval')} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontSize: '0.88rem' }}>
+          <button className="btn-secondary" onClick={() => onOpenLiterature('patent claim decomposition semantic retrieval')} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '11px 20px', fontSize: '0.92rem' }}>
             <BookOpen size={16} /> Academic Literature
           </button>
         </div>
@@ -129,17 +129,17 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
             <div style={{ background: 'rgba(34,104,88,0.12)', padding: '10px', borderRadius: '10px', color: 'var(--accent-cyan)' }}>
               <FolderKanban size={22} />
             </div>
-            <span style={{ fontSize: '0.74rem', color: 'var(--accent-emerald)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600, background: 'rgba(34,104,88,0.12)', padding: '3px 8px', borderRadius: '6px' }}>
+            <span style={{ fontSize: '0.76rem', color: 'var(--accent-emerald)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 650, background: 'rgba(34,104,88,0.12)', padding: '3px 8px', borderRadius: '6px' }}>
               <TrendingUp size={12} /> Live Session
             </span>
           </div>
-          <div style={{ fontSize: '1.9rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: '1.1' }}>
+          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: '1.1' }}>
             {metrics.totalPatents}
           </div>
-          <div style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-main)', marginTop: '4px' }}>
+          <div style={{ fontSize: '0.90rem', fontWeight: 650, color: 'var(--text-main)', marginTop: '4px' }}>
             Patents In Session
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '6px' }}>
             {metrics.grantedCount} Granted · {metrics.applicationsCount} Applications
           </div>
         </div>
@@ -150,17 +150,17 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
             <div style={{ background: 'rgba(55,86,125,0.12)', padding: '10px', borderRadius: '10px', color: 'var(--accent-indigo)' }}>
               <FileCheck size={22} />
             </div>
-            <span style={{ fontSize: '0.74rem', color: 'var(--accent-cyan)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600, background: 'rgba(34,104,88,0.12)', padding: '3px 8px', borderRadius: '6px' }}>
+            <span style={{ fontSize: '0.76rem', color: 'var(--accent-cyan)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 650, background: 'rgba(34,104,88,0.12)', padding: '3px 8px', borderRadius: '6px' }}>
               <Zap size={12} /> {metrics.avgClaimsPerPatent} / patent
             </span>
           </div>
-          <div style={{ fontSize: '1.9rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: '1.1' }}>
+          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: '1.1' }}>
             {metrics.totalClaims}
           </div>
-          <div style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-main)', marginTop: '4px' }}>
+          <div style={{ fontSize: '0.90rem', fontWeight: 650, color: 'var(--text-main)', marginTop: '4px' }}>
             Claims Decomposed
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '6px' }}>
             {metrics.independentClaims} Independent · {metrics.dependentClaims} Dependent
           </div>
         </div>
@@ -171,17 +171,17 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
             <div style={{ background: 'rgba(34,104,88,0.12)', padding: '10px', borderRadius: '10px', color: 'var(--accent-emerald)' }}>
               <Layers size={22} />
             </div>
-            <span style={{ fontSize: '0.74rem', color: 'var(--accent-emerald)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600, background: 'rgba(34,104,88,0.12)', padding: '3px 8px', borderRadius: '6px' }}>
+            <span style={{ fontSize: '0.76rem', color: 'var(--accent-emerald)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 650, background: 'rgba(34,104,88,0.12)', padding: '3px 8px', borderRadius: '6px' }}>
               {metrics.avgElementsPerClaim} / claim
             </span>
           </div>
-          <div style={{ fontSize: '1.9rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: '1.1' }}>
+          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: '1.1' }}>
             {metrics.totalElements}
           </div>
-          <div style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-main)', marginTop: '4px' }}>
+          <div style={{ fontSize: '0.90rem', fontWeight: 650, color: 'var(--text-main)', marginTop: '4px' }}>
             Technical Limitations
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '6px' }}>
             Atomic units for § 102/103 mapping
           </div>
         </div>
@@ -192,17 +192,17 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
             <div style={{ background: 'rgba(112,76,135,0.12)', padding: '10px', borderRadius: '10px', color: 'var(--accent-purple)' }}>
               <Cpu size={22} />
             </div>
-            <span style={{ fontSize: '0.74rem', color: 'var(--accent-purple)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600, background: 'rgba(112,76,135,0.12)', padding: '3px 8px', borderRadius: '6px' }}>
+            <span style={{ fontSize: '0.76rem', color: 'var(--accent-purple)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 650, background: 'rgba(112,76,135,0.12)', padding: '3px 8px', borderRadius: '6px' }}>
               WIPO / CPC
             </span>
           </div>
-          <div style={{ fontSize: '1.9rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: '1.1' }}>
+          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: '1.1' }}>
             {metrics.cpcDistribution.length}
           </div>
-          <div style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-main)', marginTop: '4px' }}>
+          <div style={{ fontSize: '0.90rem', fontWeight: 650, color: 'var(--text-main)', marginTop: '4px' }}>
             Technology Domains
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '6px' }}>
             Leading: {metrics.cpcDistribution[0]?.code || 'Not recorded'} ({metrics.cpcDistribution[0]?.percentage || 0}%)
           </div>
         </div>
@@ -213,17 +213,17 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
             <div style={{ background: 'rgba(145,94,16,0.12)', padding: '10px', borderRadius: '10px', color: 'var(--accent-amber)' }}>
               <ShieldCheck size={22} />
             </div>
-            <span style={{ fontSize: '0.74rem', color: 'var(--accent-amber)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600, background: 'rgba(145,94,16,0.12)', padding: '3px 8px', borderRadius: '6px' }}>
+            <span style={{ fontSize: '0.76rem', color: 'var(--accent-amber)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 650, background: 'rgba(145,94,16,0.12)', padding: '3px 8px', borderRadius: '6px' }}>
               Parsed
             </span>
           </div>
-          <div style={{ fontSize: '1.9rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: '1.1' }}>
+          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: '1.1' }}>
             {metrics.decompositionCoverage}%
           </div>
-          <div style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-main)', marginTop: '4px' }}>
+          <div style={{ fontSize: '0.90rem', fontWeight: 650, color: 'var(--text-main)', marginTop: '4px' }}>
             Decomposition Coverage
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '6px' }}>
             Claims with parsed elements; accuracy not assessed
           </div>
         </div>

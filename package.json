@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node --env-file-if-exists=.env scripts/dev.mjs",
+    "dev": "node --experimental-strip-types --env-file-if-exists=.env scripts/dev.mjs",
     "dev:web": "vite",
     "bootstrap-admin": "node --env-file-if-exists=.env scripts/bootstrap-admin.mjs",
     "test": "node --experimental-strip-types --test --test-concurrency=1 tests/*.test.mjs",

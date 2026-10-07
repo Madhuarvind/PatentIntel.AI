@@ -71,7 +71,7 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
   return (
     <aside className="app-sidebar" style={{
       borderRight: '1px solid var(--border-color)',
-      background: 'var(--bg-card-solid)',
+      background: '#fbfcf8',
       padding: '20px 14px',
       display: 'flex',
       flexDirection: 'column',
@@ -81,63 +81,20 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
     }}>
       {/* Navigation Sections */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-        {/* Enterprise Pilot Portal Link */}
-        <a
-          href="#/pilot"
-          className="sidebar-pilot-link"
-          aria-label="Enterprise Review Pilot"
-          title="Enterprise Review Pilot"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '10px 12px',
-            borderRadius: '12px',
-            background: 'linear-gradient(90deg, rgba(55,86,125,0.12) 0%, rgba(112,76,135,0.08) 100%)',
-            border: '1px solid rgba(112,76,135,0.3)',
-            color: 'var(--accent-purple)',
-            textDecoration: 'none',
-            fontWeight: 700,
-            fontSize: '0.84rem',
-            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-            boxShadow: 'var(--shadow-sm)'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Sparkles size={16} color="var(--accent-purple)" />
-            <span style={{ letterSpacing: '-0.01em' }}>Enterprise Review Pilot</span>
-          </div>
-          <span style={{
-            fontSize: '0.62rem',
-            fontWeight: 800,
-            padding: '2px 6px',
-            borderRadius: '4px',
-            background: 'rgba(112,76,135,0.2)',
-            border: '1px solid rgba(112,76,135,0.4)',
-            color: 'var(--accent-purple)'
-          }}>
-            PILOT ↗
-          </span>
-        </a>
-        <p className="sidebar-workspace-note" style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.75rem', lineHeight: 1.5 }}>
-          Experimental local tools. Browser records can be shared across accounts on this device.
-          Use the Review Pilot for private, server-persisted proposals and assigned decisions.
-        </p>
-
         {sections.map((section, sIdx) => (
           <div key={sIdx}>
             <div className="sidebar-section-title" style={{
-              fontSize: '0.68rem',
+              fontSize: '0.82rem',
               fontWeight: 800,
               color: 'var(--text-dim)',
               textTransform: 'uppercase',
-              letterSpacing: '0.08em',
+              letterSpacing: '0.07em',
               padding: '0 8px 8px'
             }}>
               {section.title}
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {section.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeView === item.id;
@@ -149,41 +106,38 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
                     aria-label={item.label}
                     style={{
                       width: '100%',
-                      padding: '10px 12px',
-                      borderRadius: '12px',
+                      padding: '12px 14px',
+                      borderRadius: '9px',
                       border: 'none',
-                      background: isActive 
-                        ? 'linear-gradient(90deg, rgba(34,104,88,0.15) 0%, rgba(55,86,125,0.08) 100%)'
-                        : 'transparent',
-                      color: isActive ? 'var(--accent-cyan)' : 'var(--text-muted)',
-                      fontWeight: isActive ? 700 : 500,
-                      fontSize: '0.86rem',
+                      background: isActive ? '#e2f0e5' : 'transparent',
+                      color: isActive ? '#204b40' : '#526a70',
+                      fontWeight: isActive ? 700 : 600,
+                      fontSize: '15px',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                      borderLeft: isActive ? '4px solid var(--accent-cyan)' : '4px solid transparent',
-                      boxShadow: isActive ? '0 4px 15px rgba(34,104,88,0.15)' : 'none',
+                      transition: 'background 0.15s ease',
+                      boxShadow: 'none',
                       whiteSpace: 'nowrap'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                      <Icon size={18} style={{ flexShrink: 0 }} color={isActive ? 'var(--accent-cyan)' : 'var(--text-muted)'} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '11px', minWidth: 0 }}>
+                      <Icon size={20} style={{ flexShrink: 0 }} color={isActive ? '#204b40' : '#526a70'} />
                       <span className="sidebar-item-label" style={{ whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>{item.label}</span>
                     </div>
 
                     {item.badge && (
                       <span className="sidebar-badge" style={{
-                        fontSize: '0.62rem',
-                        fontWeight: 800,
-                        padding: '2px 7px',
+                        fontSize: '0.74rem',
+                        fontWeight: 700,
+                        padding: '3px 8px',
                         borderRadius: '6px',
                         background: isActive ? 'rgba(34,104,88,0.22)' : 'var(--bg-surface)',
                         color: isActive ? 'var(--accent-cyan)' : 'var(--text-dim)',
                         border: '1px solid ' + (isActive ? 'rgba(34,104,88,0.4)' : 'var(--border-color)'),
                         flexShrink: 0,
-                        marginLeft: '4px'
+                        marginLeft: '8px'
                       }}>
                         {item.badge}
                       </span>
@@ -197,11 +151,11 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
       </div>
 
       {/* Dynamic Active Workspace & API Sync Status Card */}
-      <div className="glass-panel sidebar-footer-card" style={{
-        padding: '14px',
+      <div className="sidebar-footer-card" style={{
+        padding: '16px',
         borderRadius: '12px',
-        background: 'linear-gradient(180deg, rgba(34,104,88,0.05) 0%, rgba(34,104,88,0.05) 100%)',
-        border: '1px solid rgba(34,104,88,0.2)',
+        background: '#ffffff',
+        border: '1px solid #cad7cf',
         marginTop: '20px',
         flexShrink: 0
       }}>
@@ -215,16 +169,16 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
               boxShadow: 'var(--shadow-sm)',
               display: 'inline-block'
             }} />
-            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-main)' }}>Browser-local workspace</span>
+            <span style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-main)' }}>Browser-local workspace</span>
           </div>
 
-          <span className="badge badge-cyan" style={{ fontSize: '0.66rem', padding: '2px 6px' }}>
-            <Database size={10} style={{ marginRight: '3px' }} /> {patentCount} Patents
+          <span className="badge badge-cyan" style={{ fontSize: '0.72rem', padding: '2px 7px' }}>
+            <Database size={11} style={{ marginRight: '3px' }} /> {patentCount} Patents
           </span>
         </div>
 
-        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: '1.4', display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <Activity size={12} color="var(--accent-cyan)" />
+        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.4', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Activity size={13} color="var(--accent-cyan)" />
           <span>Local workspace · source availability checked on request</span>
         </div>
       </div>

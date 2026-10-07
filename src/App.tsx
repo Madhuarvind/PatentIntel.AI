@@ -207,7 +207,7 @@ export const App: React.FC = () => {
             width: '100%',
             maxWidth: '100%',
             minWidth: 0,
-            padding: activeView === 'review-queue' ? '20px 28px' : '32px',
+            padding: activeView === 'review-queue' ? '20px 28px' : '38px 42px 30px',
             overflowY: activeView === 'review-queue' ? 'hidden' : 'auto',
             boxSizing: 'border-box'
           }}
@@ -268,7 +268,7 @@ export const App: React.FC = () => {
           )}
 
           {activeView === 'settings' && (
-            <SettingsView />
+            <SettingsView user={user} />
           )}
 
           {activeView === 'claim-synthesizer' && (

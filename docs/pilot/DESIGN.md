@@ -111,3 +111,38 @@ Both workspaces and authentication consume a single light theme: ivory surfaces,
 | Version export and persistence | Report / version-bound JSON | Version-2 ID, text and features match; retained after QA restart | JSON locally verified; actual PDF pending |
 
 Preserve both workspaces and all research documents. PR #9 is already merged upstream; publish these UI changes as a follow-up pull request. Do not merge or deploy as part of this checkpoint. Newer unrelated authentication and development-script changes remain separate working-tree work.
+
+## Delivered implementation & deferred capability status — 6 October 2026
+
+Traceability of completed implementations alongside explicit deferred/non-implemented items per institutional design constraints:
+
+| Requirement / Capability | Implemented | Scope & Evidence | Notes / Constraints |
+|---|---|---|---|
+| **Multi-Role Governance & Session RBAC** | **Yes** | Server sessions bound to `Researcher`, `Reviewer`, and `Administrator` roles (`server/pilot.mjs`, `server/auth.mjs`); verified via HTTP tests. | Public registration defaults to `Researcher`. `Administrator` invites team members; bootstrap script available for operator accounts. |
+| **Anti-Collision Self-Approval Prevention** | **Yes** | Gated on server (`r.owner_id === user.id` rejected) and UI (`Self-Approval Prohibited` badge). | Authors/inventors cannot approve their own submissions under any circumstances. |
+| **Role Permissions & Feature Matrix** | **Yes** | Interactive `RoleMatrixTable.tsx` deployed to both workspaces (`#/pilot/settings` and `#/settings`). | Clearly delineates allowed vs. restricted actions, highlighting the current user's role. |
+| **Workspace Layout & Typography Modernization** | **Yes** | Standardized 16px/15.5px base typography, 330px platform sidebar, 280px pilot sidebar, and scaled typography across the Patent Team Review Queue. | Eliminates text truncation, small fonts, and cramped layouts across all screens. |
+| **Verified Saved Report PDF Export** | **Yes** | Headless Chrome 4-page A4 print generation (`scratch/inspected-report.pdf`) verified via `parseDocument` with canonical `EvidenceMatch` schema. | Full alignment between downloaded JSON and printed PDF report. |
+| **Server Academic & Patent Proxies** | **Yes** | Authenticated Node handlers for Crossref DOI metadata and PatentsView patent lookup. | Server-side API key containment; client never holds external provider secrets. |
+| **Generative AI Claims & Legal Screening** | **No (Deferred)** | Disabled by statutory policy; custom endpoint fields removed from settings. | Zero hallucinated text or artificial novelty probability scores. |
+| **Hosted Cloud Deployment** | **No (Deferred)** | Local PGlite and filesystem storage active; hosted release paused. | Requires operator credentials for Render, Supabase, and Resend. |
+| **Scanned Document OCR / Computer Vision** | **No (Deferred)** | Plain text and text-layer PDFs supported up to 20MB / 100 pages. | Scanned PDFs require user OCR prior to ingestion. |
+| **Live PatentsView Keyword Search** | **No (Deferred)** | Publication number lookup active; keyword search returns HTTP 503 without synthetic fallbacks. | Requires server configuration of `PATENTSVIEW_API_KEY`. |
+
+## Review queue screen implementation & deferred capability matrix — 6 October 2026
+
+Traceability of the Patent Team Review Queue (`#/review-queue`) workspace components, detailing delivered implementation versus deferred/policy-restricted items per institutional pilot constraints:
+
+| Review Workspace Component / Action | Implemented | Technical Scope & Evidence | Design Rationale & Policy Notes |
+|---|---|---|---|
+| **Two-Pane Synchronized Review Workspace** | **Yes** | Split layout with incoming proposal list (left pane) and reactive detail inspector (right pane); `IdeaNoveltyView.tsx`. | Provides synchronized context between pending proposals and deep technical disclosures without page reload. |
+| **Prior-Art Audit Inspection (`Inspect Prior-Art Audit`)** | **Yes** | Direct subview navigation (`audit` tab) displaying claim-level overlap matrix against indexed patent and academic corpus. | Allows examiners to drill down from proposal summary into granular component-by-component citation evidence. |
+| **Simulated FER Generation & Export (`Simulate / Export FER`)** | **Yes** | Pre-examination Office Action simulator evaluating 35 U.S.C. §§ 101, 102, 103, and FTO status; downloads formal `.txt` dossier. | Enables structured pre-examination feedback and formal audit trail export for research records. |
+| **Formal Decision Workflow & Anti-Collision (`Issue Review Decision`)** | **Yes** | Role-gated modal (`APPROVED_FOR_DRAFTING`, `NEEDS_REVISION`, `REJECTED`) with examiner rationale comments logged permanently in audit dossier. | Strictly enforces anti-collision: authors cannot approve their own submissions; requires Reviewer or Administrator permissions. |
+| **Historical Version Audit Trail** | **Yes** | Chronological version snapshot listing (`v1.0`, `v2.0`, etc.) with feature counts and creation timestamps via `dbStore.getInnovationVersions`. | Maintains an immutable audit record across proposal revisions for institutional governance. |
+| **Technical Problem & Architecture Specs** | **Yes** | Structured two-column specification isolating the technical deficiency from the proposed solution architecture. | Ensures full technical disclosure and clear demarcation of problem-solution pairs. |
+| **Review Thread & Examiner Feedback Dossier** | **Yes** | Append-only ledger recording all examiner comments, revision requests, and formal decision stamps; `dbStore.getReviewComments`. | Prevents comment alteration and maintains tamper-evident audit history across review rounds. |
+| **Automated Claim Drafting (`Generate Claim Draft`)** | **No (Deferred)** | Button routes to experimental handoff in prototype mode, but automated generative claim synthesis is deferred in pilot release. | Statutory policy prohibits unvetted AI claim generation to prevent hallucinated scope and invalidity under 35 U.S.C. § 112; claims require human patent attorney drafting. |
+| **Automated Legal Novelty/Obviousness Probabilities** | **No (Deferred)** | Displayed heuristic metrics (`84% Novelty`, `28% Obviousness Risk`) are deterministic lexical retrieval signals, not binding legal certainties. | Statutory compliance: pilot software cannot issue binding legal conclusions; uncalibrated BM25 lexical scores are used solely for research guidance. |
+| **ColPali Multimodal Schematic Verification** | **No (Deferred)** | Simulated topological figure matching reference in FER report is deferred; no automated drawing computer vision. | Pilot scope strictly supports plain text and text-layer PDFs (up to 20MB / 100 pages); schematic/CAD image verification deferred. |
+

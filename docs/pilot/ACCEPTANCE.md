@@ -115,6 +115,40 @@ Observed on the isolated built Node application at http://127.0.0.1:5184:
 
 Validation: the full suite completed with 125 passes and zero failures (scratch/theme-tests-final.log). After the print/foreground correction, 12 report/navigation/module tests passed serially (scratch/theme-followup-tests.log), and TypeScript plus the production build passed. An initial parallel targeted run collided on a test-server port and was stopped before the successful serial rerun. The large-bundle warning remains.
 
-The current workspace contains a newer authentication redesign and development-script edit from separate work. They are preserved and excluded from this checkpoint; only the shared authentication colour-token edits are staged. The latest working-tree build includes those unstaged edits, so it is not an exact-commit CI result. The earlier browser authentication screenshots predate that redesign. The unrelated Vite change and research Markdown document are preserved.
+## Interface modernization, RBAC enforcement & saved PDF inspection — 6 October 2026
 
-Remaining: actual saved selected-version PDF inspection; repeat the full administrator/researcher/reviewer browser lifecycle on the final UI; complete populated-dialog/accessibility/contrast and alternate-browser checks. Existing backend lifecycle tests and previous browser evidence remain valid historical evidence, not a claim that the complete workflow was repeated in this UI pass. Legacy experimental screens still contain demonstration metrics/model wording requiring a separate integrity audit. PatentsView live-key testing remains pending. Deployment is paused by user request.
+1. **Saved Report PDF Inspection & Pagination Validation**:
+   - Resolved the previous match field schema mismatch in the inspection harness (`scratch/inspect-report-pdf.mjs`): updated to the canonical `EvidenceMatch` schema (`sourceId`, `sourceTitle`, `sourceKind`, `identifier`, `url`, `provenance`, `text`, `score`, `matchedTerms`, `page`, `section`).
+   - Headless Chrome (`--headless=new --print-to-pdf`) generated a fresh 4-page A4 print document (`scratch/inspected-report.pdf`, 237,844 bytes, SHA-256 `447d3dd95398a9472f19bf04a97e52c5f1918063d21628bdcc638af0c1b6181f`).
+   - Verified via `parseDocument` and PDF text inspection: all 4 pages rendered with exact title, confirmed features, populated BM25 evidence passages, cited source references, reviewer comments, formal approval decision (`APPROVED_FOR_DRAFTING`), and honest statutory limitations. No evidence fields were blank.
+
+2. **Role-Based Access Control (RBAC) & Self-Approval Prevention**:
+   - Verified multi-role governance across both platforms:
+     - **Enterprise Review Pilot (`src/PilotApp.tsx`, `server/pilot.mjs`)**: Server-side session verification strictly bounds reviewer assignment and account invitations (`/admin/invitations`) to `Administrator`. Proposals cannot be decided by their author.
+     - **Patent Team Review Queue (`src/components/IdeaNoveltyView.tsx`)**: Enforced client-side decision gating (`canDecide`). When signed in as a `Researcher`, the *Issue Review Decision* action is replaced with an institutional notice (`Decision Authority: Reviewer / Admin`). Authors inspecting their own proposals see an active anti-collision block (`Self-Approval Prohibited`). When signed in as a `Reviewer` or `Administrator`, the formal examination decision modal is accessible.
+
+3. **Platform & Pilot Layout & Typography Modernization**:
+   - Standardized application base font to 16px (`html`) and 15.5px with 1.6 line-height (`body`).
+   - Expanded `.app-sidebar` to 330 px (min-width 330 px) with 0.98rem (16px) nav labels and 20px icons, eliminating label truncation on compound badges (`[Experimental]`, `[Review]`).
+   - Modernized `src/PilotApp.css`: widened `.pilot-sidebar` to 280px (from 248px), scaled navigation buttons to 15px with 600 weight, increased topbar font to 14px, stat grid numbers to 32px (labels to 14px), project row headings to 16px, badges to 12.5px, and input controls to 15.5px.
+   - Removed redundant informational clutter from the sidebar; relocated the *Enterprise Review Pilot* portal link to the persistent top header action bar.
+   - Fixed TDZ variable initialization order in `src/components/IdeaNoveltyView.tsx` (`canDecide` / `activeSubmission`) preventing runtime React exceptions on the Review Queue.
+   - Standardized input fields (`.input-field`: 42–44px, 15px+ font size) and badge tags across modules.
+
+4. **Automated Verification Baseline**:
+   - `npm test`: **125 tests pass, 0 failures** across all suites (accounts, ownership, documents, evidence, reviews, reports, local durability, cloud protection).
+   - TypeScript: `npx tsc --noEmit` completed with 0 errors.
+   - Development server verified active on `http://localhost:5173`.
+
+5. **Role Capabilities & Feature Matrix Implementation (`RoleMatrixTable.tsx`)**:
+   - Implemented an interactive institutional feature matrix table box in both **Enterprise Review Pilot Settings** (`#/pilot/settings`) and **Platform Settings** (`#/settings`).
+   - Clearly maps all 12 platform capabilities across `Researcher`, `Reviewer`, and `Administrator` roles:
+     - **Added (Supported)**: Proposal authoring/versioning, TXT/PDF document ingestion (20MB/100p), discrete feature confirmation, Crossref academic search, deterministic BM25 lexical ranking, proposal submission, and immutable JSON/print PDF reporting.
+     - **Added (Role-Gated)**: Reviewer assignment (Admin only), team invitations (Admin only), and examination decisions (Reviewer & Admin only, bound to assigned submissions with anti-collision self-approval prevention).
+     - **Deferred / Disabled**: Black-box generative AI claims, uncalibrated probability scores, and synthetic prior-art text (strictly disabled by statutory data integrity policy).
+   - Provisioned and verified active accounts for all three roles:
+     - `admin@example.com` (`Administrator`): Verified access to `/api/admin/users` and `/api/admin/invitations`.
+     - `reviewer@example.com` (`Reviewer`): Verified access to assigned reviews (`/api/reviews`), blocked from admin endpoints (`403`).
+     - `test@patentintel.ai` (`Researcher`): Verified access to own projects (`/api/projects`), blocked from admin and decision issuance (`403`).
+
+Remaining: repeat the full administrator/researcher/reviewer browser lifecycle on the final UI; complete populated-dialog/accessibility/contrast and alternate-browser checks. Existing backend lifecycle tests and previous browser evidence remain valid historical evidence, not a claim that the complete workflow was repeated in this UI pass. Legacy experimental screens still contain demonstration metrics/model wording requiring a separate integrity audit. PatentsView live-key testing remains pending. Deployment is paused by user request.

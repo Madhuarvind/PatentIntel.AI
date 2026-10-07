@@ -8,10 +8,16 @@
   padding: 0;
 }
 
+html {
+  font-size: 16px;
+}
+
 html, body {
   width: 100%;
   height: 100%;
   font-family: var(--font-sans);
+  font-size: 15.5px;
+  line-height: 1.6;
   background-color: var(--bg-main);
   color: var(--text-main);
   overflow-x: hidden;
@@ -264,7 +270,7 @@ select.input-field option {
 .review-workspace,
 .review-workspace-grid {
   display: grid;
-  grid-template-columns: minmax(340px, 0.82fr) minmax(0, 1.58fr);
+  grid-template-columns: minmax(360px, 0.86fr) minmax(0, 1.54fr);
   gap: 20px;
   flex: 1;
   min-height: 0;
@@ -430,7 +436,7 @@ select.input-field option {
 }
 
 .review-metric-label {
-  font-size: 0.68rem;
+  font-size: 0.82rem;
   font-weight: 800;
   color: var(--text-dim);
   text-transform: uppercase;
@@ -547,8 +553,8 @@ select.input-field option {
 
 /* Responsive App Sidebar & Viewport Containment */
 .app-sidebar {
-  width: 285px;
-  min-width: 285px;
+  width: 330px;
+  min-width: 330px;
   height: 100%;
   flex-shrink: 0;
   transition: width 0.2s ease, min-width 0.2s ease;
@@ -649,8 +655,8 @@ select.input-field option {
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 8px 10px;
-  font-size: 0.78rem;
+  padding: 9px 12px;
+  font-size: 0.88rem;
   font-weight: 600;
   color: var(--text-main);
   border: none;
@@ -713,9 +719,9 @@ select.input-field option {
   border: none;
   background: transparent;
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: 0.88rem;
   font-weight: 600;
-  padding: 5px 12px;
+  padding: 6px 14px;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.18s ease;

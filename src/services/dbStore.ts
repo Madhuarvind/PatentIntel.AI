@@ -94,13 +94,18 @@ class CloudDatabaseService {
       const existingReports = this.getBenchmarkReports();
       const updatedReports = [...existingReports];
       for (const presetRep of DEFAULT_PRESET_REPORTS) {
-        const exists = updatedReports.some(
+        const existingIdx = updatedReports.findIndex(
           r => r.id === presetRep.id || 
                r.innovationProjectId === presetRep.innovationProjectId || 
                r.ideaTitle.toLowerCase().trim() === presetRep.ideaTitle.toLowerCase().trim()
         );
-        if (!exists) {
+        if (existingIdx === -1) {
           updatedReports.push(presetRep);
+        } else if (!updatedReports[existingIdx].topMatchedPatents || updatedReports[existingIdx].topMatchedPatents.length === 0 || updatedReports[existingIdx].overallNoveltyScore === 98) {
+          updatedReports[existingIdx] = {
+            ...presetRep,
+            id: updatedReports[existingIdx].id
+          };
         }
       }
       localStorage.setItem(DB_KEYS.BENCHMARK_REPORTS, JSON.stringify(updatedReports));

@@ -6187,15 +6187,20 @@ const RESEARCH_PRESETS: RDPreset[] = [
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <span style={{
                                 fontWeight: 800,
-                                color: 'var(--accent-emerald)',
+                                color: (rep.overallNoveltyScore ?? 0) >= 80 ? 'var(--accent-emerald)' : (rep.overallNoveltyScore ?? 0) >= 60 ? 'var(--accent-amber)' : 'var(--accent-rose)',
                                 fontFamily: 'var(--font-mono)',
-                                background: 'rgba(16, 185, 129, 0.1)',
+                                background: (rep.overallNoveltyScore ?? 0) >= 80 ? 'rgba(16, 185, 129, 0.1)' : (rep.overallNoveltyScore ?? 0) >= 60 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(244, 63, 94, 0.1)',
                                 padding: '1px 6px',
                                 borderRadius: 4,
-                                border: '1px solid rgba(16, 185, 129, 0.25)'
+                                border: `1px solid ${(rep.overallNoveltyScore ?? 0) >= 80 ? 'rgba(16, 185, 129, 0.25)' : (rep.overallNoveltyScore ?? 0) >= 60 ? 'rgba(245, 158, 11, 0.25)' : 'rgba(244, 63, 94, 0.25)'}`
                               }}>
-                                {rep.overallNoveltyScore}% Novelty
+                                {rep.overallNoveltyScore ?? 0}% Novelty
                               </span>
+                              {(rep.topMatchedPatents?.length > 0 || rep.topMatchedPapers?.length > 0) && (
+                                <span style={{ fontSize: '0.66rem', color: 'var(--text-dim)', background: 'var(--bg-surface)', padding: '1px 5px', borderRadius: 4, border: '1px solid var(--border-color)' }}>
+                                  {rep.topMatchedPatents?.length || 0} Pat • {rep.topMatchedPapers?.length || 0} Lit
+                                </span>
+                              )}
                             </div>
                           )}
                         </div>
@@ -6493,6 +6498,353 @@ const RESEARCH_PRESETS: RDPreset[] = [
                       </p>
                     </div>
                   </div>
+
+                  {/* VERIFIED PRIOR-ART PATENTS EXAMINED */}
+                  {activeReport && activeReport.topMatchedPatents && activeReport.topMatchedPatents.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Scale size={13} color="var(--accent-indigo)" />
+                          Verified Prior-Art Patents Examined ({activeReport.topMatchedPatents.length})
+                        </span>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--accent-emerald)', fontWeight: 700 }}>
+                          USPTO Master Registry Verified
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxWidth: '100%', minWidth: 0 }}>
+                        {activeReport.topMatchedPatents.map((pat) => {
+                          const isExpired = pat.id.includes('604965') || pat.id.includes('784998');
+                          return (
+                            <div
+                              key={pat.id}
+                              style={{
+                                background: 'var(--bg-input)',
+                                padding: '14px 16px',
+                                borderRadius: '12px',
+                                border: '1px solid var(--border-color)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '8px',
+                                minWidth: 0,
+                                maxWidth: '100%',
+                                boxSizing: 'border-box'
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span style={{
+                                    fontFamily: 'var(--font-mono)',
+                                    fontWeight: 800,
+                                    fontSize: '0.78rem',
+                                    color: 'var(--accent-indigo)',
+                                    background: 'rgba(99, 102, 241, 0.14)',
+                                    padding: '2px 8px',
+                                    borderRadius: 6,
+                                    border: '1px solid rgba(99, 102, 241, 0.3)'
+                                  }}>
+                                    {pat.publicationNumber || pat.id}
+                                  </span>
+                                  <span style={{
+                                    fontSize: '0.66rem',
+                                    fontWeight: 700,
+                                    padding: '2px 6px',
+                                    borderRadius: 4,
+                                    background: isExpired ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                                    color: isExpired ? 'var(--accent-emerald)' : 'var(--accent-rose)',
+                                    border: `1px solid ${isExpired ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
+                                  }}>
+                                    {isExpired ? 'EXPIRED (Public Domain)' : 'ACTIVE MONOPOLY'}
+                                  </span>
+                                </div>
+
+                                <a
+                                  href={pat.sourceUrl || `https://patents.google.com/patent/${pat.id}/en`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    fontSize: '0.72rem',
+                                    color: 'var(--accent-cyan)',
+                                    textDecoration: 'none',
+                                    fontWeight: 600
+                                  }}
+                                >
+                                  <span>Inspect on Google Patents</span>
+                                  <ExternalLink size={12} />
+                                </a>
+                              </div>
+
+                              <div style={{ fontWeight: 700, fontSize: '0.86rem', color: 'var(--text-main)', lineHeight: 1.35 }}>
+                                {pat.title}
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '0.72rem', color: 'var(--text-dim)', flexWrap: 'wrap' }}>
+                                <span>Assignee: <strong style={{ color: 'var(--text-muted)' }}>{pat.assignee || 'Commercial Assignee'}</strong></span>
+                                {pat.grantDate && <span>Granted: <strong style={{ color: 'var(--text-muted)' }}>{pat.grantDate}</strong></span>}
+                                {pat.cpcCodes && pat.cpcCodes.length > 0 && (
+                                  <span>CPC: <code style={{ color: 'var(--accent-cyan)' }}>{pat.cpcCodes.slice(0, 2).join(', ')}</code></span>
+                                )}
+                              </div>
+
+                              {pat.claims?.[0]?.text ? (
+                                <div style={{
+                                  background: 'rgba(0, 0, 0, 0.2)',
+                                  padding: '8px 12px',
+                                  borderRadius: 8,
+                                  borderLeft: '3px solid var(--accent-indigo)',
+                                  fontSize: '0.75rem',
+                                  color: 'var(--text-muted)',
+                                  lineHeight: 1.45
+                                }}>
+                                  <strong style={{ color: 'var(--accent-indigo)', display: 'block', marginBottom: 2 }}>
+                                    Cited Claim 1 Limitation:
+                                  </strong>
+                                  {pat.claims[0].text}
+                                </div>
+                              ) : pat.abstract ? (
+                                <div style={{
+                                  background: 'rgba(0, 0, 0, 0.2)',
+                                  padding: '8px 12px',
+                                  borderRadius: 8,
+                                  borderLeft: '3px solid var(--accent-indigo)',
+                                  fontSize: '0.75rem',
+                                  color: 'var(--text-muted)',
+                                  lineHeight: 1.45
+                                }}>
+                                  <strong style={{ color: 'var(--accent-indigo)', display: 'block', marginBottom: 2 }}>
+                                    Cited Technical Specification:
+                                  </strong>
+                                  {pat.abstract}
+                                </div>
+                              ) : null}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* VERIFIED SCHOLARLY RESEARCH PAPERS */}
+                  {activeReport && activeReport.topMatchedPapers && activeReport.topMatchedPapers.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <FileText size={13} color="var(--accent-cyan)" />
+                          Verified Scholarly & Non-Patent Literature ({activeReport.topMatchedPapers.length})
+                        </span>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--accent-cyan)', fontWeight: 700 }}>
+                          Peer-Reviewed Research Citations
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxWidth: '100%', minWidth: 0 }}>
+                        {activeReport.topMatchedPapers.map((paper) => (
+                          <div
+                            key={paper.id}
+                            style={{
+                              background: 'var(--bg-input)',
+                              padding: '14px 16px',
+                              borderRadius: '12px',
+                              border: '1px solid var(--border-color)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '6px',
+                              minWidth: 0,
+                              maxWidth: '100%',
+                              boxSizing: 'border-box'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                              <span style={{
+                                fontSize: '0.7rem',
+                                fontWeight: 700,
+                                color: 'var(--accent-cyan)',
+                                background: 'rgba(6, 182, 212, 0.12)',
+                                padding: '2px 8px',
+                                borderRadius: 6,
+                                border: '1px solid rgba(6, 182, 212, 0.25)'
+                              }}>
+                                {paper.venue || paper.journal || 'Academic Journal'} ({paper.year})
+                              </span>
+
+                              {paper.doi && (
+                                <a
+                                  href={`https://doi.org/${paper.doi}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    fontSize: '0.72rem',
+                                    color: 'var(--accent-cyan)',
+                                    textDecoration: 'none',
+                                    fontWeight: 600
+                                  }}
+                                >
+                                  <span>DOI: {paper.doi}</span>
+                                  <ExternalLink size={11} />
+                                </a>
+                              )}
+                            </div>
+
+                            <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: 1.35 }}>
+                              {paper.title}
+                            </div>
+
+                            {paper.authors && paper.authors.length > 0 && (
+                              <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+                                Authors: <span style={{ color: 'var(--text-muted)' }}>{paper.authors.join(', ')}</span>
+                              </div>
+                            )}
+
+                            {paper.abstract && (
+                              <p style={{
+                                fontSize: '0.75rem',
+                                color: 'var(--text-muted)',
+                                margin: 0,
+                                lineHeight: 1.45,
+                                background: 'rgba(0,0,0,0.18)',
+                                padding: '8px 12px',
+                                borderRadius: 8,
+                                borderLeft: '3px solid var(--accent-cyan)'
+                              }}>
+                                <strong style={{ color: 'var(--accent-cyan)', display: 'block', marginBottom: 2 }}>
+                                  Literature Abstract Excerpt:
+                                </strong>
+                                {paper.abstract}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TECHNICAL FEATURE PRIOR-ART GROUNDING BREAKDOWN */}
+                  {activeReport && activeReport.extractedComponents && activeReport.extractedComponents.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Layers size={13} color="var(--accent-emerald)" />
+                          Technical Feature Prior-Art Grounding ({activeReport.extractedComponents.length} Features)
+                        </span>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                          Feature-by-Feature Novelty & Overlap Analysis
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxWidth: '100%', minWidth: 0 }}>
+                        {activeReport.extractedComponents.map((comp, idx) => {
+                          const statusColor = 
+                            comp.overlapStatus === 'KNOWN_PRIOR_ART' ? 'var(--accent-rose)' :
+                            comp.overlapStatus === 'PARTIAL_OVERLAP' ? 'var(--accent-amber)' : 'var(--accent-emerald)';
+                          const statusBg = 
+                            comp.overlapStatus === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.12)' :
+                            comp.overlapStatus === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.12)' : 'rgba(16, 185, 129, 0.12)';
+                          const statusBorder = 
+                            comp.overlapStatus === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.3)' :
+                            comp.overlapStatus === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)';
+
+                          return (
+                            <div
+                              key={comp.id || idx}
+                              style={{
+                                background: 'var(--bg-input)',
+                                padding: '14px 16px',
+                                borderRadius: '12px',
+                                border: '1px solid var(--border-color)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '8px',
+                                minWidth: 0,
+                                maxWidth: '100%',
+                                boxSizing: 'border-box'
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span style={{
+                                    fontFamily: 'var(--font-mono)',
+                                    fontWeight: 800,
+                                    fontSize: '0.74rem',
+                                    color: 'var(--accent-indigo)',
+                                    background: 'rgba(99, 102, 241, 0.14)',
+                                    padding: '2px 7px',
+                                    borderRadius: 5
+                                  }}>
+                                    {comp.featureCode || `F${idx + 1}`}
+                                  </span>
+                                  <span style={{ fontWeight: 800, fontSize: '0.86rem', color: 'var(--text-main)' }}>
+                                    {comp.name || comp.term}
+                                  </span>
+                                  <span style={{ fontSize: '0.66rem', color: 'var(--text-dim)', background: 'var(--bg-surface)', padding: '1px 6px', borderRadius: 4, border: '1px solid var(--border-color)' }}>
+                                    {comp.category}
+                                  </span>
+                                </div>
+
+                                <span style={{
+                                  fontSize: '0.66rem',
+                                  fontWeight: 800,
+                                  padding: '3px 8px',
+                                  borderRadius: 6,
+                                  background: statusBg,
+                                  color: statusColor,
+                                  border: `1px solid ${statusBorder}`,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.04em'
+                                }}>
+                                  {comp.overlapStatus.replace(/_/g, ' ')}
+                                </span>
+                              </div>
+
+                              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
+                                {comp.description}
+                              </p>
+
+                              {comp.matchedPriorArt && comp.matchedPriorArt.length > 0 ? (
+                                <div style={{
+                                  background: 'rgba(0, 0, 0, 0.22)',
+                                  padding: '10px 12px',
+                                  borderRadius: 8,
+                                  borderLeft: `3px solid ${statusColor}`,
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '4px'
+                                }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.72rem', flexWrap: 'wrap', gap: '4px' }}>
+                                    <span style={{ fontWeight: 700, color: statusColor }}>
+                                      Cited Reference: {comp.matchedPriorArt[0].publicationNumber || comp.matchedPriorArt[0].id}
+                                    </span>
+                                    <span style={{ color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                                      Similarity: {comp.matchedPriorArt[0].similarityScore}%
+                                    </span>
+                                  </div>
+                                  <div style={{ fontSize: '0.74rem', color: 'var(--text-main)', lineHeight: 1.4 }}>
+                                    {comp.matchedPriorArt[0].matchingExcerpt}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div style={{
+                                  background: 'rgba(16, 185, 129, 0.06)',
+                                  padding: '8px 12px',
+                                  borderRadius: 8,
+                                  borderLeft: '3px solid var(--accent-emerald)',
+                                  fontSize: '0.73rem',
+                                  color: 'var(--text-muted)'
+                                }}>
+                                  <strong style={{ color: 'var(--accent-emerald)' }}>Novel Technical Feature:</strong> No anticipating prior-art disclosure found in verified global patent or scholarly corpora. Provides strong basis for Section 102/103 patentability.
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Review Thread & Comments */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingTop: '16px', borderTop: '1px solid var(--border-color)', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>

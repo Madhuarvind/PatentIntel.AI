@@ -6010,39 +6010,39 @@ const RESEARCH_PRESETS: RDPreset[] = [
         <div className="review-page-shell">
           {/* Top Header Bar (Fixed height, flex-shrink: 0) */}
           <div className="review-page-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <h2 style={{ fontSize: '1.28rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.01em' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+              <h2 style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.02em' }}>
                 Patent Team Review Queue
               </h2>
-              <span className="badge badge-indigo" style={{ fontSize: '0.72rem', padding: '3px 10px', textTransform: 'uppercase' }}>
+              <span className="badge badge-indigo" style={{ fontSize: '0.84rem', padding: '4px 14px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 {reviewSubmissions.length} Submissions Total
               </span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.76rem', color: 'var(--text-dim)' }}>
-              <Activity size={14} color="var(--accent-cyan)" />
-              <span>Two-Pane Synchronized Review Workspace</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.92rem', color: 'var(--text-muted)' }}>
+              <Activity size={16} color="var(--accent-cyan)" />
+              <span style={{ fontWeight: 600 }}>Two-Pane Synchronized Review Workspace</span>
             </div>
           </div>
 
           {/* Balanced Two-Pane Full-Height Workspace */}
           <div className="review-workspace">
-            {/* LEFT PANE: Full Review Queue (~38% width, independent internal scroll) */}
+            {/* LEFT PANE: Full Review Queue (~400-440px width, independent internal scroll) */}
             <div className="proposal-pane glass-panel">
               <div className="proposal-pane-header">
-                <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                <span style={{ fontSize: '0.94rem', fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Incoming Proposals ({reviewSubmissions.length})
                 </span>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                <span style={{ fontSize: '0.84rem', color: 'var(--text-muted)' }}>
                   Click to inspect details
                 </span>
               </div>
 
               <div className="proposal-list custom-scrollbar">
                 {reviewSubmissions.length === 0 ? (
-                  <div style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--text-muted)', borderRadius: '16px' }}>
-                    <FileCheck size={32} color="var(--accent-indigo)" style={{ margin: '0 auto 10px', display: 'block' }} />
-                    <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-main)' }}>Queue is Clean</div>
-                    <p style={{ fontSize: '0.78rem', margin: '6px 0 0 0', lineHeight: 1.4 }}>No pending patent proposals for evaluation.</p>
+                  <div style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--text-muted)', borderRadius: '16px' }}>
+                    <FileCheck size={38} color="var(--accent-indigo)" style={{ margin: '0 auto 12px', display: 'block' }} />
+                    <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-main)' }}>Queue is Clean</div>
+                    <p style={{ fontSize: '0.9rem', margin: '8px 0 0 0', lineHeight: 1.5 }}>No pending patent proposals for evaluation.</p>
                   </div>
                 ) : (
                   reviewSubmissions.map((sub) => {
@@ -6074,8 +6074,8 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         }}
                         className="glass-panel glass-panel-hover"
                         style={{
-                          padding: '15px 16px',
-                          borderRadius: '14px',
+                          padding: '18px 20px',
+                          borderRadius: '16px',
                           border: isSelected ? '1.5px solid var(--accent-indigo)' : '1px solid var(--border-color)',
                           borderLeft: isSelected ? '5px solid var(--accent-indigo)' : '4px solid transparent',
                           background: isSelected 
@@ -6085,25 +6085,25 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           cursor: 'pointer',
                           display: 'flex',
                           flexDirection: 'column',
-                          gap: '9px',
+                          gap: '12px',
                           transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                           flexShrink: 0
                         }}
                       >
                         {/* Submitter & Status Row */}
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
-                            <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              <User size={12} color="var(--accent-indigo)" />
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <User size={15} color="var(--accent-indigo)" />
                             </div>
-                            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <span style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {sub.submittedByName}
                             </span>
                           </div>
 
                           <span style={{
-                            fontSize: '0.66rem',
-                            padding: '3px 8px',
+                            fontSize: '0.8rem',
+                            padding: '4px 10px',
                             borderRadius: 6,
                             fontWeight: 800,
                             textTransform: 'uppercase',
@@ -6120,10 +6120,10 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         {/* Project Title */}
                         <h4 style={{
                           fontWeight: 800,
-                          fontSize: '0.92rem',
+                          fontSize: '1.15rem',
                           color: 'var(--text-main)',
                           margin: 0,
-                          lineHeight: 1.35,
+                          lineHeight: 1.4,
                           letterSpacing: '-0.01em'
                         }}>
                           {proj?.title || 'Innovation Submission'}
@@ -6131,18 +6131,18 @@ const RESEARCH_PRESETS: RDPreset[] = [
 
                         {/* Domain / Feature Snippet */}
                         {proj?.domain && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: 'var(--accent-cyan)' }}>
-                            <Tag size={12} />
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', color: 'var(--accent-cyan)', fontWeight: 600 }}>
+                            <Tag size={14} />
                             <span>{proj.domain}</span>
                           </div>
                         )}
 
                         {proj?.technicalProblem && (
                           <p style={{
-                            fontSize: '0.75rem',
+                            fontSize: '0.92rem',
                             color: 'var(--text-muted)',
                             margin: 0,
-                            lineHeight: 1.35,
+                            lineHeight: 1.55,
                             display: '-webkit-box',
                             WebkitLineClamp: 2,
                             WebkitBoxOrient: 'vertical',
@@ -6157,28 +6157,29 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
-                          fontSize: '0.72rem',
-                          color: 'var(--text-dim)',
-                          borderTop: '1px solid rgba(255,255,255,0.05)',
-                          paddingTop: '8px',
+                          fontSize: '0.84rem',
+                          color: 'var(--text-muted)',
+                          borderTop: '1px solid var(--border-color)',
+                          paddingTop: '10px',
                           marginTop: '2px',
                           flexWrap: 'wrap',
-                          gap: '6px'
+                          gap: '8px'
                         }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <span style={{
                               fontFamily: 'var(--font-mono)',
                               fontWeight: 700,
-                              padding: '2px 6px',
-                              borderRadius: 4,
+                              fontSize: '0.82rem',
+                              padding: '2px 8px',
+                              borderRadius: 5,
                               background: 'var(--bg-surface)',
                               color: 'var(--accent-indigo)',
                               border: '1px solid var(--border-color)'
                             }}>
                               v{sub.versionNumber}.0
                             </span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <Calendar size={11} />
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.82rem' }}>
+                              <Calendar size={13} />
                               {new Date(sub.submittedAt).toLocaleDateString()}
                             </span>
                           </div>
@@ -6187,17 +6188,18 @@ const RESEARCH_PRESETS: RDPreset[] = [
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <span style={{
                                 fontWeight: 800,
+                                fontSize: '0.84rem',
                                 color: (rep.overallNoveltyScore ?? 0) >= 80 ? 'var(--accent-emerald)' : (rep.overallNoveltyScore ?? 0) >= 60 ? 'var(--accent-amber)' : 'var(--accent-rose)',
                                 fontFamily: 'var(--font-mono)',
                                 background: (rep.overallNoveltyScore ?? 0) >= 80 ? 'rgba(16, 185, 129, 0.1)' : (rep.overallNoveltyScore ?? 0) >= 60 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(244, 63, 94, 0.1)',
-                                padding: '1px 6px',
-                                borderRadius: 4,
+                                padding: '2px 8px',
+                                borderRadius: 5,
                                 border: `1px solid ${(rep.overallNoveltyScore ?? 0) >= 80 ? 'rgba(16, 185, 129, 0.25)' : (rep.overallNoveltyScore ?? 0) >= 60 ? 'rgba(245, 158, 11, 0.25)' : 'rgba(244, 63, 94, 0.25)'}`
                               }}>
                                 {rep.overallNoveltyScore ?? 0}% Novelty
                               </span>
                               {(rep.topMatchedPatents?.length > 0 || rep.topMatchedPapers?.length > 0) && (
-                                <span style={{ fontSize: '0.66rem', color: 'var(--text-dim)', background: 'var(--bg-surface)', padding: '1px 5px', borderRadius: 4, border: '1px solid var(--border-color)' }}>
+                                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', background: 'var(--bg-surface)', padding: '2px 7px', borderRadius: 5, border: '1px solid var(--border-color)' }}>
                                   {rep.topMatchedPatents?.length || 0} Pat • {rep.topMatchedPapers?.length || 0} Lit
                                 </span>
                               )}
@@ -6211,18 +6213,18 @@ const RESEARCH_PRESETS: RDPreset[] = [
               </div>
             </div>
 
-            {/* RIGHT PANE: Review Detail Panel (~62% width, independent internal scroll) */}
+            {/* RIGHT PANE: Review Detail Panel (Spacious layout, independent internal scroll) */}
             <div className="detail-pane glass-panel">
               {activeSubmission && activeProject ? (
                 <div className="detail-content custom-scrollbar">
                   {/* Header Section */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '100%', minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '100%', minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                       <span style={{
                         fontFamily: 'var(--font-mono)',
-                        fontSize: '0.74rem',
+                        fontSize: '0.88rem',
                         fontWeight: 800,
-                        padding: '3px 10px',
+                        padding: '4px 12px',
                         borderRadius: 6,
                         background: 'rgba(99, 102, 241, 0.15)',
                         color: 'var(--accent-indigo)',
@@ -6231,8 +6233,8 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         Version v{activeSubmission.versionNumber}.0
                       </span>
                       <span style={{
-                        fontSize: '0.74rem',
-                        padding: '3px 10px',
+                        fontSize: '0.88rem',
+                        padding: '4px 12px',
                         borderRadius: 6,
                         fontWeight: 800,
                         textTransform: 'uppercase',
@@ -6244,24 +6246,24 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         {activeSubmission.status.replace(/_/g, ' ')}
                       </span>
                       {activeProject.domain && (
-                        <span className="badge badge-cyan" style={{ fontSize: '0.7rem' }}>
-                          <Tag size={11} /> {activeProject.domain}
+                        <span className="badge badge-cyan" style={{ fontSize: '0.86rem', padding: '4px 12px' }}>
+                          <Tag size={13} /> {activeProject.domain}
                         </span>
                       )}
                     </div>
 
-                    <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)', margin: '4px 0 0 0', lineHeight: 1.3, letterSpacing: '-0.01em', overflowWrap: 'break-word', wordBreak: 'break-word' }}>
+                    <h3 style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-main)', margin: '4px 0 0 0', lineHeight: 1.3, letterSpacing: '-0.02em', overflowWrap: 'break-word', wordBreak: 'break-word' }}>
                       {activeProject.title}
                     </h3>
 
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <User size={13} color="var(--accent-cyan)" />
+                    <p style={{ fontSize: '0.94rem', color: 'var(--text-muted)', margin: 0, display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <User size={15} color="var(--accent-cyan)" />
                         Submitted by <strong style={{ color: 'var(--text-main)' }}>{activeSubmission.submittedByName}</strong>
                       </span>
                       <span>•</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Clock size={13} color="var(--text-dim)" />
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Clock size={15} color="var(--text-muted)" />
                         {new Date(activeSubmission.submittedAt).toLocaleString()}
                       </span>
                     </p>
@@ -6274,16 +6276,16 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     justifyContent: 'space-between',
                     borderTop: '1px solid var(--border-color)',
                     borderBottom: '1px solid var(--border-color)',
-                    padding: '14px 0',
+                    padding: '16px 0',
                     flexWrap: 'wrap',
-                    gap: '12px',
+                    gap: '14px',
                     width: '100%',
                     maxWidth: '100%',
                     minWidth: 0,
                     boxSizing: 'border-box'
                   }}>
                     {/* Secondary Actions */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                       <button
                         onClick={() => {
                           if (activeReport) {
@@ -6291,31 +6293,31 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           }
                         }}
                         className="btn-secondary"
-                        style={{ padding: '8px 16px', fontSize: '0.8rem' }}
+                        style={{ padding: '11px 20px', fontSize: '0.94rem' }}
                       >
-                        <Search size={14} />
+                        <Search size={16} />
                         <span>Inspect Prior-Art Audit</span>
                       </button>
 
                       <button
                         onClick={() => setShowFerModal(true)}
                         className="btn-secondary"
-                        style={{ padding: '8px 16px', fontSize: '0.8rem', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent-indigo)', borderColor: 'rgba(99, 102, 241, 0.3)' }}
+                        style={{ padding: '11px 20px', fontSize: '0.94rem', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent-indigo)', borderColor: 'rgba(99, 102, 241, 0.3)' }}
                       >
-                        <FileText size={14} />
+                        <FileText size={16} />
                         <span>Simulate / Export FER</span>
                       </button>
                     </div>
 
                     {/* Primary Actions */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                       {canDecide ? (
                         <button
                           onClick={() => setShowDecisionModal(true)}
                           className="btn-primary"
-                          style={{ padding: '8px 18px', fontSize: '0.8rem' }}
+                          style={{ padding: '11px 24px', fontSize: '0.94rem' }}
                         >
-                          <Scale size={14} />
+                          <Scale size={16} />
                           <span>Issue Review Decision</span>
                         </button>
                       ) : !isReviewerOrAdmin ? (
@@ -6323,17 +6325,17 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           style={{
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '6px',
-                            padding: '7px 14px',
-                            borderRadius: '8px',
+                            gap: '8px',
+                            padding: '9px 16px',
+                            borderRadius: '10px',
                             background: 'rgba(55,86,125,0.07)',
                             border: '1px solid rgba(55,86,125,0.25)',
-                            fontSize: '0.76rem',
+                            fontSize: '0.88rem',
                             color: 'var(--text-muted)'
                           }}
                           title="Review decisions require Reviewer or Administrator permissions. Researchers cannot issue examination decisions."
                         >
-                          <Shield size={14} color="var(--accent-indigo)" />
+                          <Shield size={16} color="var(--accent-indigo)" />
                           <span>Decision Authority: Reviewer / Admin</span>
                         </div>
                       ) : (
@@ -6341,17 +6343,17 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           style={{
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '6px',
-                            padding: '7px 14px',
-                            borderRadius: '8px',
+                            gap: '8px',
+                            padding: '9px 16px',
+                            borderRadius: '10px',
                             background: 'rgba(174,54,67,0.08)',
                             border: '1px solid rgba(174,54,67,0.3)',
-                            fontSize: '0.76rem',
+                            fontSize: '0.88rem',
                             color: 'var(--accent-rose)'
                           }}
                           title="Anti-Collision Rule: You cannot approve or issue a decision on your own submitted proposal."
                         >
-                          <ShieldAlert size={14} color="var(--accent-rose)" />
+                          <ShieldAlert size={16} color="var(--accent-rose)" />
                           <span>Self-Approval Prohibited</span>
                         </div>
                       )}
@@ -6360,9 +6362,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         <button
                           onClick={handleHandoffToClaimSynthesizer}
                           className="btn-primary"
-                          style={{ padding: '8px 18px', fontSize: '0.8rem', background: 'var(--gradient-emerald)' }}
+                          style={{ padding: '11px 24px', fontSize: '0.94rem', background: 'var(--gradient-emerald)' }}
                         >
-                          <Sparkles size={14} />
+                          <Sparkles size={16} />
                           <span>Generate Claim Draft</span>
                         </button>
                       )}
@@ -6373,8 +6375,8 @@ const RESEARCH_PRESETS: RDPreset[] = [
                   {activeReport && (
                     <div className="review-metrics-grid" style={{
                       background: 'var(--bg-input)',
-                      padding: '16px 18px',
-                      borderRadius: '14px',
+                      padding: '20px 24px',
+                      borderRadius: '16px',
                       border: '1px solid var(--border-color)',
                       width: '100%',
                       maxWidth: '100%',
@@ -6385,7 +6387,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         <span className="review-metric-label">
                           Overall Novelty
                         </span>
-                        <div className="review-metric-value" style={{ fontSize: 'clamp(1.1rem, 2vw, 1.35rem)', color: 'var(--accent-emerald)' }}>
+                        <div className="review-metric-value" style={{ fontSize: '2rem', color: 'var(--accent-emerald)', marginTop: 4 }}>
                           {activeReport.overallNoveltyScore}%
                         </div>
                       </div>
@@ -6394,7 +6396,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         <span className="review-metric-label">
                           Review Readiness
                         </span>
-                        <div className="review-metric-value" style={{ fontSize: 'clamp(1.1rem, 2vw, 1.35rem)', color: 'var(--accent-indigo)' }}>
+                        <div className="review-metric-value" style={{ fontSize: '2rem', color: 'var(--accent-indigo)', marginTop: 4 }}>
                           {activeReport.reviewReadinessScore}%
                         </div>
                       </div>
@@ -6404,8 +6406,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           Obviousness Risk
                         </span>
                         <div className="review-metric-value" style={{
-                          fontSize: 'clamp(0.95rem, 1.8vw, 1.2rem)',
-                          color: activeReport.tsmObviousnessRisk?.level === 'HIGH' ? 'var(--accent-rose)' : 'var(--accent-amber)'
+                          fontSize: '1.45rem',
+                          color: activeReport.tsmObviousnessRisk?.level === 'HIGH' ? 'var(--accent-rose)' : 'var(--accent-amber)',
+                          marginTop: 6
                         }}>
                           {activeReport.tsmObviousnessRisk?.score || 95}% ({activeReport.tsmObviousnessRisk?.level || 'HIGH'})
                         </div>
@@ -6416,9 +6419,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           Prior-Art Concern
                         </span>
                         <div className="review-metric-value" style={{
-                          fontSize: 'clamp(0.82rem, 1.5vw, 0.92rem)',
+                          fontSize: '1.15rem',
                           color: activeReport.priorArtConcern === 'HIGH' ? 'var(--accent-rose)' : activeReport.priorArtConcern === 'MODERATE' ? 'var(--accent-amber)' : 'var(--accent-emerald)',
-                          marginTop: 4
+                          marginTop: 8
                         }}>
                           {activeReport.priorArtConcern} CONCERN
                         </div>
@@ -6427,8 +6430,8 @@ const RESEARCH_PRESETS: RDPreset[] = [
                   )}
 
                   {/* Version History Audit Trail */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
-                    <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+                    <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       Version Audit Trail ({dbStore.getInnovationVersions(activeProject.id).length} Versions Recorded):
                     </span>
                     <div className="review-version-list">
@@ -6441,15 +6444,15 @@ const RESEARCH_PRESETS: RDPreset[] = [
                             style={{
                               background: isCurrentVersion ? 'rgba(99, 102, 241, 0.18)' : 'var(--bg-input)',
                               border: `1px solid ${isCurrentVersion ? 'var(--accent-indigo)' : 'var(--border-color)'}`,
-                              borderRadius: 10,
-                              padding: '8px 14px',
-                              fontSize: '0.75rem',
+                              borderRadius: 12,
+                              padding: '10px 18px',
+                              fontSize: '0.92rem',
                               boxShadow: isCurrentVersion ? '0 2px 10px rgba(99, 102, 241, 0.2)' : 'none'
                             }}
                           >
-                            <span style={{ fontWeight: 800, color: 'var(--accent-indigo)' }}>v{v.versionNumber}.0</span>
-                            <span style={{ color: 'var(--text-muted)' }}>{v.features.length} Features</span>
-                            <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>({new Date(v.createdAt).toLocaleDateString()})</span>
+                            <span style={{ fontWeight: 800, color: 'var(--accent-indigo)', fontSize: '0.95rem' }}>v{v.versionNumber}.0</span>
+                            <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>{v.features.length} Features</span>
+                            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>({new Date(v.createdAt).toLocaleDateString()})</span>
                           </div>
                         );
                       })}
@@ -6457,43 +6460,43 @@ const RESEARCH_PRESETS: RDPreset[] = [
                   </div>
 
                   {/* Technical Problem & Proposed Solution (2-column desktop, 1-col mobile) */}
-                  <div className="review-tech-specs-grid" style={{ fontSize: '0.84rem', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+                  <div className="review-tech-specs-grid" style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
                     <div style={{
                       background: 'var(--bg-input)',
-                      padding: '16px 18px',
-                      borderRadius: '14px',
+                      padding: '22px 24px',
+                      borderRadius: '16px',
                       border: '1px solid var(--border-color)',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '6px',
+                      gap: '10px',
                       minWidth: 0,
                       maxWidth: '100%',
                       boxSizing: 'border-box'
                     }}>
-                      <span style={{ color: 'var(--accent-cyan)', fontWeight: 800, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      <span style={{ color: 'var(--accent-cyan)', fontWeight: 800, fontSize: '0.94rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         Technical Problem:
                       </span>
-                      <p style={{ color: 'var(--text-main)', margin: 0, lineHeight: 1.5, overflowWrap: 'break-word', wordBreak: 'break-word' }}>
+                      <p style={{ color: 'var(--text-main)', margin: 0, fontSize: '1.02rem', lineHeight: 1.7, overflowWrap: 'break-word', wordBreak: 'break-word' }}>
                         {activeProject.technicalProblem}
                       </p>
                     </div>
 
                     <div style={{
                       background: 'var(--bg-input)',
-                      padding: '16px 18px',
-                      borderRadius: '14px',
+                      padding: '22px 24px',
+                      borderRadius: '16px',
                       border: '1px solid var(--border-color)',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '6px',
+                      gap: '10px',
                       minWidth: 0,
                       maxWidth: '100%',
                       boxSizing: 'border-box'
                     }}>
-                      <span style={{ color: 'var(--accent-indigo)', fontWeight: 800, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      <span style={{ color: 'var(--accent-indigo)', fontWeight: 800, fontSize: '0.94rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         Proposed Solution & Architecture:
                       </span>
-                      <p style={{ color: 'var(--text-main)', margin: 0, lineHeight: 1.5, overflowWrap: 'break-word', wordBreak: 'break-word' }}>
+                      <p style={{ color: 'var(--text-main)', margin: 0, fontSize: '1.02rem', lineHeight: 1.7, overflowWrap: 'break-word', wordBreak: 'break-word' }}>
                         {activeProject.proposedSolution}
                       </p>
                     </div>
@@ -6501,18 +6504,18 @@ const RESEARCH_PRESETS: RDPreset[] = [
 
                   {/* VERIFIED PRIOR-ART PATENTS EXAMINED */}
                   {activeReport && activeReport.topMatchedPatents && activeReport.topMatchedPatents.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Scale size={13} color="var(--accent-indigo)" />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                        <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Scale size={16} color="var(--accent-indigo)" />
                           Verified Prior-Art Patents Examined ({activeReport.topMatchedPatents.length})
                         </span>
-                        <span style={{ fontSize: '0.68rem', color: 'var(--accent-emerald)', fontWeight: 700 }}>
+                        <span style={{ fontSize: '0.86rem', color: 'var(--accent-emerald)', fontWeight: 700 }}>
                           USPTO Master Registry Verified
                         </span>
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxWidth: '100%', minWidth: 0 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%', maxWidth: '100%', minWidth: 0 }}>
                         {activeReport.topMatchedPatents.map((pat) => {
                           const isExpired = pat.id.includes('604965') || pat.id.includes('784998');
                           return (
@@ -6520,36 +6523,36 @@ const RESEARCH_PRESETS: RDPreset[] = [
                               key={pat.id}
                               style={{
                                 background: 'var(--bg-input)',
-                                padding: '14px 16px',
-                                borderRadius: '12px',
+                                padding: '20px 24px',
+                                borderRadius: '16px',
                                 border: '1px solid var(--border-color)',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: '8px',
+                                gap: '12px',
                                 minWidth: 0,
                                 maxWidth: '100%',
                                 boxSizing: 'border-box'
                               }}
                             >
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                   <span style={{
                                     fontFamily: 'var(--font-mono)',
                                     fontWeight: 800,
-                                    fontSize: '0.78rem',
+                                    fontSize: '1.02rem',
                                     color: 'var(--accent-indigo)',
                                     background: 'rgba(99, 102, 241, 0.14)',
-                                    padding: '2px 8px',
+                                    padding: '4px 10px',
                                     borderRadius: 6,
                                     border: '1px solid rgba(99, 102, 241, 0.3)'
                                   }}>
                                     {pat.publicationNumber || pat.id}
                                   </span>
                                   <span style={{
-                                    fontSize: '0.66rem',
+                                    fontSize: '0.82rem',
                                     fontWeight: 700,
-                                    padding: '2px 6px',
-                                    borderRadius: 4,
+                                    padding: '3px 8px',
+                                    borderRadius: 5,
                                     background: isExpired ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
                                     color: isExpired ? 'var(--accent-emerald)' : 'var(--accent-rose)',
                                     border: `1px solid ${isExpired ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
@@ -6565,59 +6568,61 @@ const RESEARCH_PRESETS: RDPreset[] = [
                                   style={{
                                     display: 'inline-flex',
                                     alignItems: 'center',
-                                    gap: '4px',
-                                    fontSize: '0.72rem',
+                                    gap: '6px',
+                                    fontSize: '0.92rem',
                                     color: 'var(--accent-cyan)',
                                     textDecoration: 'none',
                                     fontWeight: 600
                                   }}
                                 >
                                   <span>Inspect on Google Patents</span>
-                                  <ExternalLink size={12} />
+                                  <ExternalLink size={14} />
                                 </a>
                               </div>
 
-                              <div style={{ fontWeight: 700, fontSize: '0.86rem', color: 'var(--text-main)', lineHeight: 1.35 }}>
+                              <div style={{ fontWeight: 800, fontSize: '1.22rem', color: 'var(--text-main)', lineHeight: 1.4 }}>
                                 {pat.title}
                               </div>
 
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '0.72rem', color: 'var(--text-dim)', flexWrap: 'wrap' }}>
-                                <span>Assignee: <strong style={{ color: 'var(--text-muted)' }}>{pat.assignee || 'Commercial Assignee'}</strong></span>
-                                {pat.grantDate && <span>Granted: <strong style={{ color: 'var(--text-muted)' }}>{pat.grantDate}</strong></span>}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '0.92rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+                                <span>Assignee: <strong style={{ color: 'var(--text-main)' }}>{pat.assignee || 'Commercial Assignee'}</strong></span>
+                                {pat.grantDate && <span>Granted: <strong style={{ color: 'var(--text-main)' }}>{pat.grantDate}</strong></span>}
                                 {pat.cpcCodes && pat.cpcCodes.length > 0 && (
-                                  <span>CPC: <code style={{ color: 'var(--accent-cyan)' }}>{pat.cpcCodes.slice(0, 2).join(', ')}</code></span>
+                                  <span>CPC: <code style={{ color: 'var(--accent-cyan)', fontWeight: 700 }}>{pat.cpcCodes.slice(0, 2).join(', ')}</code></span>
                                 )}
                               </div>
 
                               {pat.claims?.[0]?.text ? (
                                 <div style={{
-                                  background: 'rgba(0, 0, 0, 0.2)',
-                                  padding: '8px 12px',
-                                  borderRadius: 8,
-                                  borderLeft: '3px solid var(--accent-indigo)',
-                                  fontSize: '0.75rem',
-                                  color: 'var(--text-muted)',
-                                  lineHeight: 1.45
+                                  background: 'var(--bg-surface)',
+                                  padding: '16px 20px',
+                                  borderRadius: 10,
+                                  border: '1px solid var(--border-color)',
+                                  borderLeft: '4px solid var(--accent-indigo)',
+                                  lineHeight: 1.7
                                 }}>
-                                  <strong style={{ color: 'var(--accent-indigo)', display: 'block', marginBottom: 2 }}>
+                                  <strong style={{ color: 'var(--accent-indigo)', display: 'block', fontSize: '0.98rem', fontWeight: 800, marginBottom: 8, letterSpacing: '0.02em' }}>
                                     Cited Claim 1 Limitation:
                                   </strong>
-                                  {pat.claims[0].text}
+                                  <div style={{ fontSize: '1rem', color: 'var(--text-main)', lineHeight: 1.7 }}>
+                                    {pat.claims[0].text}
+                                  </div>
                                 </div>
                               ) : pat.abstract ? (
                                 <div style={{
-                                  background: 'rgba(0, 0, 0, 0.2)',
-                                  padding: '8px 12px',
-                                  borderRadius: 8,
-                                  borderLeft: '3px solid var(--accent-indigo)',
-                                  fontSize: '0.75rem',
-                                  color: 'var(--text-muted)',
-                                  lineHeight: 1.45
+                                  background: 'var(--bg-surface)',
+                                  padding: '16px 20px',
+                                  borderRadius: 10,
+                                  border: '1px solid var(--border-color)',
+                                  borderLeft: '4px solid var(--accent-indigo)',
+                                  lineHeight: 1.7
                                 }}>
-                                  <strong style={{ color: 'var(--accent-indigo)', display: 'block', marginBottom: 2 }}>
+                                  <strong style={{ color: 'var(--accent-indigo)', display: 'block', fontSize: '0.98rem', fontWeight: 800, marginBottom: 8, letterSpacing: '0.02em' }}>
                                     Cited Technical Specification:
                                   </strong>
-                                  {pat.abstract}
+                                  <div style={{ fontSize: '1rem', color: 'var(--text-main)', lineHeight: 1.7 }}>
+                                    {pat.abstract}
+                                  </div>
                                 </div>
                               ) : null}
                             </div>
@@ -6629,41 +6634,41 @@ const RESEARCH_PRESETS: RDPreset[] = [
 
                   {/* VERIFIED SCHOLARLY RESEARCH PAPERS */}
                   {activeReport && activeReport.topMatchedPapers && activeReport.topMatchedPapers.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <FileText size={13} color="var(--accent-cyan)" />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                        <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <FileText size={16} color="var(--accent-cyan)" />
                           Verified Scholarly & Non-Patent Literature ({activeReport.topMatchedPapers.length})
                         </span>
-                        <span style={{ fontSize: '0.68rem', color: 'var(--accent-cyan)', fontWeight: 700 }}>
+                        <span style={{ fontSize: '0.86rem', color: 'var(--accent-cyan)', fontWeight: 700 }}>
                           Peer-Reviewed Research Citations
                         </span>
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxWidth: '100%', minWidth: 0 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%', maxWidth: '100%', minWidth: 0 }}>
                         {activeReport.topMatchedPapers.map((paper) => (
                           <div
                             key={paper.id}
                             style={{
                               background: 'var(--bg-input)',
-                              padding: '14px 16px',
-                              borderRadius: '12px',
+                              padding: '20px 24px',
+                              borderRadius: '16px',
                               border: '1px solid var(--border-color)',
                               display: 'flex',
                               flexDirection: 'column',
-                              gap: '6px',
+                              gap: '10px',
                               minWidth: 0,
                               maxWidth: '100%',
                               boxSizing: 'border-box'
                             }}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                               <span style={{
-                                fontSize: '0.7rem',
+                                fontSize: '0.84rem',
                                 fontWeight: 700,
                                 color: 'var(--accent-cyan)',
                                 background: 'rgba(6, 182, 212, 0.12)',
-                                padding: '2px 8px',
+                                padding: '3px 10px',
                                 borderRadius: 6,
                                 border: '1px solid rgba(6, 182, 212, 0.25)'
                               }}>
@@ -6678,45 +6683,45 @@ const RESEARCH_PRESETS: RDPreset[] = [
                                   style={{
                                     display: 'inline-flex',
                                     alignItems: 'center',
-                                    gap: '4px',
-                                    fontSize: '0.72rem',
+                                    gap: '6px',
+                                    fontSize: '0.92rem',
                                     color: 'var(--accent-cyan)',
                                     textDecoration: 'none',
                                     fontWeight: 600
                                   }}
                                 >
                                   <span>DOI: {paper.doi}</span>
-                                  <ExternalLink size={11} />
+                                  <ExternalLink size={14} />
                                 </a>
                               )}
                             </div>
 
-                            <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: 1.35 }}>
+                            <div style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--text-main)', lineHeight: 1.4 }}>
                               {paper.title}
                             </div>
 
                             {paper.authors && paper.authors.length > 0 && (
-                              <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
-                                Authors: <span style={{ color: 'var(--text-muted)' }}>{paper.authors.join(', ')}</span>
+                              <div style={{ fontSize: '0.92rem', color: 'var(--text-muted)' }}>
+                                Authors: <span style={{ color: 'var(--text-main)' }}>{paper.authors.join(', ')}</span>
                               </div>
                             )}
 
                             {paper.abstract && (
-                              <p style={{
-                                fontSize: '0.75rem',
-                                color: 'var(--text-muted)',
-                                margin: 0,
-                                lineHeight: 1.45,
-                                background: 'rgba(0,0,0,0.18)',
-                                padding: '8px 12px',
-                                borderRadius: 8,
-                                borderLeft: '3px solid var(--accent-cyan)'
+                              <div style={{
+                                background: 'var(--bg-surface)',
+                                padding: '16px 20px',
+                                borderRadius: 10,
+                                border: '1px solid var(--border-color)',
+                                borderLeft: '4px solid var(--accent-cyan)',
+                                lineHeight: 1.7
                               }}>
-                                <strong style={{ color: 'var(--accent-cyan)', display: 'block', marginBottom: 2 }}>
+                                <strong style={{ color: 'var(--accent-cyan)', display: 'block', fontSize: '0.98rem', fontWeight: 800, marginBottom: 8, letterSpacing: '0.02em' }}>
                                   Literature Abstract Excerpt:
                                 </strong>
-                                {paper.abstract}
-                              </p>
+                                <div style={{ fontSize: '0.98rem', color: 'var(--text-main)', lineHeight: 1.7 }}>
+                                  {paper.abstract}
+                                </div>
+                              </div>
                             )}
                           </div>
                         ))}
@@ -6726,18 +6731,18 @@ const RESEARCH_PRESETS: RDPreset[] = [
 
                   {/* TECHNICAL FEATURE PRIOR-ART GROUNDING BREAKDOWN */}
                   {activeReport && activeReport.extractedComponents && activeReport.extractedComponents.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Layers size={13} color="var(--accent-emerald)" />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                        <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Layers size={16} color="var(--accent-emerald)" />
                           Technical Feature Prior-Art Grounding ({activeReport.extractedComponents.length} Features)
                         </span>
-                        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                        <span style={{ fontSize: '0.86rem', color: 'var(--text-muted)' }}>
                           Feature-by-Feature Novelty & Overlap Analysis
                         </span>
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxWidth: '100%', minWidth: 0 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '100%', minWidth: 0 }}>
                         {activeReport.extractedComponents.map((comp, idx) => {
                           const statusColor = 
                             comp.overlapStatus === 'KNOWN_PRIOR_ART' ? 'var(--accent-rose)' :
@@ -6754,42 +6759,42 @@ const RESEARCH_PRESETS: RDPreset[] = [
                               key={comp.id || idx}
                               style={{
                                 background: 'var(--bg-input)',
-                                padding: '14px 16px',
-                                borderRadius: '12px',
+                                padding: '18px 22px',
+                                borderRadius: '16px',
                                 border: '1px solid var(--border-color)',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: '8px',
+                                gap: '10px',
                                 minWidth: 0,
                                 maxWidth: '100%',
                                 boxSizing: 'border-box'
                               }}
                             >
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                   <span style={{
                                     fontFamily: 'var(--font-mono)',
                                     fontWeight: 800,
-                                    fontSize: '0.74rem',
+                                    fontSize: '0.9rem',
                                     color: 'var(--accent-indigo)',
                                     background: 'rgba(99, 102, 241, 0.14)',
-                                    padding: '2px 7px',
-                                    borderRadius: 5
+                                    padding: '3px 9px',
+                                    borderRadius: 6
                                   }}>
                                     {comp.featureCode || `F${idx + 1}`}
                                   </span>
-                                  <span style={{ fontWeight: 800, fontSize: '0.86rem', color: 'var(--text-main)' }}>
+                                  <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-main)' }}>
                                     {comp.name || comp.term}
                                   </span>
-                                  <span style={{ fontSize: '0.66rem', color: 'var(--text-dim)', background: 'var(--bg-surface)', padding: '1px 6px', borderRadius: 4, border: '1px solid var(--border-color)' }}>
+                                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', background: 'var(--bg-surface)', padding: '2px 8px', borderRadius: 5, border: '1px solid var(--border-color)' }}>
                                     {comp.category}
                                   </span>
                                 </div>
 
                                 <span style={{
-                                  fontSize: '0.66rem',
+                                  fontSize: '0.8rem',
                                   fontWeight: 800,
-                                  padding: '3px 8px',
+                                  padding: '4px 10px',
                                   borderRadius: 6,
                                   background: statusBg,
                                   color: statusColor,
@@ -6801,40 +6806,43 @@ const RESEARCH_PRESETS: RDPreset[] = [
                                 </span>
                               </div>
 
-                              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
+                              <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.6 }}>
                                 {comp.description}
                               </p>
 
                               {comp.matchedPriorArt && comp.matchedPriorArt.length > 0 ? (
                                 <div style={{
-                                  background: 'rgba(0, 0, 0, 0.22)',
-                                  padding: '10px 12px',
-                                  borderRadius: 8,
-                                  borderLeft: `3px solid ${statusColor}`,
+                                  background: 'var(--bg-surface)',
+                                  padding: '14px 18px',
+                                  borderRadius: 10,
+                                  border: '1px solid var(--border-color)',
+                                  borderLeft: `4px solid ${statusColor}`,
                                   display: 'flex',
                                   flexDirection: 'column',
-                                  gap: '4px'
+                                  gap: '6px'
                                 }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.72rem', flexWrap: 'wrap', gap: '4px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.88rem', flexWrap: 'wrap', gap: '6px' }}>
                                     <span style={{ fontWeight: 700, color: statusColor }}>
                                       Cited Reference: {comp.matchedPriorArt[0].publicationNumber || comp.matchedPriorArt[0].id}
                                     </span>
-                                    <span style={{ color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                                    <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
                                       Similarity: {comp.matchedPriorArt[0].similarityScore}%
                                     </span>
                                   </div>
-                                  <div style={{ fontSize: '0.74rem', color: 'var(--text-main)', lineHeight: 1.4 }}>
+                                  <div style={{ fontSize: '0.94rem', color: 'var(--text-main)', lineHeight: 1.6 }}>
                                     {comp.matchedPriorArt[0].matchingExcerpt}
                                   </div>
                                 </div>
                               ) : (
                                 <div style={{
-                                  background: 'rgba(16, 185, 129, 0.06)',
-                                  padding: '8px 12px',
-                                  borderRadius: 8,
-                                  borderLeft: '3px solid var(--accent-emerald)',
-                                  fontSize: '0.73rem',
-                                  color: 'var(--text-muted)'
+                                  background: 'rgba(16, 185, 129, 0.08)',
+                                  padding: '12px 18px',
+                                  borderRadius: 10,
+                                  border: '1px solid rgba(16, 185, 129, 0.25)',
+                                  borderLeft: '4px solid var(--accent-emerald)',
+                                  fontSize: '0.92rem',
+                                  color: 'var(--text-main)',
+                                  lineHeight: 1.55
                                 }}>
                                   <strong style={{ color: 'var(--accent-emerald)' }}>Novel Technical Feature:</strong> No anticipating prior-art disclosure found in verified global patent or scholarly corpora. Provides strong basis for Section 102/103 patentability.
                                 </div>
@@ -6847,61 +6855,60 @@ const RESEARCH_PRESETS: RDPreset[] = [
                   )}
 
                   {/* Review Thread & Comments */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingTop: '16px', borderTop: '1px solid var(--border-color)', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <h4 style={{ fontSize: '0.76rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-dim)', letterSpacing: '0.04em', margin: 0 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', paddingTop: '20px', borderTop: '1px solid var(--border-color)', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                      <h4 style={{ fontSize: '0.96rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.05em', margin: 0 }}>
                         Review Thread & Examiner Feedback ({reviewComments.length})
                       </h4>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                         All comments logged permanently in audit dossier
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px', width: '100%', maxWidth: '100%', minWidth: 0 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '240px', overflowY: 'auto', paddingRight: '6px', width: '100%', maxWidth: '100%', minWidth: 0 }}>
                       {reviewComments.map((comm) => (
                         <div
                           key={comm.id}
                           style={{
                             background: comm.comment.includes('DECISION') ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-input)',
-                            padding: '12px 14px',
-                            borderRadius: '12px',
+                            padding: '14px 18px',
+                            borderRadius: '14px',
                             border: `1px solid ${comm.comment.includes('DECISION') ? 'rgba(99, 102, 241, 0.3)' : 'var(--border-color)'}`,
-                            fontSize: '0.82rem',
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: '4px',
+                            gap: '6px',
                             minWidth: 0,
                             maxWidth: '100%',
                             boxSizing: 'border-box'
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 700, color: 'var(--text-main)', flexWrap: 'wrap', gap: '4px' }}>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <User size={13} color="var(--accent-cyan)" />
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 700, color: 'var(--text-main)', flexWrap: 'wrap', gap: '6px' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '0.94rem' }}>
+                              <User size={15} color="var(--accent-cyan)" />
                               {comm.authorName}
                             </span>
-                            <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
+                            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
                               {new Date(comm.createdAt).toLocaleTimeString()}
                             </span>
                           </div>
-                          <p style={{ color: 'var(--text-muted)', margin: 0, lineHeight: 1.45, overflowWrap: 'break-word', wordBreak: 'break-word' }}>{comm.comment}</p>
+                          <p style={{ color: 'var(--text-main)', margin: 0, fontSize: '0.95rem', lineHeight: 1.6, overflowWrap: 'break-word', wordBreak: 'break-word' }}>{comm.comment}</p>
                         </div>
                       ))}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px', width: '100%', maxWidth: '100%', minWidth: 0, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '12px', width: '100%', maxWidth: '100%', minWidth: 0, flexWrap: 'wrap' }}>
                       <input
                         type="text"
                         value={newCommentText}
                         onChange={(e) => setNewCommentText(e.target.value)}
                         placeholder="Add review feedback, guidance, or question for R&D submitter..."
                         className="input-field"
-                        style={{ flex: '1 1 220px', minWidth: 0 }}
+                        style={{ flex: '1 1 260px', minWidth: 0 }}
                       />
                       <button
                         onClick={handleAddReviewComment}
                         className="btn-secondary"
-                        style={{ padding: '8px 18px', fontSize: '0.8rem', whiteSpace: 'nowrap', flexShrink: 0 }}
+                        style={{ padding: '11px 22px', fontSize: '0.94rem', whiteSpace: 'nowrap', flexShrink: 0 }}
                       >
                         Post Feedback
                       </button>
@@ -6909,12 +6916,12 @@ const RESEARCH_PRESETS: RDPreset[] = [
                   </div>
                 </div>
               ) : (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '32px', gap: '14px' }}>
-                  <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(99, 102, 241, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
-                    <Lightbulb size={28} />
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '48px 32px', gap: '16px' }}>
+                  <div style={{ width: 64, height: 64, borderRadius: 18, background: 'rgba(99, 102, 241, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
+                    <Lightbulb size={32} />
                   </div>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>Select a Submission to Inspect</h3>
-                  <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', maxWidth: '440px', margin: 0, lineHeight: 1.45 }}>
+                  <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>Select a Submission to Inspect</h3>
+                  <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', maxWidth: '480px', margin: 0, lineHeight: 1.6 }}>
                     Click on any proposal in the Patent Team Review Queue on the left to evaluate novelty metrics, inspect prior-art citations, review the audit trail, and issue official examination decisions.
                   </p>
                 </div>

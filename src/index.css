@@ -24,6 +24,24 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--text-main);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+h1 { font-size: 2rem; font-weight: 800; }
+h2 { font-size: 1.65rem; font-weight: 800; }
+h3 { font-size: 1.35rem; font-weight: 700; }
+h4 { font-size: 1.15rem; font-weight: 700; }
+h5 { font-size: 1rem; font-weight: 600; }
+
+p {
+  line-height: 1.65;
+}
+
 #root {
   width: 100%;
   min-height: 100vh;
@@ -90,7 +108,8 @@ html, body {
   background: var(--gradient-primary);
   color: var(--text-main);
   font-weight: 700;
-  padding: 10px 22px;
+  font-size: 0.95rem;
+  padding: 11px 24px;
   border-radius: 12px;
   border: none;
   cursor: pointer;
@@ -115,7 +134,8 @@ html, body {
   background: var(--bg-surface);
   color: var(--text-main);
   font-weight: 600;
-  padding: 10px 20px;
+  font-size: 0.95rem;
+  padding: 11px 22px;
   border-radius: 12px;
   border: 1px solid var(--border-color);
   cursor: pointer;
@@ -143,9 +163,9 @@ html, body {
   background: var(--bg-input);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 10px 14px;
+  padding: 11px 16px;
   color: var(--text-main);
-  font-size: 0.88rem;
+  font-size: 0.95rem;
   outline: none;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   font-family: var(--font-sans);
@@ -153,7 +173,7 @@ html, body {
 
 select.input-field {
   cursor: pointer;
-  padding: 8px 12px;
+  padding: 10px 14px;
 }
 
 select.input-field option {
@@ -171,10 +191,10 @@ select.input-field option {
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 12px;
+  gap: 6px;
+  padding: 5px 14px;
   border-radius: 999px;
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -237,7 +257,10 @@ select.input-field option {
   flex-direction: column !important;
   height: 100% !important;
   min-height: 0 !important;
-  padding: 20px 28px !important;
+  padding: 24px 32px !important;
+  max-width: 1760px !important;
+  width: 100% !important;
+  margin: 0 auto !important;
   box-sizing: border-box !important;
 }
 
@@ -251,7 +274,7 @@ select.input-field option {
   min-width: 0;
   box-sizing: border-box;
   overflow: hidden;
-  gap: 16px;
+  gap: 18px;
   flex: 1;
 }
 
@@ -260,7 +283,7 @@ select.input-field option {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 16px;
   flex-shrink: 0;
   width: 100%;
   box-sizing: border-box;
@@ -270,8 +293,8 @@ select.input-field option {
 .review-workspace,
 .review-workspace-grid {
   display: grid;
-  grid-template-columns: minmax(360px, 0.86fr) minmax(0, 1.54fr);
-  gap: 20px;
+  grid-template-columns: minmax(400px, 440px) minmax(0, 1fr);
+  gap: 24px;
   flex: 1;
   min-height: 0;
   height: 100%;
@@ -294,8 +317,8 @@ select.input-field option {
   min-width: 0;
   box-sizing: border-box;
   overflow: hidden;
-  padding: 18px 16px;
-  border-radius: 16px;
+  padding: 22px 20px;
+  border-radius: 18px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
 }
@@ -304,8 +327,8 @@ select.input-field option {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 12px;
-  margin-bottom: 4px;
+  padding-bottom: 14px;
+  margin-bottom: 6px;
   border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
   width: 100%;
@@ -319,7 +342,7 @@ select.input-field option {
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   padding-right: 6px;
   box-sizing: border-box;
 }
@@ -336,8 +359,8 @@ select.input-field option {
   min-width: 0;
   box-sizing: border-box;
   overflow: hidden;
-  padding: 22px 24px;
-  border-radius: 16px;
+  padding: 28px 34px;
+  border-radius: 18px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   container-type: inline-size;
@@ -350,7 +373,7 @@ select.input-field option {
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
   padding-right: 8px;
   box-sizing: border-box;
 }
@@ -436,11 +459,11 @@ select.input-field option {
 }
 
 .review-metric-label {
-  font-size: 0.82rem;
+  font-size: 0.88rem;
   font-weight: 800;
   color: var(--text-dim);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   min-width: 0;
   max-width: 100%;
   overflow-wrap: anywhere;
@@ -451,6 +474,7 @@ select.input-field option {
 .review-metric-value {
   font-weight: 800;
   font-family: var(--font-mono);
+  font-size: 1.85rem;
   min-width: 0;
   max-width: 100%;
   overflow-wrap: anywhere;

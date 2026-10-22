@@ -4,7 +4,11 @@ A research-team workspace for proposals, source-backed lexical comparisons, assi
 
 ## Run locally
 
-Use Node 24+, then:
+### Quick Start (Windows)
+Double-click `set_all.bat` (or `set_all.cmd`) directly in File Explorer to verify requirements, configure `.env`, start the server, and automatically launch the browser at `http://localhost:5173`.
+
+### Manual Start
+Use Node 20+, then:
 
 ```sh
 npm ci

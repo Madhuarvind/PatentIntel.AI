@@ -7,6 +7,7 @@
     "dev": "node --experimental-strip-types --env-file-if-exists=.env scripts/dev.mjs",
     "dev:web": "vite",
     "bootstrap-admin": "node --env-file-if-exists=.env scripts/bootstrap-admin.mjs",
+    "seed:accounts": "node --env-file-if-exists=.env scripts/provision-default-accounts.mjs",
     "test": "node --experimental-strip-types --test --test-concurrency=1 tests/*.test.mjs",
     "build": "tsc -b && vite build",
     "lint": "oxlint",

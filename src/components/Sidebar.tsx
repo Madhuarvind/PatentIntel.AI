@@ -55,8 +55,8 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
         { id: 'claims', label: 'Claim Decomposition', icon: Layers },
         { id: 'mapping', label: 'Claim-to-Claim Mapping', icon: GitCompare, badge: 'Core' },
         { id: 'timeline', label: 'Prior-Art Timeline', icon: Clock },
-        { id: 'ai-evidence', label: 'AI Evidence Reasoning', icon: Sparkles, badge: 'LLM' },
-        { id: 'claim-synthesizer', label: 'AI Claim Synthesizer', icon: PenTool, badge: 'NEW' }
+        { id: 'ai-evidence', label: 'Evidence Reasoning', icon: Sparkles, badge: 'Experimental' },
+        { id: 'claim-synthesizer', label: 'AI Claim Synthesizer', icon: PenTool, badge: 'Experimental' }
       ]
     },
     {
@@ -85,24 +85,26 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
         <a
           href="#/pilot"
           className="sidebar-pilot-link"
+          aria-label="Enterprise Review Pilot"
+          title="Enterprise Review Pilot"
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '10px 12px',
             borderRadius: '12px',
-            background: 'linear-gradient(90deg, rgba(99, 102, 241, 0.12) 0%, rgba(168, 85, 247, 0.08) 100%)',
-            border: '1px solid rgba(168, 85, 247, 0.3)',
-            color: '#c084fc',
+            background: 'linear-gradient(90deg, rgba(55,86,125,0.12) 0%, rgba(112,76,135,0.08) 100%)',
+            border: '1px solid rgba(112,76,135,0.3)',
+            color: 'var(--accent-purple)',
             textDecoration: 'none',
             fontWeight: 700,
             fontSize: '0.84rem',
             transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-            boxShadow: '0 2px 10px rgba(168, 85, 247, 0.1)'
+            boxShadow: 'var(--shadow-sm)'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Sparkles size={16} color="#c084fc" />
+            <Sparkles size={16} color="var(--accent-purple)" />
             <span style={{ letterSpacing: '-0.01em' }}>Enterprise Review Pilot</span>
           </div>
           <span style={{
@@ -110,14 +112,14 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
             fontWeight: 800,
             padding: '2px 6px',
             borderRadius: '4px',
-            background: 'rgba(168, 85, 247, 0.2)',
-            border: '1px solid rgba(168, 85, 247, 0.4)',
-            color: '#e9d5ff'
+            background: 'rgba(112,76,135,0.2)',
+            border: '1px solid rgba(112,76,135,0.4)',
+            color: 'var(--accent-purple)'
           }}>
             PILOT ↗
           </span>
         </a>
-        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.75rem', lineHeight: 1.5 }}>
+        <p className="sidebar-workspace-note" style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.75rem', lineHeight: 1.5 }}>
           Experimental local tools. Browser records can be shared across accounts on this device.
           Use the Review Pilot for private, server-persisted proposals and assigned decisions.
         </p>
@@ -143,13 +145,15 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
                   <button
                     key={item.id}
                     onClick={() => onSelectView(item.id)}
+                    aria-current={isActive ? 'page' : undefined}
+                    aria-label={item.label}
                     style={{
                       width: '100%',
                       padding: '10px 12px',
                       borderRadius: '12px',
                       border: 'none',
                       background: isActive 
-                        ? 'linear-gradient(90deg, rgba(0, 242, 254, 0.15) 0%, rgba(99, 102, 241, 0.08) 100%)' 
+                        ? 'linear-gradient(90deg, rgba(34,104,88,0.15) 0%, rgba(55,86,125,0.08) 100%)'
                         : 'transparent',
                       color: isActive ? 'var(--accent-cyan)' : 'var(--text-muted)',
                       fontWeight: isActive ? 700 : 500,
@@ -160,7 +164,7 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
                       justifyContent: 'space-between',
                       transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                       borderLeft: isActive ? '4px solid var(--accent-cyan)' : '4px solid transparent',
-                      boxShadow: isActive ? '0 4px 15px rgba(0, 242, 254, 0.15)' : 'none',
+                      boxShadow: isActive ? '0 4px 15px rgba(34,104,88,0.15)' : 'none',
                       whiteSpace: 'nowrap'
                     }}
                   >
@@ -175,9 +179,9 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
                         fontWeight: 800,
                         padding: '2px 7px',
                         borderRadius: '6px',
-                        background: isActive ? 'rgba(0,242,254,0.22)' : 'var(--bg-surface)',
+                        background: isActive ? 'rgba(34,104,88,0.22)' : 'var(--bg-surface)',
                         color: isActive ? 'var(--accent-cyan)' : 'var(--text-dim)',
-                        border: '1px solid ' + (isActive ? 'rgba(0,242,254,0.4)' : 'var(--border-color)'),
+                        border: '1px solid ' + (isActive ? 'rgba(34,104,88,0.4)' : 'var(--border-color)'),
                         flexShrink: 0,
                         marginLeft: '4px'
                       }}>
@@ -196,8 +200,8 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
       <div className="glass-panel sidebar-footer-card" style={{
         padding: '14px',
         borderRadius: '12px',
-        background: 'linear-gradient(180deg, rgba(0, 242, 254, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%)',
-        border: '1px solid rgba(0, 242, 254, 0.2)',
+        background: 'linear-gradient(180deg, rgba(34,104,88,0.05) 0%, rgba(34,104,88,0.05) 100%)',
+        border: '1px solid rgba(34,104,88,0.2)',
         marginTop: '20px',
         flexShrink: 0
       }}>
@@ -207,11 +211,11 @@ export const Sidebar: React.FC<Props> = ({ activeView, onSelectView }) => {
               width: '8px',
               height: '8px',
               borderRadius: '50%',
-              background: '#10B981',
-              boxShadow: '0 0 8px #10B981',
+              background: 'var(--accent-emerald)',
+              boxShadow: 'var(--shadow-sm)',
               display: 'inline-block'
             }} />
-            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-main)' }}>Live Workspace Active</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-main)' }}>Browser-local workspace</span>
           </div>
 
           <span className="badge badge-cyan" style={{ fontSize: '0.66rem', padding: '2px 6px' }}>

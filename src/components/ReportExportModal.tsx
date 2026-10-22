@@ -49,7 +49,7 @@ export const ReportExportModal: React.FC<Props> = ({ isOpen, onClose, patentNumb
             }
             body {
               font-family: Georgia, 'Times New Roman', serif;
-              color: #0B0F19;
+              color: var(--text-main);
               background: #FFFFFF;
               line-height: 1.6;
               margin: 0;
@@ -77,8 +77,8 @@ export const ReportExportModal: React.FC<Props> = ({ isOpen, onClose, patentNumb
               margin-top: 2px;
             }
             .rejection-box {
-              background-color: #F8FAFC;
-              border: 1px solid #CBD5E1;
+              background-color: var(--text-main);
+              border: 1px solid var(--text-muted);
               padding: 16px;
               border-radius: 6px;
               margin-bottom: 24px;
@@ -93,7 +93,7 @@ export const ReportExportModal: React.FC<Props> = ({ isOpen, onClose, patentNumb
             h3 {
               font-size: 1.05rem;
               font-weight: bold;
-              border-bottom: 1px solid #94A3B8;
+              border-bottom: 1px solid var(--text-muted);
               padding-bottom: 4px;
               margin-top: 24px;
               margin-bottom: 12px;
@@ -105,12 +105,12 @@ export const ReportExportModal: React.FC<Props> = ({ isOpen, onClose, patentNumb
               font-size: 0.85rem;
             }
             th, td {
-              border: 1px solid #94A3B8;
+              border: 1px solid var(--text-muted);
               padding: 8px 10px;
               text-align: left;
             }
             th {
-              background-color: #E2E8F0;
+              background-color: var(--text-main);
               font-weight: bold;
             }
             .status-match { color: #15803D; font-weight: bold; }
@@ -118,7 +118,7 @@ export const ReportExportModal: React.FC<Props> = ({ isOpen, onClose, patentNumb
             .status-novel { color: #6B21A8; font-weight: bold; }
             .signature-area {
               margin-top: 45px;
-              border-top: 1px solid #CBD5E1;
+              border-top: 1px solid var(--text-muted);
               padding-top: 16px;
               display: flex;
               justify-content: space-between;
@@ -247,7 +247,7 @@ export const ReportExportModal: React.FC<Props> = ({ isOpen, onClose, patentNumb
         padding: '32px',
         borderRadius: '20px',
         border: '1px solid var(--accent-cyan)',
-        boxShadow: '0 0 40px rgba(0, 242, 254, 0.15)',
+        boxShadow: 'var(--shadow-sm)',
         position: 'relative'
       }}>
         {/* Close Button */}
@@ -298,7 +298,7 @@ export const ReportExportModal: React.FC<Props> = ({ isOpen, onClose, patentNumb
               borderRadius: '8px',
               border: '1px solid',
               borderColor: activeTab === 'preview' ? 'var(--accent-cyan)' : 'transparent',
-              background: activeTab === 'preview' ? 'rgba(0, 242, 254, 0.12)' : 'var(--bg-surface)',
+              background: activeTab === 'preview' ? 'rgba(34,104,88,0.12)' : 'var(--bg-surface)',
               color: activeTab === 'preview' ? 'var(--accent-cyan)' : 'var(--text-muted)',
               fontWeight: 700,
               fontSize: '0.86rem',
@@ -318,7 +318,7 @@ export const ReportExportModal: React.FC<Props> = ({ isOpen, onClose, patentNumb
               borderRadius: '8px',
               border: '1px solid',
               borderColor: activeTab === 'markdown' ? 'var(--accent-cyan)' : 'transparent',
-              background: activeTab === 'markdown' ? 'rgba(0, 242, 254, 0.12)' : 'var(--bg-surface)',
+              background: activeTab === 'markdown' ? 'rgba(34,104,88,0.12)' : 'var(--bg-surface)',
               color: activeTab === 'markdown' ? 'var(--accent-cyan)' : 'var(--text-muted)',
               fontWeight: 700,
               fontSize: '0.86rem',
@@ -338,7 +338,7 @@ export const ReportExportModal: React.FC<Props> = ({ isOpen, onClose, patentNumb
               borderRadius: '8px',
               border: '1px solid',
               borderColor: activeTab === 'bibtex' ? 'var(--accent-cyan)' : 'transparent',
-              background: activeTab === 'bibtex' ? 'rgba(0, 242, 254, 0.12)' : 'var(--bg-surface)',
+              background: activeTab === 'bibtex' ? 'rgba(34,104,88,0.12)' : 'var(--bg-surface)',
               color: activeTab === 'bibtex' ? 'var(--accent-cyan)' : 'var(--text-muted)',
               fontWeight: 700,
               fontSize: '0.86rem',
@@ -354,7 +354,7 @@ export const ReportExportModal: React.FC<Props> = ({ isOpen, onClose, patentNumb
 
         {/* Tab 1: Printable Official Preview Document */}
         {activeTab === 'preview' && (
-          <div className="printable-report-area" style={{ background: '#FFFFFF', color: '#0B0F19', padding: '32px', borderRadius: '12px', fontFamily: 'Georgia, serif', lineHeight: '1.6', boxShadow: '0 4px 20px rgba(0,0,0,0.5)', marginBottom: '24px' }}>
+          <div className="printable-report-area" style={{ background: '#FFFFFF', color: 'var(--text-main)', padding: '32px', borderRadius: '12px', fontFamily: 'Georgia, serif', lineHeight: '1.6', boxShadow: 'var(--shadow-sm)', marginBottom: '24px' }}>
             <div style={{ borderBottom: '3px double #000', paddingBottom: '16px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
                 <h1 style={{ fontSize: '1.4rem', fontWeight: 'bold', margin: 0, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
@@ -374,7 +374,7 @@ export const ReportExportModal: React.FC<Props> = ({ isOpen, onClose, patentNumb
               </div>
             </div>
 
-            <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '6px', border: '1px solid #CBD5E1', marginBottom: '24px', fontSize: '0.92rem' }}>
+            <div style={{ background: 'var(--text-main)', padding: '16px', borderRadius: '6px', border: '1px solid var(--text-muted)', marginBottom: '24px', fontSize: '0.92rem' }}>
               <div style={{ fontWeight: 'bold', color: '#B91C1C', textTransform: 'uppercase', marginBottom: '4px' }}>
                 Statutory Rejection Determination
               </div>
@@ -386,54 +386,54 @@ export const ReportExportModal: React.FC<Props> = ({ isOpen, onClose, patentNumb
               </div>
             </div>
 
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', borderBottom: '1px solid #94A3B8', paddingBottom: '6px', marginBottom: '12px' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', borderBottom: '1px solid var(--text-muted)', paddingBottom: '6px', marginBottom: '12px' }}>
               1. Claim Element Alignment Matrix (35 U.S.C. § 102 / § 103)
             </h3>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', margin: '14px 0 24px', border: '1px solid #94A3B8' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', margin: '14px 0 24px', border: '1px solid var(--text-muted)' }}>
               <thead>
-                <tr style={{ background: '#E2E8F0', textAlign: 'left' }}>
-                  <th style={{ padding: '8px', border: '1px solid #94A3B8' }}>Element ID</th>
-                  <th style={{ padding: '8px', border: '1px solid #94A3B8' }}>Target Application Claim Element</th>
-                  <th style={{ padding: '8px', border: '1px solid #94A3B8' }}>Primary Reference Disclosure</th>
-                  <th style={{ padding: '8px', border: '1px solid #94A3B8' }}>Statutory Status</th>
+                <tr style={{ background: 'var(--text-main)', textAlign: 'left' }}>
+                  <th style={{ padding: '8px', border: '1px solid var(--text-muted)' }}>Element ID</th>
+                  <th style={{ padding: '8px', border: '1px solid var(--text-muted)' }}>Target Application Claim Element</th>
+                  <th style={{ padding: '8px', border: '1px solid var(--text-muted)' }}>Primary Reference Disclosure</th>
+                  <th style={{ padding: '8px', border: '1px solid var(--text-muted)' }}>Statutory Status</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td style={{ padding: '8px', border: '1px solid #94A3B8', fontWeight: 'bold' }}>1[a]</td>
-                  <td style={{ padding: '8px', border: '1px solid #94A3B8' }}>Optical camera sensor configured to capture video frames</td>
-                  <td style={{ padding: '8px', border: '1px solid #94A3B8' }}>Disclosed in US 10,482,391 (Col 4, L 12–28)</td>
-                  <td style={{ padding: '8px', border: '1px solid #94A3B8', color: '#15803D', fontWeight: 'bold' }}>§ 102 Anticipated</td>
+                  <td style={{ padding: '8px', border: '1px solid var(--text-muted)', fontWeight: 'bold' }}>1[a]</td>
+                  <td style={{ padding: '8px', border: '1px solid var(--text-muted)' }}>Optical camera sensor configured to capture video frames</td>
+                  <td style={{ padding: '8px', border: '1px solid var(--text-muted)' }}>Disclosed in US 10,482,391 (Col 4, L 12–28)</td>
+                  <td style={{ padding: '8px', border: '1px solid var(--text-muted)', color: '#15803D', fontWeight: 'bold' }}>§ 102 Anticipated</td>
                 </tr>
                 <tr>
-                  <td style={{ padding: '8px', border: '1px solid #94A3B8', fontWeight: 'bold' }}>1[b]</td>
-                  <td style={{ padding: '8px', border: '1px solid #94A3B8' }}>Deep neural network threat processor computing threat vectors</td>
-                  <td style={{ padding: '8px', border: '1px solid #94A3B8' }}>Disclosed in US 10,482,391 (Col 6, L 05–18)</td>
-                  <td style={{ padding: '8px', border: '1px solid #94A3B8', color: '#15803D', fontWeight: 'bold' }}>§ 102 Anticipated</td>
+                  <td style={{ padding: '8px', border: '1px solid var(--text-muted)', fontWeight: 'bold' }}>1[b]</td>
+                  <td style={{ padding: '8px', border: '1px solid var(--text-muted)' }}>Deep neural network threat processor computing threat vectors</td>
+                  <td style={{ padding: '8px', border: '1px solid var(--text-muted)' }}>Disclosed in US 10,482,391 (Col 6, L 05–18)</td>
+                  <td style={{ padding: '8px', border: '1px solid var(--text-muted)', color: '#15803D', fontWeight: 'bold' }}>§ 102 Anticipated</td>
                 </tr>
                 <tr>
-                  <td style={{ padding: '8px', border: '1px solid #94A3B8', fontWeight: 'bold' }}>1[c]</td>
-                  <td style={{ padding: '8px', border: '1px solid #94A3B8' }}>Real-time hazard warning controller issuing cockpit alert signal</td>
-                  <td style={{ padding: '8px', border: '1px solid #94A3B8' }}>Disclosed in US 11,048,920 (Col 3, L 40)</td>
-                  <td style={{ padding: '8px', border: '1px solid #94A3B8', color: '#B45309', fontWeight: 'bold' }}>§ 103 Obvious</td>
+                  <td style={{ padding: '8px', border: '1px solid var(--text-muted)', fontWeight: 'bold' }}>1[c]</td>
+                  <td style={{ padding: '8px', border: '1px solid var(--text-muted)' }}>Real-time hazard warning controller issuing cockpit alert signal</td>
+                  <td style={{ padding: '8px', border: '1px solid var(--text-muted)' }}>Disclosed in US 11,048,920 (Col 3, L 40)</td>
+                  <td style={{ padding: '8px', border: '1px solid var(--text-muted)', color: '#B45309', fontWeight: 'bold' }}>§ 103 Obvious</td>
                 </tr>
                 <tr>
-                  <td style={{ padding: '8px', border: '1px solid #94A3B8', fontWeight: 'bold' }}>1[d]</td>
-                  <td style={{ padding: '8px', border: '1px solid #94A3B8' }}>Visual display interface in vehicle cockpit</td>
-                  <td style={{ padding: '8px', border: '1px solid #94A3B8' }}>Difference: Prior art discloses HUD projection</td>
-                  <td style={{ padding: '8px', border: '1px solid #94A3B8', color: '#6B21A8', fontWeight: 'bold' }}>Novelty Point</td>
+                  <td style={{ padding: '8px', border: '1px solid var(--text-muted)', fontWeight: 'bold' }}>1[d]</td>
+                  <td style={{ padding: '8px', border: '1px solid var(--text-muted)' }}>Visual display interface in vehicle cockpit</td>
+                  <td style={{ padding: '8px', border: '1px solid var(--text-muted)' }}>Difference: Prior art discloses HUD projection</td>
+                  <td style={{ padding: '8px', border: '1px solid var(--text-muted)', color: '#6B21A8', fontWeight: 'bold' }}>Novelty Point</td>
                 </tr>
               </tbody>
             </table>
 
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', borderBottom: '1px solid #94A3B8', paddingBottom: '6px', marginBottom: '12px' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', borderBottom: '1px solid var(--text-muted)', paddingBottom: '6px', marginBottom: '12px' }}>
               2. Grounded AI Reasoning & Legal Assessment
             </h3>
             <p style={{ fontSize: '0.88rem', margin: '0 0 12px', color: '#1E293B', lineHeight: '1.6' }}>
               A person having ordinary skill in the art (PHOSITA) in automotive neural vision systems would find it obvious to combine the optical CNN threat detector of US 10,482,391 with the acoustic cockpit warning controller of US 11,048,920 to achieve predictable driver hazard alerts.
             </p>
 
-            <div style={{ marginTop: '40px', borderTop: '1px solid #CBD5E1', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: '#475569' }}>
+            <div style={{ marginTop: '40px', borderTop: '1px solid var(--text-muted)', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: '#475569' }}>
               <div>
                 <div><strong>Lead Patent Examiner:</strong> Dr. Alex Vance</div>
                 <div>USPTO Art Unit 2684 • Senior Fellow</div>

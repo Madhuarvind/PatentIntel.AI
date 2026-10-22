@@ -96,14 +96,14 @@ export const AIEvidenceView: React.FC<Props> = ({ onOpenPaper }) => {
         );
       case 'UNMATCHED':
         return (
-          <span className="badge" style={{ background: 'rgba(244, 63, 94, 0.15)', color: 'var(--accent-rose)', border: '1px solid rgba(244, 63, 94, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <span className="badge" style={{ background: 'rgba(174,54,67,0.15)', color: 'var(--accent-rose)', border: '1px solid rgba(174,54,67,0.3)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
             <AlertTriangle size={12} /> Unmatched
           </span>
         );
       case 'UNASSESSED':
       default:
         return (
-          <span className="badge" style={{ background: 'rgba(255, 255, 255, 0.08)', color: 'var(--text-dim)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <span className="badge" style={{ background: 'rgba(21,51,60,0.08)', color: 'var(--text-dim)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
             <FileQuestion size={12} /> Unassessed
           </span>
         );
@@ -154,13 +154,13 @@ export const AIEvidenceView: React.FC<Props> = ({ onOpenPaper }) => {
       </div>
 
       {exportNotice && (
-        <div style={{ padding: '10px 16px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid var(--accent-emerald)', borderRadius: '8px', color: 'var(--accent-emerald)', fontSize: '0.85rem' }}>
+        <div style={{ padding: '10px 16px', background: 'rgba(34,104,88,0.15)', border: '1px solid var(--accent-emerald)', borderRadius: '8px', color: 'var(--accent-emerald)', fontSize: '0.85rem' }}>
           {exportNotice}
         </div>
       )}
 
       {/* Dynamic Patent Selector Bar */}
-      <div className="glass-panel" style={{ padding: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px', borderRadius: '14px' }}>
+      <div className="glass-panel" style={{ padding: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(360px, 100%), 1fr))', gap: '20px', borderRadius: '14px' }}>
         <div>
           <PatentSelector
             patents={workspacePatents}
@@ -194,7 +194,7 @@ export const AIEvidenceView: React.FC<Props> = ({ onOpenPaper }) => {
       )}
 
       {evidenceResult && !evidenceResult.success && (
-        <div className="glass-panel" style={{ padding: '28px 32px', borderRadius: '14px', border: '1px solid rgba(244, 63, 94, 0.4)', background: 'rgba(244, 63, 94, 0.05)' }}>
+        <div className="glass-panel" style={{ padding: '28px 32px', borderRadius: '14px', border: '1px solid rgba(174,54,67,0.4)', background: 'rgba(174,54,67,0.05)' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
             <AlertTriangle size={24} color="var(--accent-rose)" style={{ flexShrink: 0, marginTop: '2px' }} />
             <div>
@@ -235,7 +235,7 @@ export const AIEvidenceView: React.FC<Props> = ({ onOpenPaper }) => {
             </div>
 
             {/* Evidence Metric Summary Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))', gap: '14px' }}>
               {/* Total Limitations */}
               <div style={{ background: 'var(--bg-surface)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>Total Limitations</div>
@@ -327,7 +327,7 @@ export const AIEvidenceView: React.FC<Props> = ({ onOpenPaper }) => {
                     padding: '10px 14px',
                     background: 'rgba(0, 0, 0, 0.25)',
                     borderRadius: '8px',
-                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(21,51,60,0.05)',
                     fontSize: '0.84rem'
                   }}>
                     <span style={{ fontSize: '0.72rem', color: 'var(--accent-indigo)', fontWeight: 700, display: 'block', marginBottom: '4px' }}>

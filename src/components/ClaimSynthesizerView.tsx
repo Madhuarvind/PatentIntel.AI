@@ -1,7 +1,7 @@
 /**
  * ClaimSynthesizerView.tsx
  *
- * AI-Powered Patent Claim Synthesizer — primary workspace view.
+ * Experimental Patent Claim Synthesizer — primary workspace view.
  *
  * Layout:
  *   HEADER
@@ -46,9 +46,9 @@ type SupportStatus = 'SUPPORTED' | 'PARTIALLY_SUPPORTED' | 'UNSUPPORTED';
 
 const SupportBadge: React.FC<{ status: SupportStatus; score?: number }> = ({ status, score }) => {
   const configs = {
-    SUPPORTED: { color: 'var(--accent-emerald)', bg: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.3)', icon: <CheckCircle2 size={11} />, label: 'Supported' },
-    PARTIALLY_SUPPORTED: { color: 'var(--accent-amber)', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.3)', icon: <AlertTriangle size={11} />, label: 'Partial' },
-    UNSUPPORTED: { color: 'var(--accent-rose)', bg: 'rgba(244,63,94,0.1)', border: 'rgba(244,63,94,0.3)', icon: <XCircle size={11} />, label: 'Unsupported' },
+    SUPPORTED: { color: 'var(--accent-emerald)', bg: 'rgba(34,104,88,0.1)', border: 'rgba(34,104,88,0.3)', icon: <CheckCircle2 size={11} />, label: 'Supported' },
+    PARTIALLY_SUPPORTED: { color: 'var(--accent-amber)', bg: 'rgba(145,94,16,0.1)', border: 'rgba(145,94,16,0.3)', icon: <AlertTriangle size={11} />, label: 'Partial' },
+    UNSUPPORTED: { color: 'var(--accent-rose)', bg: 'rgba(174,54,67,0.1)', border: 'rgba(174,54,67,0.3)', icon: <XCircle size={11} />, label: 'Unsupported' },
   };
   const c = configs[status];
   return (
@@ -62,7 +62,7 @@ const SupportBadge: React.FC<{ status: SupportStatus; score?: number }> = ({ sta
 // Sub-component: QualityMetricCard
 // ---------------------------------------------------------------------------
 const QualityCard: React.FC<{ label: string; value: string | number; suffix?: string; color: string; warning?: boolean }> = ({ label, value, suffix, color, warning }) => (
-  <div style={{ background: 'var(--bg-surface)', padding: '16px 14px', borderRadius: 12, border: `1px solid ${warning ? 'rgba(244,63,94,0.3)' : 'var(--border-color)'}`, textAlign: 'center' }}>
+  <div style={{ background: 'var(--bg-surface)', padding: '16px 14px', borderRadius: 12, border: `1px solid ${warning ? 'rgba(174,54,67,0.3)' : 'var(--border-color)'}`, textAlign: 'center' }}>
     <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 6, letterSpacing: '0.05em' }}>{label}</div>
     <div style={{ fontSize: '1.5rem', fontWeight: 800, color: warning ? 'var(--accent-rose)' : color }}>
       {value}<span style={{ fontSize: '0.85rem', color: 'var(--text-dim)', fontWeight: 500 }}>{suffix}</span>
@@ -94,8 +94,8 @@ const ClaimTextBlock: React.FC<{
     <div
       onClick={!isEditing ? onClick : undefined}
       style={{
-        background: isSelected ? 'rgba(0,242,254,0.06)' : 'var(--bg-surface)',
-        border: `1px solid ${isSelected ? 'rgba(0,242,254,0.4)' : 'var(--border-color)'}`,
+        background: isSelected ? 'rgba(34,104,88,0.06)' : 'var(--bg-surface)',
+        border: `1px solid ${isSelected ? 'rgba(34,104,88,0.4)' : 'var(--border-color)'}`,
         borderRadius: 12, padding: '16px', cursor: !isEditing ? 'pointer' : 'default',
         transition: 'all 0.2s ease',
       }}
@@ -103,7 +103,7 @@ const ClaimTextBlock: React.FC<{
       {/* Claim header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ background: 'var(--gradient-primary)', color: '#0B0F19', fontWeight: 800, fontSize: '0.78rem', padding: '3px 10px', borderRadius: 6 }}>
+          <span style={{ background: 'var(--gradient-primary)', color: 'var(--text-main)', fontWeight: 800, fontSize: '0.78rem', padding: '3px 10px', borderRadius: 6 }}>
             Claim {claim.claimNumber}
           </span>
           <span className={`badge ${claim.isIndependent ? 'badge-cyan' : 'badge-indigo'}`} style={{ fontSize: '0.68rem' }}>
@@ -164,7 +164,7 @@ const ClaimTextBlock: React.FC<{
           <summary style={{ fontSize: '0.78rem', color: 'var(--accent-cyan)', cursor: 'pointer', fontWeight: 600 }}>
             <Info size={12} style={{ display: 'inline', marginRight: 4 }} />Why This Claim?
           </summary>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 6, padding: '8px 12px', background: 'rgba(0,242,254,0.05)', borderRadius: 8, lineHeight: 1.5 }}>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 6, padding: '8px 12px', background: 'rgba(34,104,88,0.05)', borderRadius: 8, lineHeight: 1.5 }}>
             {claim.whySelected}
           </p>
         </details>
@@ -193,13 +193,13 @@ const DependencyTree: React.FC<{
               onClick={() => onSelectClaim(child.claimNumber)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 8,
-                cursor: 'pointer', background: selectedClaimNum === child.claimNumber ? 'rgba(99,102,241,0.12)' : 'transparent',
+                cursor: 'pointer', background: selectedClaimNum === child.claimNumber ? 'rgba(55,86,125,0.12)' : 'transparent',
                 color: selectedClaimNum === child.claimNumber ? 'var(--accent-indigo)' : 'var(--text-muted)',
                 transition: 'all 0.15s', marginBottom: 2, fontSize: '0.84rem', fontWeight: 500,
               }}
             >
               <span style={{ color: 'var(--text-dim)', fontSize: '0.7rem' }}>{idx < children.length - 1 ? '├──' : '└──'}</span>
-              <span style={{ background: 'rgba(99,102,241,0.15)', color: 'var(--accent-indigo)', borderRadius: 4, padding: '1px 7px', fontSize: '0.72rem', fontWeight: 800 }}>
+              <span style={{ background: 'rgba(55,86,125,0.15)', color: 'var(--accent-indigo)', borderRadius: 4, padding: '1px 7px', fontSize: '0.72rem', fontWeight: 800 }}>
                 {child.claimNumber}
               </span>
               <span>Claim {child.claimNumber}</span>
@@ -220,14 +220,14 @@ const DependencyTree: React.FC<{
             onClick={() => onSelectClaim(ic.claimNumber)}
             style={{
               display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 10,
-              cursor: 'pointer', background: selectedClaimNum === ic.claimNumber ? 'rgba(0,242,254,0.1)' : 'var(--bg-surface)',
+              cursor: 'pointer', background: selectedClaimNum === ic.claimNumber ? 'rgba(34,104,88,0.1)' : 'var(--bg-surface)',
               color: selectedClaimNum === ic.claimNumber ? 'var(--accent-cyan)' : 'var(--text-main)',
-              border: `1px solid ${selectedClaimNum === ic.claimNumber ? 'rgba(0,242,254,0.3)' : 'var(--border-color)'}`,
+              border: `1px solid ${selectedClaimNum === ic.claimNumber ? 'rgba(34,104,88,0.3)' : 'var(--border-color)'}`,
               transition: 'all 0.15s', fontSize: '0.88rem', fontWeight: 700,
             }}
           >
             <GitBranch size={14} />
-            <span style={{ background: 'var(--gradient-primary)', color: '#0B0F19', borderRadius: 4, padding: '1px 8px', fontSize: '0.72rem', fontWeight: 800 }}>
+            <span style={{ background: 'var(--gradient-primary)', color: 'var(--text-main)', borderRadius: 4, padding: '1px 8px', fontSize: '0.72rem', fontWeight: 800 }}>
               {ic.claimNumber}
             </span>
             <span>Claim {ic.claimNumber} — Independent ({ic.category})</span>
@@ -266,14 +266,14 @@ const EvidencePanel: React.FC<{ claim: GeneratedClaim | null }> = ({ claim }) =>
       )}
 
       {claim.elements.map(el => (
-        <div key={el.id} style={{ background: 'var(--bg-surface)', border: `1px solid ${el.evidence?.supportStatus === 'UNSUPPORTED' ? 'rgba(244,63,94,0.35)' : 'var(--border-color)'}`, borderRadius: 10, overflow: 'hidden' }}>
+        <div key={el.id} style={{ background: 'var(--bg-surface)', border: `1px solid ${el.evidence?.supportStatus === 'UNSUPPORTED' ? 'rgba(174,54,67,0.35)' : 'var(--border-color)'}`, borderRadius: 10, overflow: 'hidden' }}>
           {/* Element header */}
           <div
             onClick={() => setExpandedEl(expandedEl === el.id ? null : el.id)}
             style={{ padding: '10px 12px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ background: 'var(--gradient-primary)', color: '#0B0F19', fontWeight: 800, fontSize: '0.72rem', padding: '2px 7px', borderRadius: 4 }}>{el.id}</span>
+              <span style={{ background: 'var(--gradient-primary)', color: 'var(--text-main)', fontWeight: 800, fontSize: '0.72rem', padding: '2px 7px', borderRadius: 4 }}>{el.id}</span>
               <span style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-main)' }}>{el.label}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -292,7 +292,7 @@ const EvidencePanel: React.FC<{ claim: GeneratedClaim | null }> = ({ claim }) =>
 
               {/* Unsupported warning */}
               {el.evidence?.supportStatus === 'UNSUPPORTED' && (
-                <div style={{ background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.25)', borderRadius: 8, padding: '10px 12px', marginBottom: 8, display: 'flex', gap: 8 }}>
+                <div style={{ background: 'rgba(174,54,67,0.08)', border: '1px solid rgba(174,54,67,0.25)', borderRadius: 8, padding: '10px 12px', marginBottom: 8, display: 'flex', gap: 8 }}>
                   <AlertTriangle size={14} color="var(--accent-rose)" style={{ flexShrink: 0, marginTop: 2 }} />
                   <div>
                     <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent-rose)', marginBottom: 2 }}>⚠ Unsupported Element</div>
@@ -303,7 +303,7 @@ const EvidencePanel: React.FC<{ claim: GeneratedClaim | null }> = ({ claim }) =>
 
               {/* Evidence reference */}
               {el.evidence && el.evidence.paragraphRef && (
-                <div style={{ background: 'rgba(0,242,254,0.04)', border: '1px solid rgba(0,242,254,0.15)', borderRadius: 8, padding: '10px 12px' }}>
+                <div style={{ background: 'rgba(34,104,88,0.04)', border: '1px solid rgba(34,104,88,0.15)', borderRadius: 8, padding: '10px 12px' }}>
                   <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--accent-cyan)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>
                     Source Evidence
                   </div>
@@ -401,7 +401,7 @@ const CandidateCard: React.FC<{
         flex: 1, minWidth: 0, padding: '14px 16px', borderRadius: 12, cursor: 'pointer',
         background: isSelected ? `rgba(${candidate.strategy === 'broad' ? '99,102,241' : candidate.strategy === 'balanced' ? '0,242,254' : '16,185,129'}, 0.08)` : 'var(--bg-surface)',
         border: `1.5px solid ${isSelected ? col : 'var(--border-color)'}`,
-        transition: 'all 0.2s ease', boxShadow: isSelected ? `0 0 20px ${col}22` : 'none',
+        transition: 'all 0.2s ease', boxShadow: isSelected ? `0 0 20px color-mix(in srgb, ${col} 13%, transparent)` : 'none',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
@@ -570,7 +570,7 @@ const ExportModal: React.FC<{
       <div className="glass-panel" style={{ width: 500, padding: 28, position: 'relative' }}>
         <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)' }}>✕</button>
         <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: '0 0 6px' }}>Export Draft Claim Set</h3>
-        <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '10px 14px', marginBottom: 20, fontSize: '0.8rem', color: 'var(--accent-amber)' }}>
+        <div style={{ background: 'rgba(145,94,16,0.1)', border: '1px solid rgba(145,94,16,0.3)', borderRadius: 8, padding: '10px 14px', marginBottom: 20, fontSize: '0.8rem', color: 'var(--accent-amber)' }}>
           <AlertTriangle size={13} style={{ display: 'inline', marginRight: 5 }} />
           All exports include the disclaimer: <em>"AI-assisted draft — for review only"</em>
         </div>
@@ -862,7 +862,7 @@ export const ClaimSynthesizerView: React.FC<ClaimSynthesizerViewProps> = ({ init
               <Wand2 size={18} color="#fff" />
             </div>
             <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-              AI-Powered Patent Claim Synthesizer
+              Experimental Patent Claim Synthesizer
             </h1>
             <span className="badge badge-indigo" style={{ fontSize: '0.68rem' }}>NEW</span>
           </div>
@@ -886,7 +886,7 @@ export const ClaimSynthesizerView: React.FC<ClaimSynthesizerViewProps> = ({ init
       </div>
 
       {/* ── DISCLAIMER BANNER ── */}
-      <div style={{ background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 10, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ background: 'rgba(55,86,125,0.07)', border: '1px solid rgba(55,86,125,0.2)', borderRadius: 10, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
         <Info size={15} color="var(--accent-indigo)" style={{ flexShrink: 0 }} />
         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
           <strong style={{ color: 'var(--accent-indigo)' }}>Research & Drafting Tool Only.</strong> Claim output is AI-assisted and grounded in your provided specification. All results must be reviewed by a qualified patent attorney or agent. Quality scores are internal model indicators, not legal validity assessments.
@@ -896,26 +896,26 @@ export const ClaimSynthesizerView: React.FC<ClaimSynthesizerViewProps> = ({ init
       {/* ── LINKED R&D INNOVATION HANDOFF BANNER ── */}
       {initialData?.title && (
         <div style={{
-          background: 'linear-gradient(90deg, rgba(0, 242, 254, 0.12) 0%, rgba(99, 102, 241, 0.12) 100%)',
-          border: '1px solid rgba(0, 242, 254, 0.4)',
+          background: 'linear-gradient(90deg, rgba(34,104,88,0.12) 0%, rgba(55,86,125,0.12) 100%)',
+          border: '1px solid rgba(34,104,88,0.4)',
           borderRadius: '14px',
           padding: '14px 20px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: '16px',
-          boxShadow: '0 6px 24px rgba(0, 242, 254, 0.08)'
+          boxShadow: 'var(--shadow-sm)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div style={{
               width: 38,
               height: 38,
               borderRadius: 10,
-              background: 'rgba(0, 242, 254, 0.18)',
+              background: 'rgba(34,104,88,0.18)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              border: '1px solid rgba(0, 242, 254, 0.4)',
+              border: '1px solid rgba(34,104,88,0.4)',
               flexShrink: 0
             }}>
               <Sparkles size={18} color="var(--accent-cyan)" />
@@ -930,7 +930,7 @@ export const ClaimSynthesizerView: React.FC<ClaimSynthesizerViewProps> = ({ init
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '4px 12px', borderRadius: 999, background: 'rgba(16, 185, 129, 0.18)', color: 'var(--accent-emerald)', border: '1px solid rgba(16, 185, 129, 0.4)' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '4px 12px', borderRadius: 999, background: 'rgba(34,104,88,0.18)', color: 'var(--accent-emerald)', border: '1px solid rgba(34,104,88,0.4)' }}>
               ✓ APPROVED FOR DRAFTING
             </span>
           </div>
@@ -1000,7 +1000,7 @@ export const ClaimSynthesizerView: React.FC<ClaimSynthesizerViewProps> = ({ init
                       fontSize: '0.78rem',
                       fontWeight: strategy === opt.value ? 700 : 500,
                       border: `1px solid ${strategy === opt.value ? 'var(--accent-cyan)' : 'var(--border-color)'}`,
-                      background: strategy === opt.value ? 'rgba(0,242,254,0.18)' : 'var(--bg-surface)',
+                      background: strategy === opt.value ? 'rgba(34,104,88,0.18)' : 'var(--bg-surface)',
                       color: strategy === opt.value ? 'var(--accent-cyan)' : 'var(--text-muted)',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease',
@@ -1072,7 +1072,7 @@ export const ClaimSynthesizerView: React.FC<ClaimSynthesizerViewProps> = ({ init
             </button>
 
             {generateError && (
-              <div style={{ background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.3)', borderRadius: 10, padding: '10px 12px', display: 'flex', gap: 8, marginTop: 10 }}>
+              <div style={{ background: 'rgba(174,54,67,0.1)', border: '1px solid rgba(174,54,67,0.3)', borderRadius: 10, padding: '10px 12px', display: 'flex', gap: 8, marginTop: 10 }}>
                 <AlertCircle size={14} color="var(--accent-rose)" style={{ flexShrink: 0, marginTop: 1 }} />
                 <p style={{ fontSize: '0.78rem', color: 'var(--accent-rose)', margin: 0, lineHeight: 1.4 }}>{generateError}</p>
               </div>
@@ -1092,7 +1092,7 @@ export const ClaimSynthesizerView: React.FC<ClaimSynthesizerViewProps> = ({ init
               <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', textAlign: 'center', maxWidth: 340, lineHeight: 1.6, margin: 0 }}>
                 Provide a technical specification in the left panel and click <strong>Synthesize Patent Claims</strong> to begin AI-assisted drafting.
               </p>
-              <div style={{ marginTop: 20, padding: '12px 16px', background: 'rgba(99,102,241,0.06)', borderRadius: 10, border: '1px solid rgba(99,102,241,0.15)', maxWidth: 380 }}>
+              <div style={{ marginTop: 20, padding: '12px 16px', background: 'rgba(55,86,125,0.06)', borderRadius: 10, border: '1px solid rgba(55,86,125,0.15)', maxWidth: 380 }}>
                 <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent-indigo)', marginBottom: 6 }}>Try the acceptance test spec:</div>
                 <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0, fontStyle: 'italic', lineHeight: 1.5 }}>
                   "A traffic control communication system includes a traffic controller, a mobile transmitter, a communication module, and a processor configured to receive traffic information and transmit a priority control message."
@@ -1273,7 +1273,7 @@ export const ClaimSynthesizerView: React.FC<ClaimSynthesizerViewProps> = ({ init
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {savedVersions.slice().reverse().map(ver => (
                       <div key={ver.versionId} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'var(--bg-surface)', borderRadius: 10, border: '1px solid var(--border-color)' }}>
-                        <div style={{ background: 'var(--gradient-primary)', color: '#0B0F19', borderRadius: 6, padding: '2px 8px', fontSize: '0.72rem', fontWeight: 800, flexShrink: 0 }}>
+                        <div style={{ background: 'var(--gradient-primary)', color: 'var(--text-main)', borderRadius: 6, padding: '2px 8px', fontSize: '0.72rem', fontWeight: 800, flexShrink: 0 }}>
                           v{ver.versionNumber}
                         </div>
                         <div style={{ flex: 1 }}>
@@ -1308,7 +1308,7 @@ export const ClaimSynthesizerView: React.FC<ClaimSynthesizerViewProps> = ({ init
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {quality?.warnings.map((w, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px', background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 8 }}>
+                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px', background: 'rgba(145,94,16,0.06)', border: '1px solid rgba(145,94,16,0.2)', borderRadius: 8 }}>
                         <AlertTriangle size={14} color="var(--accent-amber)" style={{ flexShrink: 0, marginTop: 1 }} />
                         <span style={{ fontSize: '0.83rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{w}</span>
                       </div>

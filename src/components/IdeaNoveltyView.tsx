@@ -1021,7 +1021,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
             line-height: 1.5;
           }
           .header {
-            border-bottom: 2px solid #6366f1;
+            border-bottom: 2px solid var(--accent-indigo);
             padding-bottom: 16px;
             margin-bottom: 24px;
             display: flex;
@@ -1029,10 +1029,10 @@ const RESEARCH_PRESETS: RDPreset[] = [
             align-items: flex-start;
           }
           .title { font-size: 20px; font-weight: 800; color: #0f172a; margin: 0; }
-          .subtitle { font-size: 12px; color: #64748b; margin-top: 4px; }
+          .subtitle { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
           .badge {
             background: #f1f5f9;
-            border: 1px solid #cbd5e1;
+            border: 1px solid var(--text-muted);
             padding: 4px 10px;
             border-radius: 6px;
             font-family: 'JetBrains Mono', monospace;
@@ -1047,21 +1047,21 @@ const RESEARCH_PRESETS: RDPreset[] = [
             margin-bottom: 24px;
           }
           .metric-card {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
+            background: var(--text-main);
+            border: 1px solid var(--text-main);
             border-radius: 8px;
             padding: 12px;
             text-align: center;
           }
           .metric-value { font-size: 22px; font-weight: 800; color: #4338ca; }
-          .metric-label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 2px; }
+          .metric-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; }
           .section { margin-bottom: 28px; }
-          .section-title { font-size: 14px; font-weight: 800; color: #0f172a; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px; }
+          .section-title { font-size: 14px; font-weight: 800; color: #0f172a; text-transform: uppercase; border-bottom: 1px solid var(--text-main); padding-bottom: 6px; margin-bottom: 12px; }
           table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-          th, td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; font-size: 12px; }
+          th, td { border: 1px solid var(--text-main); padding: 8px 10px; text-align: left; font-size: 12px; }
           th { background: #f1f5f9; font-weight: 700; color: #334155; }
           .claim-box { background: #faf5ff; border: 1px solid #d8b4fe; padding: 12px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px; margin-top: 6px; color: #581c87; }
-          .footer { margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 12px; font-size: 10px; color: #94a3b8; text-align: center; }
+          .footer { margin-top: 40px; border-top: 1px solid var(--text-main); padding-top: 12px; font-size: 10px; color: var(--text-muted); text-align: center; }
           @media print {
             body { padding: 20px; }
             .no-print { display: none; }
@@ -1143,10 +1143,10 @@ const RESEARCH_PRESETS: RDPreset[] = [
         <div class="section">
           <div class="section-title">3. Recommended Differentiators & Synthetic Claim Limitations</div>
           ${activeReport.recommendations.map(rec => `
-            <div style="border: 1px solid #cbd5e1; padding: 12px; border-radius: 6px; margin-bottom: 12px;">
+            <div style="border: 1px solid var(--text-muted); padding: 12px; border-radius: 6px; margin-bottom: 12px;">
               <div style="font-weight: 700; color: #1e1b4b; font-size: 13px;">${rec.title} (${rec.status})</div>
               <div style="color: #475569; margin-top: 2px;">${rec.description}</div>
-              <div style="margin-top: 4px; font-size: 11px; color: #64748b;"><strong>Prior-Art Gap:</strong> ${rec.priorArtGap}</div>
+              <div style="margin-top: 4px; font-size: 11px; color: var(--text-muted);"><strong>Prior-Art Gap:</strong> ${rec.priorArtGap}</div>
               ${rec.draftClaimClause ? `<div class="claim-box"><strong>Draft Claim Clause:</strong> "${rec.draftClaimClause}"</div>` : ''}
             </div>
           `).join('')}
@@ -1337,7 +1337,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center',
-                boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)'
+                boxShadow: 'var(--shadow-sm)'
               }}
             >
               <Lightbulb size={26} color="#FFFFFF" />
@@ -1352,9 +1352,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     fontSize: '0.72rem', 
                     fontWeight: 700, 
                     fontFamily: 'var(--font-mono)', 
-                    background: 'rgba(99, 102, 241, 0.15)', 
+                    background: 'rgba(55,86,125,0.15)',
                     color: 'var(--accent-indigo)', 
-                    border: '1px solid rgba(99, 102, 241, 0.3)', 
+                    border: '1px solid rgba(55,86,125,0.3)',
                     borderRadius: 999, 
                     padding: '3px 10px' 
                   }}
@@ -1388,9 +1388,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
       {activeTab === 'dashboard' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {/* Dashboard KPI Metrics Overview */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '14px' }}>
             <div className="glass-panel" style={{ padding: '16px 20px', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{ width: 42, height: 42, borderRadius: 10, background: 'rgba(99, 102, 241, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-indigo)' }}>
+              <div style={{ width: 42, height: 42, borderRadius: 10, background: 'rgba(55,86,125,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-indigo)' }}>
                 <Layers size={20} />
               </div>
               <div>
@@ -1402,7 +1402,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
             </div>
 
             <div className="glass-panel" style={{ padding: '16px 20px', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{ width: 42, height: 42, borderRadius: 10, background: 'rgba(16, 185, 129, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-emerald)' }}>
+              <div style={{ width: 42, height: 42, borderRadius: 10, background: 'rgba(34,104,88,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-emerald)' }}>
                 <CheckCircle2 size={20} />
               </div>
               <div>
@@ -1414,7 +1414,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
             </div>
 
             <div className="glass-panel" style={{ padding: '16px 20px', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{ width: 42, height: 42, borderRadius: 10, background: 'rgba(245, 158, 11, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-amber)' }}>
+              <div style={{ width: 42, height: 42, borderRadius: 10, background: 'rgba(145,94,16,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-amber)' }}>
                 <FileText size={20} />
               </div>
               <div>
@@ -1426,7 +1426,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
             </div>
 
             <div className="glass-panel" style={{ padding: '16px 20px', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{ width: 42, height: 42, borderRadius: 10, background: 'rgba(0, 242, 254, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-cyan)' }}>
+              <div style={{ width: 42, height: 42, borderRadius: 10, background: 'rgba(34,104,88,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-cyan)' }}>
                 <Sparkles size={20} />
               </div>
               <div>
@@ -1685,7 +1685,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                       display: 'flex', 
                       alignItems: 'center', 
                       justifyContent: 'center', 
-                      color: '#94a3b8' 
+                      color: 'var(--text-muted)'
                     }}
                   >
                     <Archive size={26} />
@@ -1726,7 +1726,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                       width: 56, 
                       height: 56, 
                       borderRadius: '50%', 
-                      background: 'rgba(99, 102, 241, 0.1)', 
+                      background: 'rgba(55,86,125,0.1)',
                       display: 'flex', 
                       alignItems: 'center', 
                       justifyContent: 'center', 
@@ -1755,7 +1755,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
             }
 
             return (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))', gap: '20px' }}>
                 {displayedProjects.map((proj) => {
                   const report = dbStore.getLatestBenchmarkReport(proj.id);
                   const isAnalyzing = proj.status === 'ANALYZING';
@@ -1804,7 +1804,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                                   borderRadius: 4,
                                   textTransform: 'uppercase',
                                   background: 'rgba(148, 163, 184, 0.12)',
-                                  color: '#94a3b8',
+                                  color: 'var(--text-muted)',
                                   border: '1px solid rgba(148, 163, 184, 0.3)',
                                   display: 'inline-flex',
                                   alignItems: 'center',
@@ -1823,9 +1823,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                                   fontWeight: 800,
                                   padding: '2px 7px',
                                   borderRadius: 4,
-                                  background: 'rgba(245, 158, 11, 0.12)',
+                                  background: 'rgba(145,94,16,0.12)',
                                   color: 'var(--accent-amber)',
-                                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                                  border: '1px solid rgba(145,94,16,0.3)',
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: 3
@@ -1846,9 +1846,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                                 padding: '3px 10px', 
                                 borderRadius: 999, 
                                 textTransform: 'uppercase',
-                                background: proj.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16,185,129,0.12)' : proj.status === 'SUBMITTED' ? 'rgba(245,158,11,0.12)' : isAnalyzing ? 'rgba(168,85,247,0.15)' : 'rgba(99,102,241,0.12)',
+                                background: proj.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(34,104,88,0.12)' : proj.status === 'SUBMITTED' ? 'rgba(145,94,16,0.12)' : isAnalyzing ? 'rgba(112,76,135,0.15)' : 'rgba(55,86,125,0.12)',
                                 color: proj.status === 'APPROVED_FOR_DRAFTING' ? 'var(--accent-emerald)' : proj.status === 'SUBMITTED' ? 'var(--accent-amber)' : isAnalyzing ? 'var(--accent-purple)' : 'var(--accent-indigo)',
-                                border: `1px solid ${proj.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16,185,129,0.3)' : proj.status === 'SUBMITTED' ? 'rgba(245,158,11,0.3)' : isAnalyzing ? 'rgba(168,85,247,0.4)' : 'rgba(99,102,241,0.3)'}`,
+                                border: `1px solid ${proj.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(34,104,88,0.3)' : proj.status === 'SUBMITTED' ? 'rgba(145,94,16,0.3)' : isAnalyzing ? 'rgba(112,76,135,0.4)' : 'rgba(55,86,125,0.3)'}`,
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: 5
@@ -2002,7 +2002,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                 </span>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: '14px' }}>
                 {RESEARCH_PRESETS.slice(0, 3).map((preset) => (
                   <div
                     key={preset.id}
@@ -2010,7 +2010,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     style={{ padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '10px', borderRadius: '14px' }}
                   >
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--accent-cyan)', background: 'rgba(0, 242, 254, 0.08)', padding: '2px 8px', borderRadius: 999, width: 'fit-content' }}>
+                      <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--accent-cyan)', background: 'rgba(34,104,88,0.08)', padding: '2px 8px', borderRadius: 999, width: 'fit-content' }}>
                         {preset.badge}
                       </span>
                       <h4 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)', margin: 0, lineHeight: 1.3 }}>
@@ -2065,9 +2065,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     justifyContent: 'center', 
                     fontWeight: 700, 
                     fontSize: '0.8rem',
-                    background: wizardStep === s.step ? 'var(--accent-indigo)' : wizardStep > s.step ? 'rgba(16, 185, 129, 0.2)' : 'var(--bg-surface)',
+                    background: wizardStep === s.step ? 'var(--accent-indigo)' : wizardStep > s.step ? 'rgba(34,104,88,0.2)' : 'var(--bg-surface)',
                     color: wizardStep === s.step ? '#FFFFFF' : wizardStep > s.step ? 'var(--accent-emerald)' : 'var(--text-dim)',
-                    border: `1px solid ${wizardStep === s.step ? 'var(--accent-indigo)' : wizardStep > s.step ? 'rgba(16, 185, 129, 0.4)' : 'var(--border-color)'}`
+                    border: `1px solid ${wizardStep === s.step ? 'var(--accent-indigo)' : wizardStep > s.step ? 'rgba(34,104,88,0.4)' : 'var(--border-color)'}`
                   }}
                 >
                   {wizardStep > s.step ? <Check size={16} /> : s.step}
@@ -2113,7 +2113,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                   )}
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: '12px' }}>
                   {RESEARCH_PRESETS.map((preset) => {
                     const isSelected = activePresetId === preset.id;
                     return (
@@ -2121,7 +2121,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         key={preset.id}
                         onClick={() => applyPresetSample(preset.id)}
                         style={{
-                          background: isSelected ? 'rgba(99, 102, 241, 0.12)' : 'var(--bg-surface)',
+                          background: isSelected ? 'rgba(55,86,125,0.12)' : 'var(--bg-surface)',
                           border: `1.5px solid ${isSelected ? 'var(--accent-indigo)' : 'var(--border-color)'}`,
                           borderRadius: '12px',
                           padding: '14px',
@@ -2164,8 +2164,8 @@ const RESEARCH_PRESETS: RDPreset[] = [
                 {activePresetId !== null && (
                   <div 
                     style={{ 
-                      background: 'rgba(99, 102, 241, 0.08)', 
-                      border: '1px solid rgba(99, 102, 241, 0.25)', 
+                      background: 'rgba(55,86,125,0.08)',
+                      border: '1px solid rgba(55,86,125,0.25)',
                       borderRadius: '10px', 
                       padding: '10px 14px', 
                       display: 'flex', 
@@ -2294,7 +2294,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                 </p>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))', gap: '20px' }}>
                 {/* File Upload Box */}
                 <div 
                   style={{ 
@@ -2380,7 +2380,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                   <div key={comp.id} style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 700, padding: '4px 8px', borderRadius: 6, background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 700, padding: '4px 8px', borderRadius: 6, background: 'rgba(55,86,125,0.15)', color: 'var(--accent-indigo)', border: '1px solid rgba(55,86,125,0.3)' }}>
                           {comp.featureCode}
                         </span>
                         <input
@@ -2476,7 +2476,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
           {/* STEP 5: LIVE BENCHMARK EXECUTION */}
           {wizardStep === 5 && (
             <div style={{ padding: '60px 0', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
-              <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(99, 102, 241, 0.15)', border: '2px solid var(--accent-indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(55,86,125,0.15)', border: '2px solid var(--accent-indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <RefreshCw size={36} color="var(--accent-indigo)" style={{ animation: 'spin 1.5s linear infinite' }} />
               </div>
 
@@ -2550,9 +2550,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     padding: '4px 12px', 
                     borderRadius: 999, 
                     textTransform: 'uppercase',
-                    background: activeProject.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16,185,129,0.14)' : activeProject.status === 'SUBMITTED' ? 'rgba(245,158,11,0.14)' : activeProject.status === 'NEEDS_REVISION' ? 'rgba(244,63,94,0.14)' : 'rgba(99,102,241,0.14)',
+                    background: activeProject.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(34,104,88,0.14)' : activeProject.status === 'SUBMITTED' ? 'rgba(145,94,16,0.14)' : activeProject.status === 'NEEDS_REVISION' ? 'rgba(174,54,67,0.14)' : 'rgba(55,86,125,0.14)',
                     color: activeProject.status === 'APPROVED_FOR_DRAFTING' ? 'var(--accent-emerald)' : activeProject.status === 'SUBMITTED' ? 'var(--accent-amber)' : activeProject.status === 'NEEDS_REVISION' ? 'var(--accent-rose)' : 'var(--accent-indigo)',
-                    border: `1px solid ${activeProject.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16,185,129,0.4)' : activeProject.status === 'SUBMITTED' ? 'rgba(245,158,11,0.4)' : activeProject.status === 'NEEDS_REVISION' ? 'rgba(244,63,94,0.4)' : 'rgba(99,102,241,0.4)'}`,
+                    border: `1px solid ${activeProject.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(34,104,88,0.4)' : activeProject.status === 'SUBMITTED' ? 'rgba(145,94,16,0.4)' : activeProject.status === 'NEEDS_REVISION' ? 'rgba(174,54,67,0.4)' : 'rgba(55,86,125,0.4)'}`,
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 6
@@ -2575,9 +2575,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                       fontWeight: 800,
                       padding: '4px 10px',
                       borderRadius: 6,
-                      background: 'rgba(245, 158, 11, 0.14)',
+                      background: 'rgba(145,94,16,0.14)',
                       color: 'var(--accent-amber)',
-                      border: '1px solid rgba(245, 158, 11, 0.4)',
+                      border: '1px solid rgba(145,94,16,0.4)',
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: 5
@@ -2685,7 +2685,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
             {/* Card 1: Technical Problem */}
             <div className="glass-panel" style={{ padding: '22px 24px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(244, 63, 94, 0.12)', color: 'var(--accent-rose)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(244, 63, 94, 0.25)' }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(174,54,67,0.12)', color: 'var(--accent-rose)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(174,54,67,0.25)' }}>
                   <AlertTriangle size={18} />
                 </div>
                 <div>
@@ -2703,7 +2703,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
             {/* Card 2: Proposed Solution & Architecture */}
             <div className="glass-panel" style={{ padding: '22px 24px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent-emerald)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(34,104,88,0.12)', color: 'var(--accent-emerald)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(34,104,88,0.25)' }}>
                   <CheckCircle2 size={18} />
                 </div>
                 <div>
@@ -2717,7 +2717,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                 {activeProject.proposedSolution || 'No proposed solution recorded.'}
               </p>
               {activeProject.expectedTechnicalEffect && (
-                <div style={{ fontSize: '0.8rem', color: 'var(--accent-cyan)', background: 'rgba(0, 242, 254, 0.08)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(0, 242, 254, 0.2)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--accent-cyan)', background: 'rgba(34,104,88,0.08)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(34,104,88,0.2)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Sparkles size={14} style={{ flexShrink: 0 }} />
                   <span><strong>Expected Technical Effect:</strong> {activeProject.expectedTechnicalEffect}</span>
                 </div>
@@ -2730,7 +2730,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
           {/* ----------------------------------------------------------------- */}
           {isGeneratingAudit && (
             <div className="glass-panel" style={{ padding: '40px 32px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', borderRadius: '20px' }}>
-              <div style={{ width: 68, height: 68, borderRadius: '50%', background: 'rgba(99, 102, 241, 0.15)', border: '2px solid var(--accent-indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 30px rgba(99, 102, 241, 0.3)' }}>
+              <div style={{ width: 68, height: 68, borderRadius: '50%', background: 'rgba(55,86,125,0.15)', border: '2px solid var(--accent-indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-sm)' }}>
                 <RefreshCw size={32} color="var(--accent-indigo)" style={{ animation: 'spin 1.4s linear infinite' }} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -2755,7 +2755,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
 
           {!isGeneratingAudit && !activeReport && (
             <div className="glass-panel" style={{ padding: '48px 32px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', borderRadius: '20px' }}>
-              <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(99, 102, 241, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-indigo)' }}>
+              <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(55,86,125,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-indigo)' }}>
                 <Lightbulb size={32} />
               </div>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
@@ -2783,9 +2783,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
             const latestDec = dbStore.getReviewDecisions(activeSubmission.id)[0];
             if (activeSubmission.status === 'NEEDS_REVISION') {
               return (
-                <div style={{ background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: '16px', padding: '18px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', boxShadow: '0 8px 25px rgba(245, 158, 11, 0.15)' }}>
+                <div style={{ background: 'rgba(145,94,16,0.12)', border: '1px solid rgba(145,94,16,0.4)', borderRadius: '16px', padding: '18px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', boxShadow: 'var(--shadow-sm)' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', flex: 1, minWidth: '300px' }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(245, 158, 11, 0.2)', color: 'var(--accent-amber)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid rgba(245, 158, 11, 0.4)' }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(145,94,16,0.2)', color: 'var(--accent-amber)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid rgba(145,94,16,0.4)' }}>
                       <AlertTriangle size={24} />
                     </div>
                     <div>
@@ -2803,7 +2803,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     <button onClick={handleOpenEditModal} className="btn-secondary" style={{ fontSize: '0.78rem', padding: '8px 14px', background: 'var(--bg-card)' }}>
                       <Edit3 size={14} /> <span>Edit Technical Proposal</span>
                     </button>
-                    <button onClick={handleInspectDifferentiators} className="btn-secondary" style={{ fontSize: '0.78rem', padding: '8px 14px', background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+                    <button onClick={handleInspectDifferentiators} className="btn-secondary" style={{ fontSize: '0.78rem', padding: '8px 14px', background: 'rgba(55,86,125,0.15)', color: 'var(--accent-indigo)', border: '1px solid rgba(55,86,125,0.3)' }}>
                       <Sparkles size={14} /> <span>Inspect Differentiators</span>
                     </button>
                     <button onClick={executeFinalSubmission} className="btn-primary" style={{ fontSize: '0.78rem', padding: '8px 16px', background: 'var(--gradient-accent)' }}>
@@ -2816,7 +2816,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
 
             if (activeSubmission.status === 'SUBMITTED') {
               return (
-                <div style={{ background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.35)', borderRadius: '14px', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ background: 'rgba(55,86,125,0.12)', border: '1px solid rgba(55,86,125,0.35)', borderRadius: '14px', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <FileCheck size={22} color="var(--accent-indigo)" />
                     <div>
@@ -2843,7 +2843,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
 
             if (activeSubmission.status === 'APPROVED_FOR_DRAFTING') {
               return (
-                <div style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '14px', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ background: 'rgba(34,104,88,0.12)', border: '1px solid rgba(34,104,88,0.4)', borderRadius: '14px', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <CheckCircle size={22} color="var(--accent-emerald)" />
                     <div>
@@ -2869,8 +2869,8 @@ const RESEARCH_PRESETS: RDPreset[] = [
           {/* Legal Disclaimer Banner */}
           <div 
             style={{ 
-              background: 'rgba(99, 102, 241, 0.08)', 
-              border: '1px solid rgba(99, 102, 241, 0.25)', 
+              background: 'rgba(55,86,125,0.08)',
+              border: '1px solid rgba(55,86,125,0.25)',
               borderRadius: '14px', 
               padding: '14px 18px', 
               display: 'flex', 
@@ -2885,7 +2885,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
           </div>
 
           {/* Report Summary Banner */}
-          <div className="glass-panel" style={{ padding: '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '24px', alignItems: 'center' }}>
+          <div className="glass-panel" style={{ padding: '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: '24px', alignItems: 'center' }}>
             {/* Prior-Art Concern Status */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-dim)' }}>Prior-Art Concern</span>
@@ -2899,9 +2899,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                   display: 'inline-flex', 
                   alignItems: 'center', 
                   gap: '8px',
-                  background: activeReport.priorArtConcern === 'HIGH' ? 'rgba(244, 63, 94, 0.12)' : activeReport.priorArtConcern === 'MODERATE' ? 'rgba(245, 158, 11, 0.12)' : 'rgba(16, 185, 129, 0.12)',
+                  background: activeReport.priorArtConcern === 'HIGH' ? 'rgba(174,54,67,0.12)' : activeReport.priorArtConcern === 'MODERATE' ? 'rgba(145,94,16,0.12)' : 'rgba(34,104,88,0.12)',
                   color: activeReport.priorArtConcern === 'HIGH' ? 'var(--accent-rose)' : activeReport.priorArtConcern === 'MODERATE' ? 'var(--accent-amber)' : 'var(--accent-emerald)',
-                  border: `1px solid ${activeReport.priorArtConcern === 'HIGH' ? 'rgba(244, 63, 94, 0.3)' : activeReport.priorArtConcern === 'MODERATE' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`
+                  border: `1px solid ${activeReport.priorArtConcern === 'HIGH' ? 'rgba(174,54,67,0.3)' : activeReport.priorArtConcern === 'MODERATE' ? 'rgba(145,94,16,0.3)' : 'rgba(34,104,88,0.3)'}`
                 }}
               >
                 {activeReport.priorArtConcern === 'HIGH' && <AlertTriangle size={16} />}
@@ -2925,7 +2925,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
               <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-dim)' }}>
                 Component Overlap Breakdown (Click Card to Drill Down)
               </span>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '10px', textAlign: 'center', width: '100%', maxWidth: '100%', minWidth: 0 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(110px, 100%), 1fr))', gap: '10px', textAlign: 'center', width: '100%', maxWidth: '100%', minWidth: 0 }}>
                 <div 
                   onClick={() => { 
                     setSelectedFilterStatus('KNOWN_PRIOR_ART'); 
@@ -2933,9 +2933,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     document.getElementById('feature-matrix-section')?.scrollIntoView({ behavior: 'smooth' });
                   }}
                   style={{ 
-                    background: selectedFilterStatus === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.25)' : 'rgba(244, 63, 94, 0.1)', 
-                    border: `1px solid ${selectedFilterStatus === 'KNOWN_PRIOR_ART' ? 'var(--accent-rose)' : 'rgba(244, 63, 94, 0.4)'}`, 
-                    boxShadow: selectedFilterStatus === 'KNOWN_PRIOR_ART' ? '0 0 12px rgba(244, 63, 94, 0.4)' : 'none',
+                    background: selectedFilterStatus === 'KNOWN_PRIOR_ART' ? 'rgba(174,54,67,0.25)' : 'rgba(174,54,67,0.1)',
+                    border: `1px solid ${selectedFilterStatus === 'KNOWN_PRIOR_ART' ? 'var(--accent-rose)' : 'rgba(174,54,67,0.4)'}`,
+                    boxShadow: selectedFilterStatus === 'KNOWN_PRIOR_ART' ? '0 0 12px rgba(174,54,67,0.4)' : 'none',
                     borderRadius: 10, 
                     padding: 8, 
                     cursor: 'pointer', 
@@ -2953,9 +2953,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     document.getElementById('feature-matrix-section')?.scrollIntoView({ behavior: 'smooth' });
                   }}
                   style={{ 
-                    background: selectedFilterStatus === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.25)' : 'rgba(245, 158, 11, 0.1)', 
-                    border: `1px solid ${selectedFilterStatus === 'PARTIAL_OVERLAP' ? 'var(--accent-amber)' : 'rgba(245, 158, 11, 0.4)'}`, 
-                    boxShadow: selectedFilterStatus === 'PARTIAL_OVERLAP' ? '0 0 12px rgba(245, 158, 11, 0.4)' : 'none',
+                    background: selectedFilterStatus === 'PARTIAL_OVERLAP' ? 'rgba(145,94,16,0.25)' : 'rgba(145,94,16,0.1)',
+                    border: `1px solid ${selectedFilterStatus === 'PARTIAL_OVERLAP' ? 'var(--accent-amber)' : 'rgba(145,94,16,0.4)'}`,
+                    boxShadow: selectedFilterStatus === 'PARTIAL_OVERLAP' ? '0 0 12px rgba(145,94,16,0.4)' : 'none',
                     borderRadius: 10, 
                     padding: 8, 
                     cursor: 'pointer', 
@@ -2973,9 +2973,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     document.getElementById('feature-matrix-section')?.scrollIntoView({ behavior: 'smooth' });
                   }}
                   style={{ 
-                    background: selectedFilterStatus === 'POTENTIALLY_DISTINCTIVE' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(16, 185, 129, 0.1)', 
-                    border: `1px solid ${selectedFilterStatus === 'POTENTIALLY_DISTINCTIVE' ? 'var(--accent-emerald)' : 'rgba(16, 185, 129, 0.4)'}`, 
-                    boxShadow: selectedFilterStatus === 'POTENTIALLY_DISTINCTIVE' ? '0 0 12px rgba(16, 185, 129, 0.4)' : 'none',
+                    background: selectedFilterStatus === 'POTENTIALLY_DISTINCTIVE' ? 'rgba(34,104,88,0.25)' : 'rgba(34,104,88,0.1)',
+                    border: `1px solid ${selectedFilterStatus === 'POTENTIALLY_DISTINCTIVE' ? 'var(--accent-emerald)' : 'rgba(34,104,88,0.4)'}`,
+                    boxShadow: selectedFilterStatus === 'POTENTIALLY_DISTINCTIVE' ? '0 0 12px rgba(34,104,88,0.4)' : 'none',
                     borderRadius: 10, 
                     padding: 8, 
                     cursor: 'pointer', 
@@ -2993,9 +2993,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     document.getElementById('feature-matrix-section')?.scrollIntoView({ behavior: 'smooth' });
                   }}
                   style={{ 
-                    background: selectedFilterStatus === 'INSUFFICIENT_EVIDENCE' ? 'rgba(99, 102, 241, 0.25)' : 'var(--bg-surface)', 
+                    background: selectedFilterStatus === 'INSUFFICIENT_EVIDENCE' ? 'rgba(55,86,125,0.25)' : 'var(--bg-surface)',
                     border: `1px solid ${selectedFilterStatus === 'INSUFFICIENT_EVIDENCE' ? 'var(--accent-indigo)' : 'var(--border-color)'}`, 
-                    boxShadow: selectedFilterStatus === 'INSUFFICIENT_EVIDENCE' ? '0 0 12px rgba(99, 102, 241, 0.4)' : 'none',
+                    boxShadow: selectedFilterStatus === 'INSUFFICIENT_EVIDENCE' ? '0 0 12px rgba(55,86,125,0.4)' : 'none',
                     borderRadius: 10, 
                     padding: 8, 
                     cursor: 'pointer', 
@@ -3038,16 +3038,16 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         fontWeight: 800, 
                         padding: '4px 12px', 
                         borderRadius: 6, 
-                        background: isPass ? 'rgba(16, 185, 129, 0.15)' : isWarn ? 'rgba(245, 158, 11, 0.15)' : 'rgba(244, 63, 94, 0.15)', 
+                        background: isPass ? 'rgba(34,104,88,0.15)' : isWarn ? 'rgba(145,94,16,0.15)' : 'rgba(174,54,67,0.15)',
                         color: isPass ? 'var(--accent-emerald)' : isWarn ? 'var(--accent-amber)' : 'var(--accent-rose)',
-                        border: `1px solid ${isPass ? 'rgba(16, 185, 129, 0.4)' : isWarn ? 'rgba(245, 158, 11, 0.4)' : 'rgba(244, 63, 94, 0.4)'}`
+                        border: `1px solid ${isPass ? 'rgba(34,104,88,0.4)' : isWarn ? 'rgba(145,94,16,0.4)' : 'rgba(174,54,67,0.4)'}`
                       }}
                     >
                       {statDetails.status.replace(/_/g, ' ')}
                     </span>
                     <button
                       onClick={() => setShowStatutoryWhyModal(true)}
-                      style={{ background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: 6, padding: '4px 10px', color: 'var(--accent-indigo)', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                      style={{ background: 'rgba(55,86,125,0.12)', border: '1px solid rgba(55,86,125,0.3)', borderRadius: 6, padding: '4px 10px', color: 'var(--accent-indigo)', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
                     >
                       <HelpCircle size={14} /> Why this result?
                     </button>
@@ -3103,12 +3103,12 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>
                       Claim Element Statutory Breakdown:
                     </span>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '8px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: '8px' }}>
                       {statDetails.indiaSection3k.claimElementBreakdown.map((elem: { elementName: string; elementType: string; statutoryRole: string }, idx: number) => (
                         <div key={idx} style={{ background: 'var(--bg-surface)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                             <strong style={{ color: 'var(--text-main)', fontSize: '0.78rem' }}>{elem.elementName}</strong>
-                            <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: elem.elementType === 'PHYSICAL_HARDWARE' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(99, 102, 241, 0.15)', color: elem.elementType === 'PHYSICAL_HARDWARE' ? 'var(--accent-emerald)' : 'var(--accent-indigo)' }}>
+                            <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: elem.elementType === 'PHYSICAL_HARDWARE' ? 'rgba(34,104,88,0.15)' : 'rgba(55,86,125,0.15)', color: elem.elementType === 'PHYSICAL_HARDWARE' ? 'var(--accent-emerald)' : 'var(--accent-indigo)' }}>
                               {elem.elementType.replace(/_/g, ' ')}
                             </span>
                           </div>
@@ -3122,7 +3122,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                 {/* Sub-Tab 2: US Sec 101 */}
                 {activeStatutoryTab === 'us' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.8rem' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))', gap: '8px' }}>
                       <div style={{ background: 'var(--bg-input)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                         <span style={{ color: 'var(--text-dim)', display: 'block', fontSize: '0.7rem' }}>Statutory Category:</span>
                         <strong style={{ color: 'var(--accent-indigo)' }}>{statDetails.usSection101.statutoryCategory}</strong>
@@ -3140,7 +3140,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
 
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                       {statDetails.usSection101.technicalImplementationIndicators.map((ind: string, i: number) => (
-                        <span key={i} style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 8px', borderRadius: 4, background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent-emerald)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                        <span key={i} style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 8px', borderRadius: 4, background: 'rgba(34,104,88,0.12)', color: 'var(--accent-emerald)', border: '1px solid rgba(34,104,88,0.3)' }}>
                           {ind}
                         </span>
                       ))}
@@ -3165,9 +3165,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                             padding: '2px 6px',
                             borderRadius: 4,
                             fontWeight: 700,
-                            background: tok.category === 'PHYSICAL' ? 'rgba(168, 85, 247, 0.2)' : tok.category === 'COMPUTING' ? 'rgba(99, 102, 241, 0.2)' : tok.category === 'ALGORITHM' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)',
-                            color: tok.category === 'PHYSICAL' ? '#C084FC' : tok.category === 'COMPUTING' ? '#818CF8' : tok.category === 'ALGORITHM' ? '#FBBF24' : '#34D399',
-                            border: '1px solid rgba(255,255,255,0.1)'
+                            background: tok.category === 'PHYSICAL' ? 'rgba(112,76,135,0.2)' : tok.category === 'COMPUTING' ? 'rgba(55,86,125,0.2)' : tok.category === 'ALGORITHM' ? 'rgba(145,94,16,0.2)' : 'rgba(34,104,88,0.2)',
+                            color: tok.category === 'PHYSICAL' ? 'var(--accent-purple)' : tok.category === 'COMPUTING' ? '#818CF8' : tok.category === 'ALGORITHM' ? '#FBBF24' : '#34D399',
+                            border: '1px solid rgba(21,51,60,0.1)'
                           }}
                         >
                           {tok.text}
@@ -3180,16 +3180,16 @@ const RESEARCH_PRESETS: RDPreset[] = [
                       const isHighRisk = tok.legalRisk === 'HIGH_RISK_EXCLUSION';
                       const isStrength = tok.legalRisk === 'STATUTORY_STRENGTH';
                       const borderCol = isHighRisk ? 'var(--accent-amber)' : isStrength ? 'var(--accent-emerald)' : 'var(--accent-indigo)';
-                      const bgCol = isHighRisk ? 'rgba(245, 158, 11, 0.08)' : isStrength ? 'rgba(16, 185, 129, 0.08)' : 'rgba(99, 102, 241, 0.08)';
+                      const bgCol = isHighRisk ? 'rgba(145,94,16,0.08)' : isStrength ? 'rgba(34,104,88,0.08)' : 'rgba(55,86,125,0.08)';
 
                       return (
-                        <div style={{ background: bgCol, border: `1px solid ${borderCol}`, padding: '16px 20px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
+                        <div style={{ background: bgCol, border: `1px solid ${borderCol}`, padding: '16px 20px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '12px', boxShadow: 'var(--shadow-sm)' }}>
                           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                               <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-main)' }}>
                                 Token Inspector: <code style={{ color: borderCol, background: 'var(--bg-input)', padding: '2px 8px', borderRadius: 4, fontFamily: 'var(--font-mono)' }}>"{tok.text}"</code>
                               </span>
-                              <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '3px 8px', borderRadius: 999, background: borderCol, color: '#FFFFFF', textTransform: 'uppercase' }}>
+                              <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '3px 8px', borderRadius: 999, background: borderCol, color: 'var(--text-main)', textTransform: 'uppercase' }}>
                                 {tok.category}
                               </span>
                               {tok.recommendedClaimType && (
@@ -3207,7 +3207,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                             <strong>Functional Description:</strong> {tok.explanation}
                           </p>
 
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', fontSize: '0.78rem' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px', fontSize: '0.78rem' }}>
                             <div style={{ background: 'var(--bg-input)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                               <span style={{ color: 'var(--accent-indigo)', fontWeight: 700, display: 'block', marginBottom: 4 }}>⚖️ Statutory Eligibility Impact (Sec 3(k) / §101):</span>
                               <span style={{ color: 'var(--text-muted)', lineHeight: 1.4, display: 'block' }}>
@@ -3224,7 +3224,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           </div>
 
                           {tok.draftingRemediation && (
-                            <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.3)', fontSize: '0.78rem', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                            <div style={{ background: 'rgba(34,104,88,0.1)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(34,104,88,0.3)', fontSize: '0.78rem', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                               <Sparkles size={16} color="var(--accent-emerald)" style={{ flexShrink: 0, marginTop: 2 }} />
                               <div>
                                 <strong style={{ color: 'var(--accent-emerald)', display: 'block', marginBottom: 2 }}>Strategic Claim Drafting Remediation:</strong>
@@ -3286,7 +3286,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
               <button
                 onClick={() => setShowFerModal(true)}
                 className="btn-secondary"
-                style={{ padding: '8px 14px', fontSize: '0.78rem', background: 'rgba(99, 102, 241, 0.12)', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.3)' }}
+                style={{ padding: '8px 14px', fontSize: '0.78rem', background: 'rgba(55,86,125,0.12)', color: 'var(--accent-indigo)', border: '1px solid rgba(55,86,125,0.3)' }}
               >
                 <FileText size={15} />
                 <span>Simulate Office Action (FER)</span>
@@ -3304,7 +3304,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
               <button
                 onClick={handleExportPdfDossier}
                 className="btn-secondary"
-                style={{ padding: '8px 14px', fontSize: '0.78rem', background: 'rgba(239, 68, 68, 0.12)', color: 'var(--accent-rose)', border: '1px solid rgba(239, 68, 68, 0.3)' }}
+                style={{ padding: '8px 14px', fontSize: '0.78rem', background: 'rgba(174,54,67,0.12)', color: 'var(--accent-rose)', border: '1px solid rgba(174,54,67,0.3)' }}
                 title="Generate and print printable PDF audit dossier report"
               >
                 <FileText size={15} />
@@ -3424,7 +3424,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     // If user filtered by a specific category, show flat view of filtered items
                     if (topologyCategoryFilter !== 'ALL') {
                       return (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: '14px' }}>
                           {filtered.map(comp => renderTopologyCard(comp))}
                         </div>
                       );
@@ -3470,7 +3470,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                                   </span>
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                                   {lg.comps.map(comp => renderTopologyCard(comp))}
                                 </div>
                               </div>
@@ -3504,20 +3504,20 @@ const RESEARCH_PRESETS: RDPreset[] = [
                             borderRadius: '12px',
                             border: `1px solid ${
                               isSelected ? 'var(--accent-indigo)' :
-                              comp.overlapStatus === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.4)' :
-                              comp.overlapStatus === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.4)' :
-                              'rgba(16, 185, 129, 0.4)'
+                              comp.overlapStatus === 'KNOWN_PRIOR_ART' ? 'rgba(174,54,67,0.4)' :
+                              comp.overlapStatus === 'PARTIAL_OVERLAP' ? 'rgba(145,94,16,0.4)' :
+                              'rgba(34,104,88,0.4)'
                             }`,
-                            background: isSelected ? 'rgba(99, 102, 241, 0.12)' :
-                                        comp.overlapStatus === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.06)' :
-                                        comp.overlapStatus === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.06)' :
-                                        'rgba(16, 185, 129, 0.06)',
+                            background: isSelected ? 'rgba(55,86,125,0.12)' :
+                                        comp.overlapStatus === 'KNOWN_PRIOR_ART' ? 'rgba(174,54,67,0.06)' :
+                                        comp.overlapStatus === 'PARTIAL_OVERLAP' ? 'rgba(145,94,16,0.06)' :
+                                        'rgba(34,104,88,0.06)',
                             cursor: 'pointer',
                             transition: 'all 0.2s ease',
                             display: 'flex',
                             flexDirection: 'column',
                             gap: '8px',
-                            boxShadow: isSelected ? '0 0 16px rgba(99, 102, 241, 0.25)' : 'none'
+                            boxShadow: isSelected ? '0 0 16px rgba(55,86,125,0.25)' : 'none'
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -3525,7 +3525,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                               <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4, background: 'var(--bg-surface)', border: '1px solid var(--border-color)', color: 'var(--accent-indigo)' }}>
                                 {comp.featureCode}
                               </span>
-                              <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'rgba(255,255,255,0.06)', color: 'var(--text-dim)' }}>
+                              <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'rgba(21,51,60,0.06)', color: 'var(--text-dim)' }}>
                                 {comp.category}
                               </span>
                             </div>
@@ -3536,16 +3536,16 @@ const RESEARCH_PRESETS: RDPreset[] = [
                                 fontWeight: 800, 
                                 padding: '2px 8px', 
                                 borderRadius: 999, 
-                                background: comp.overlapStatus === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.15)' :
-                                            comp.overlapStatus === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.15)' :
-                                            'rgba(16, 185, 129, 0.15)',
+                                background: comp.overlapStatus === 'KNOWN_PRIOR_ART' ? 'rgba(174,54,67,0.15)' :
+                                            comp.overlapStatus === 'PARTIAL_OVERLAP' ? 'rgba(145,94,16,0.15)' :
+                                            'rgba(34,104,88,0.15)',
                                 color: comp.overlapStatus === 'KNOWN_PRIOR_ART' ? 'var(--accent-rose)' :
                                        comp.overlapStatus === 'PARTIAL_OVERLAP' ? 'var(--accent-amber)' :
                                        'var(--accent-emerald)',
                                 border: `1px solid ${
-                                  comp.overlapStatus === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.3)' :
-                                  comp.overlapStatus === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.3)' :
-                                  'rgba(16, 185, 129, 0.3)'
+                                  comp.overlapStatus === 'KNOWN_PRIOR_ART' ? 'rgba(174,54,67,0.3)' :
+                                  comp.overlapStatus === 'PARTIAL_OVERLAP' ? 'rgba(145,94,16,0.3)' :
+                                  'rgba(34,104,88,0.3)'
                                 }`
                               }}
                             >
@@ -3576,7 +3576,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                   <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--accent-indigo)', textTransform: 'uppercase' }}>
                     Inter-Component Technical Architecture Coupling ({activeReport.componentRelationships?.length || 0} Relationships):
                   </span>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))', gap: '12px' }}>
                     {(activeReport.componentRelationships || []).map((rel) => (
                       <div
                         key={rel.id}
@@ -3585,7 +3585,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           setSelectedNodeComponent(null);
                         }}
                         style={{
-                          background: selectedTopologyRelationship?.id === rel.id ? 'rgba(99, 102, 241, 0.12)' : 'var(--bg-surface)',
+                          background: selectedTopologyRelationship?.id === rel.id ? 'rgba(55,86,125,0.12)' : 'var(--bg-surface)',
                           border: `1px solid ${selectedTopologyRelationship?.id === rel.id ? 'var(--accent-indigo)' : 'var(--border-color)'}`,
                           borderRadius: '12px',
                           padding: '14px',
@@ -3600,7 +3600,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', fontWeight: 800, color: 'var(--accent-indigo)' }}>
                             {rel.fromTerm} ➔ [{rel.relationshipType}] ➔ {rel.toTerm}
                           </span>
-                          <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-emerald)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                          <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'rgba(34,104,88,0.15)', color: 'var(--accent-emerald)', border: '1px solid rgba(34,104,88,0.3)' }}>
                             {rel.overlapStatus.replace(/_/g, ' ')}
                           </span>
                         </div>
@@ -3625,13 +3625,13 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '14px',
-                    boxShadow: '0 8px 30px rgba(99, 102, 241, 0.15)',
+                    boxShadow: 'var(--shadow-sm)',
                     animation: 'fadeIn 0.25s ease-in-out'
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', fontWeight: 800, padding: '4px 10px', borderRadius: 6, background: 'var(--accent-indigo)', color: '#FFFFFF' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', fontWeight: 800, padding: '4px 10px', borderRadius: 6, background: 'var(--accent-indigo)', color: 'var(--text-main)' }}>
                         Relationship Edge
                       </span>
                       <h4 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
@@ -3677,7 +3677,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     display: 'flex', 
                     flexDirection: 'column', 
                     gap: '16px',
-                    boxShadow: '0 8px 30px rgba(99, 102, 241, 0.15)',
+                    boxShadow: 'var(--shadow-sm)',
                     animation: 'fadeIn 0.3s ease-in-out'
                   }}
                 >
@@ -3692,7 +3692,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           padding: '4px 10px', 
                           borderRadius: 6, 
                           background: 'var(--accent-indigo)', 
-                          color: '#FFFFFF' 
+                          color: 'var(--text-main)'
                         }}
                       >
                         {selectedNodeComponent.featureCode}
@@ -3706,7 +3706,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           fontWeight: 700, 
                           padding: '3px 8px', 
                           borderRadius: 999, 
-                          background: 'rgba(255,255,255,0.06)', 
+                          background: 'rgba(21,51,60,0.06)',
                           border: '1px solid var(--border-color)',
                           color: 'var(--text-muted)' 
                         }}
@@ -3719,16 +3719,16 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           fontWeight: 700, 
                           padding: '3px 10px', 
                           borderRadius: 999, 
-                          background: selectedNodeComponent.overlapStatus === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.15)' :
-                                      selectedNodeComponent.overlapStatus === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.15)' :
-                                      'rgba(16, 185, 129, 0.15)',
+                          background: selectedNodeComponent.overlapStatus === 'KNOWN_PRIOR_ART' ? 'rgba(174,54,67,0.15)' :
+                                      selectedNodeComponent.overlapStatus === 'PARTIAL_OVERLAP' ? 'rgba(145,94,16,0.15)' :
+                                      'rgba(34,104,88,0.15)',
                           color: selectedNodeComponent.overlapStatus === 'KNOWN_PRIOR_ART' ? 'var(--accent-rose)' :
                                  selectedNodeComponent.overlapStatus === 'PARTIAL_OVERLAP' ? 'var(--accent-amber)' :
                                  'var(--accent-emerald)',
                           border: `1px solid ${
-                            selectedNodeComponent.overlapStatus === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.3)' :
-                            selectedNodeComponent.overlapStatus === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.3)' :
-                            'rgba(16, 185, 129, 0.3)'
+                            selectedNodeComponent.overlapStatus === 'KNOWN_PRIOR_ART' ? 'rgba(174,54,67,0.3)' :
+                            selectedNodeComponent.overlapStatus === 'PARTIAL_OVERLAP' ? 'rgba(145,94,16,0.3)' :
+                            'rgba(34,104,88,0.3)'
                           }`
                         }}
                       >
@@ -3779,7 +3779,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     </div>
 
                     {selectedNodeComponent.matchedPriorArt.length > 0 ? (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '10px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: '10px' }}>
                         {selectedNodeComponent.matchedPriorArt.map((pat) => (
                           <div 
                             key={pat.id} 
@@ -3804,7 +3804,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                                 title="Click to inspect mathematical score breakdown"
                                 style={{
                                   background: 'var(--bg-surface)',
-                                  border: `1px solid ${pat.similarityScore > 80 ? 'rgba(244, 63, 94, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
+                                  border: `1px solid ${pat.similarityScore > 80 ? 'rgba(174,54,67,0.4)' : 'rgba(145,94,16,0.4)'}`,
                                   borderRadius: '6px',
                                   padding: '2px 8px',
                                   cursor: 'pointer',
@@ -4016,7 +4016,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                   if (filteredMatches.length === 0) {
                     return (
                       <div style={{ background: 'var(--bg-input)', border: '1px dashed var(--border-color)', borderRadius: '16px', padding: '36px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ width: 50, height: 50, borderRadius: '50%', background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-indigo)' }}>
+                        <div style={{ width: 50, height: 50, borderRadius: '50%', background: 'rgba(55,86,125,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-indigo)' }}>
                           <Search size={24} />
                         </div>
                         <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
@@ -4048,9 +4048,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         style={{ 
                           background: 'var(--bg-input)', 
                           border: `1px solid ${
-                            fm.status === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.4)' : 
-                            fm.status === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.4)' : 
-                            fm.status === 'POTENTIALLY_DISTINCTIVE' ? 'rgba(16, 185, 129, 0.4)' : 
+                            fm.status === 'KNOWN_PRIOR_ART' ? 'rgba(174,54,67,0.4)' :
+                            fm.status === 'PARTIAL_OVERLAP' ? 'rgba(145,94,16,0.4)' :
+                            fm.status === 'POTENTIALLY_DISTINCTIVE' ? 'rgba(34,104,88,0.4)' :
                             'var(--border-color)'
                           }`, 
                           borderRadius: '14px', 
@@ -4083,9 +4083,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                                 padding: '4px 12px', 
                                 borderRadius: 999, 
                                 textTransform: 'uppercase',
-                                background: fm.status === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.15)' : fm.status === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.15)' : fm.status === 'POTENTIALLY_DISTINCTIVE' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(148, 163, 184, 0.15)',
+                                background: fm.status === 'KNOWN_PRIOR_ART' ? 'rgba(174,54,67,0.15)' : fm.status === 'PARTIAL_OVERLAP' ? 'rgba(145,94,16,0.15)' : fm.status === 'POTENTIALLY_DISTINCTIVE' ? 'rgba(34,104,88,0.15)' : 'rgba(148, 163, 184, 0.15)',
                                 color: fm.status === 'KNOWN_PRIOR_ART' ? 'var(--accent-rose)' : fm.status === 'PARTIAL_OVERLAP' ? 'var(--accent-amber)' : fm.status === 'POTENTIALLY_DISTINCTIVE' ? 'var(--accent-emerald)' : 'var(--text-dim)',
-                                border: `1px solid ${fm.status === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.4)' : fm.status === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.4)' : fm.status === 'POTENTIALLY_DISTINCTIVE' ? 'rgba(16, 185, 129, 0.4)' : 'var(--border-color)'}`
+                                border: `1px solid ${fm.status === 'KNOWN_PRIOR_ART' ? 'rgba(174,54,67,0.4)' : fm.status === 'PARTIAL_OVERLAP' ? 'rgba(145,94,16,0.4)' : fm.status === 'POTENTIALLY_DISTINCTIVE' ? 'rgba(34,104,88,0.4)' : 'var(--border-color)'}`
                               }}
                             >
                               {fm.status.replace(/_/g, ' ')}
@@ -4093,7 +4093,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
 
                             <button
                               onClick={() => setSelectedFeatureForModal(fm)}
-                              style={{ background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.4)', borderRadius: 6, padding: '4px 10px', color: 'var(--accent-indigo)', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                              style={{ background: 'rgba(55,86,125,0.15)', border: '1px solid rgba(55,86,125,0.4)', borderRadius: 6, padding: '4px 10px', color: 'var(--accent-indigo)', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                             >
                               <FileCode size={13} /> Compare Side-by-Side
                             </button>
@@ -4123,12 +4123,12 @@ const RESEARCH_PRESETS: RDPreset[] = [
 
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 2 }}>
                               {fm.matchedConcepts.map((c, i) => (
-                                <span key={i} style={{ fontSize: '0.66rem', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-emerald)', padding: '2px 6px', borderRadius: 4, border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                                <span key={i} style={{ fontSize: '0.66rem', background: 'rgba(34,104,88,0.15)', color: 'var(--accent-emerald)', padding: '2px 6px', borderRadius: 4, border: '1px solid rgba(34,104,88,0.3)' }}>
                                   ✓ {c}
                                 </span>
                               ))}
                               {fm.unmatchedConcepts.map((c, i) => (
-                                <span key={i} style={{ fontSize: '0.66rem', background: 'rgba(244, 63, 94, 0.15)', color: 'var(--accent-rose)', padding: '2px 6px', borderRadius: 4, border: '1px solid rgba(244, 63, 94, 0.3)' }}>
+                                <span key={i} style={{ fontSize: '0.66rem', background: 'rgba(174,54,67,0.15)', color: 'var(--accent-rose)', padding: '2px 6px', borderRadius: 4, border: '1px solid rgba(174,54,67,0.3)' }}>
                                   ✕ {c}
                                 </span>
                               ))}
@@ -4157,7 +4157,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
 
                             {/* Patent Family Badge (De-duplication of B1 vs B2) */}
                             {fm.patentFamily ? (
-                              <div style={{ background: 'rgba(99, 102, 241, 0.08)', border: '1px dashed var(--accent-indigo)', borderRadius: '6px', padding: '6px 10px', fontSize: '0.7rem', color: 'var(--accent-indigo)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <div style={{ background: 'rgba(55,86,125,0.08)', border: '1px dashed var(--accent-indigo)', borderRadius: '6px', padding: '6px 10px', fontSize: '0.7rem', color: 'var(--accent-indigo)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <span>Patent Family: <strong>{fm.patentFamily.familyId}</strong> ({fm.patentFamily.members.join(', ')})</span>
                                 <span style={{ fontSize: '0.65rem', background: 'var(--bg-surface)', padding: '1px 6px', borderRadius: 4, color: 'var(--text-dim)' }}>1 Family Unit</span>
                               </div>
@@ -4170,7 +4170,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         </div>
 
                         {/* Independent Scoring Metrics Bar (BM25 vs SBERT vs Composite) */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', background: 'var(--bg-surface)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', fontSize: '0.75rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: '10px', background: 'var(--bg-surface)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', fontSize: '0.75rem' }}>
                           <div>
                             <span style={{ color: 'var(--text-dim)', display: 'block', marginBottom: 2 }}>Retrieval Score:</span>
                             <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-indigo)' }}>{fm.retrievalSimilarity}%</strong>
@@ -4202,7 +4202,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         </div>
 
                         {/* Structured Why Classified Explanation */}
-                        <div style={{ background: 'rgba(99, 102, 241, 0.06)', borderLeft: '3px solid var(--accent-indigo)', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--text-main)' }}>
+                        <div style={{ background: 'rgba(55,86,125,0.06)', borderLeft: '3px solid var(--accent-indigo)', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--text-main)' }}>
                           <strong style={{ color: 'var(--accent-indigo)' }}>Why Classified: </strong>
                           {fm.whyClassifiedExplanation}
                         </div>
@@ -4213,11 +4213,11 @@ const RESEARCH_PRESETS: RDPreset[] = [
                             <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>
                               Canonical Source Citations ({fm.matchedDocuments.length} Sources Found)
                             </span>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '10px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '10px' }}>
                               {fm.matchedDocuments.map((doc) => (
                                 <div key={doc.id} style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '2px 6px', borderRadius: 4, background: doc.sourceType === 'PATENT' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(16, 185, 129, 0.15)', color: doc.sourceType === 'PATENT' ? 'var(--accent-indigo)' : 'var(--accent-emerald)' }}>
+                                    <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '2px 6px', borderRadius: 4, background: doc.sourceType === 'PATENT' ? 'rgba(55,86,125,0.15)' : 'rgba(34,104,88,0.15)', color: doc.sourceType === 'PATENT' ? 'var(--accent-indigo)' : 'var(--accent-emerald)' }}>
                                       {doc.sourceType === 'PATENT' ? 'USPTO PATENT' : 'ACADEMIC PAPER'}
                                     </span>
                                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-indigo)' }}>
@@ -4304,7 +4304,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                             <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--accent-indigo)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                               Decision Support & Pre-Screening Module
                             </span>
-                            <span style={{ fontSize: '0.68rem', background: 'rgba(255,255,255,0.06)', color: 'var(--text-dim)', padding: '2px 8px', borderRadius: 4 }}>
+                            <span style={{ fontSize: '0.68rem', background: 'rgba(21,51,60,0.06)', color: 'var(--text-dim)', padding: '2px 8px', borderRadius: 4 }}>
                               COMB-001
                             </span>
                           </div>
@@ -4330,18 +4330,18 @@ const RESEARCH_PRESETS: RDPreset[] = [
                               borderRadius: 10, 
                               letterSpacing: '0.05em',
                               background: !hasSufficientEvidence ? 'rgba(148, 163, 184, 0.15)' :
-                                          comb?.screeningIndicator === 'HIGH_CONCERN' ? 'rgba(244, 63, 94, 0.18)' :
-                                          comb?.screeningIndicator === 'MODERATE_CONCERN' ? 'rgba(245, 158, 11, 0.18)' :
-                                          'rgba(16, 185, 129, 0.18)',
+                                          comb?.screeningIndicator === 'HIGH_CONCERN' ? 'rgba(174,54,67,0.18)' :
+                                          comb?.screeningIndicator === 'MODERATE_CONCERN' ? 'rgba(145,94,16,0.18)' :
+                                          'rgba(34,104,88,0.18)',
                               color: !hasSufficientEvidence ? 'var(--text-dim)' :
                                      comb?.screeningIndicator === 'HIGH_CONCERN' ? 'var(--accent-rose)' :
                                      comb?.screeningIndicator === 'MODERATE_CONCERN' ? 'var(--accent-amber)' :
                                      'var(--accent-emerald)',
                               border: `1px solid ${
                                 !hasSufficientEvidence ? 'var(--border-color)' :
-                                comb?.screeningIndicator === 'HIGH_CONCERN' ? 'rgba(244, 63, 94, 0.4)' :
-                                comb?.screeningIndicator === 'MODERATE_CONCERN' ? 'rgba(245, 158, 11, 0.4)' :
-                                'rgba(16, 185, 129, 0.4)'
+                                comb?.screeningIndicator === 'HIGH_CONCERN' ? 'rgba(174,54,67,0.4)' :
+                                comb?.screeningIndicator === 'MODERATE_CONCERN' ? 'rgba(145,94,16,0.4)' :
+                                'rgba(34,104,88,0.4)'
                               }`
                             }}
                           >
@@ -4351,7 +4351,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                       </div>
 
                       {/* Contributing Factors Bar */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px', background: 'var(--bg-input)', padding: '14px 18px', borderRadius: '12px', border: '1px solid var(--border-color)', fontSize: '0.78rem' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(160px, 100%), 1fr))', gap: '10px', background: 'var(--bg-input)', padding: '14px 18px', borderRadius: '12px', border: '1px solid var(--border-color)', fontSize: '0.78rem' }}>
                         <div>
                           <span style={{ color: 'var(--text-dim)', display: 'block', fontSize: '0.68rem', textTransform: 'uppercase', fontWeight: 700 }}>Combined Coverage:</span>
                           <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-amber)' }}>
@@ -4462,7 +4462,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           {/* Reference A: Patent Reference */}
                           <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4, background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-indigo)' }}>
+                              <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4, background: 'rgba(55,86,125,0.15)', color: 'var(--accent-indigo)' }}>
                                 REFERENCE A — PATENT
                               </span>
                               <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-main)' }}>
@@ -4505,7 +4505,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           {/* Reference B: Non-Patent Literature */}
                           <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4, background: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-emerald)' }}>
+                              <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4, background: 'rgba(34,104,88,0.15)', color: 'var(--accent-emerald)' }}>
                                 REFERENCE B — NON-PATENT LITERATURE
                               </span>
                               <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
@@ -4580,7 +4580,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                                 style={{ 
                                   borderBottom: '1px solid var(--border-color)', 
                                   cursor: 'pointer',
-                                  background: selectedMatrixRow?.featureCode === row.featureCode ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
+                                  background: selectedMatrixRow?.featureCode === row.featureCode ? 'rgba(55,86,125,0.08)' : 'transparent',
                                   transition: 'background 0.15s ease'
                                 }}
                               >
@@ -4608,7 +4608,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                                       fontWeight: 800, 
                                       padding: '2px 8px', 
                                       borderRadius: 4, 
-                                      background: row.combinedCovered ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                                      background: row.combinedCovered ? 'rgba(145,94,16,0.15)' : 'rgba(34,104,88,0.15)',
                                       color: row.combinedCovered ? 'var(--accent-amber)' : 'var(--accent-emerald)'
                                     }}
                                   >
@@ -4687,7 +4687,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           </div>
 
                           {selectedSharedConcept && (
-                            <div style={{ background: 'rgba(99, 102, 241, 0.08)', border: '1px solid var(--accent-indigo)', borderRadius: '8px', padding: '10px 12px', fontSize: '0.75rem', color: 'var(--text-main)', marginTop: 4 }}>
+                            <div style={{ background: 'rgba(55,86,125,0.08)', border: '1px solid var(--accent-indigo)', borderRadius: '8px', padding: '10px 12px', fontSize: '0.75rem', color: 'var(--text-main)', marginTop: 4 }}>
                               <div style={{ fontWeight: 700, color: 'var(--accent-indigo)', marginBottom: 2 }}>
                                 Concept Trace: {selectedSharedConcept.concept} ➔ {selectedSharedConcept.featureCode} ➔ {selectedSharedConcept.referenceId} ({selectedSharedConcept.evidenceLocation})
                               </div>
@@ -4711,7 +4711,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                                 onClick={() => setSelectedCombDependent(selectedCombDependent?.featureCode === cde.featureCode ? null : cde)}
                                 style={{
                                   background: 'var(--bg-input)',
-                                  border: `1px solid ${selectedCombDependent?.featureCode === cde.featureCode ? 'var(--accent-amber)' : 'rgba(245, 158, 11, 0.3)'}`,
+                                  border: `1px solid ${selectedCombDependent?.featureCode === cde.featureCode ? 'var(--accent-amber)' : 'rgba(145,94,16,0.3)'}`,
                                   borderRadius: '8px',
                                   padding: '10px 12px',
                                   cursor: 'pointer',
@@ -4732,7 +4732,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           </div>
 
                           {selectedCombDependent && (
-                            <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid var(--accent-amber)', borderRadius: '8px', padding: '10px 12px', fontSize: '0.75rem', color: 'var(--text-main)', marginTop: 4 }}>
+                            <div style={{ background: 'rgba(145,94,16,0.08)', border: '1px solid var(--accent-amber)', borderRadius: '8px', padding: '10px 12px', fontSize: '0.75rem', color: 'var(--text-main)', marginTop: 4 }}>
                               <div style={{ fontWeight: 700, color: 'var(--accent-amber)', marginBottom: 2 }}>
                                 Single Ref Coverage: No | Combined Coverage: Yes
                               </div>
@@ -4748,12 +4748,12 @@ const RESEARCH_PRESETS: RDPreset[] = [
                       </div>
 
                       {/* 5C: Technical Compatibility Factors */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginTop: 4 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '10px', marginTop: 4 }}>
                         {(comb?.rationaleFactors || []).map((rf, idx) => (
                           <div key={idx} style={{ background: 'var(--bg-surface)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                               <strong style={{ color: 'var(--text-main)' }}>{rf.factor}</strong>
-                              <span style={{ fontSize: '0.65rem', fontWeight: 800, padding: '1px 6px', borderRadius: 4, background: rf.status === 'IDENTIFIED' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(148, 163, 184, 0.15)', color: rf.status === 'IDENTIFIED' ? 'var(--accent-emerald)' : 'var(--text-dim)' }}>
+                              <span style={{ fontSize: '0.65rem', fontWeight: 800, padding: '1px 6px', borderRadius: 4, background: rf.status === 'IDENTIFIED' ? 'rgba(34,104,88,0.15)' : 'rgba(148, 163, 184, 0.15)', color: rf.status === 'IDENTIFIED' ? 'var(--accent-emerald)' : 'var(--text-dim)' }}>
                                 {rf.status}
                               </span>
                             </div>
@@ -4775,7 +4775,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         Inter-Component Structural Relationships (Click to Inspect Traceable Source Data):
                       </span>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '14px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))', gap: '14px' }}>
                         {(comb?.relationships || []).map((rel) => (
                           <div
                             key={rel.relationshipId}
@@ -4784,9 +4784,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                               background: 'var(--bg-input)',
                               border: `1px solid ${
                                 selectedCombRelationship?.relationshipId === rel.relationshipId ? 'var(--accent-indigo)' :
-                                rel.classification === 'KNOWN_RELATIONSHIP' ? 'rgba(244, 63, 94, 0.4)' :
-                                rel.classification === 'PARTIAL_RELATIONSHIP' ? 'rgba(245, 158, 11, 0.4)' :
-                                'rgba(16, 185, 129, 0.4)'
+                                rel.classification === 'KNOWN_RELATIONSHIP' ? 'rgba(174,54,67,0.4)' :
+                                rel.classification === 'PARTIAL_RELATIONSHIP' ? 'rgba(145,94,16,0.4)' :
+                                'rgba(34,104,88,0.4)'
                               }`,
                               borderRadius: '12px',
                               padding: '16px',
@@ -4807,9 +4807,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                                   fontWeight: 800, 
                                   padding: '2px 8px', 
                                   borderRadius: 999, 
-                                  background: rel.classification === 'KNOWN_RELATIONSHIP' ? 'rgba(244, 63, 94, 0.15)' :
-                                              rel.classification === 'PARTIAL_RELATIONSHIP' ? 'rgba(245, 158, 11, 0.15)' :
-                                              'rgba(16, 185, 129, 0.15)',
+                                  background: rel.classification === 'KNOWN_RELATIONSHIP' ? 'rgba(174,54,67,0.15)' :
+                                              rel.classification === 'PARTIAL_RELATIONSHIP' ? 'rgba(145,94,16,0.15)' :
+                                              'rgba(34,104,88,0.15)',
                                   color: rel.classification === 'KNOWN_RELATIONSHIP' ? 'var(--accent-rose)' :
                                          rel.classification === 'PARTIAL_RELATIONSHIP' ? 'var(--accent-amber)' :
                                          'var(--accent-emerald)'
@@ -4876,14 +4876,14 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         Proposal-Specific Features (Under-Supported by Retrieved References):
                       </span>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                         {(comb?.proposalSpecificFeatures || []).map((psf) => (
-                          <div key={psf.featureCode} style={{ background: 'var(--bg-input)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div key={psf.featureCode} style={{ background: 'var(--bg-input)', border: '1px solid rgba(34,104,88,0.4)', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                               <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', fontWeight: 800, color: 'var(--accent-indigo)' }}>
                                 {psf.featureCode}
                               </span>
-                              <span style={{ fontSize: '0.65rem', fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-emerald)' }}>
+                              <span style={{ fontSize: '0.65rem', fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: 'rgba(34,104,88,0.15)', color: 'var(--accent-emerald)' }}>
                                 POTENTIALLY DISTINCTIVE
                               </span>
                             </div>
@@ -4902,7 +4902,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
 
                     {/* SECTION 8: POTENTIAL DIFFERENTIATOR ENGINE */}
                     {comb?.differentiator && (
-                      <div style={{ background: 'var(--bg-input)', border: '1px solid var(--accent-indigo)', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', boxShadow: '0 4px 20px rgba(99, 102, 241, 0.1)' }}>
+                      <div style={{ background: 'var(--bg-input)', border: '1px solid var(--accent-indigo)', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', boxShadow: 'var(--shadow-sm)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <h4 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--accent-indigo)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <Sparkles size={18} />
@@ -4923,7 +4923,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                             <button
                               type="button"
                               onClick={() => setSelectedDifferentiatorBasis(!selectedDifferentiatorBasis)}
-                              style={{ background: 'rgba(99, 102, 241, 0.15)', border: '1px solid var(--accent-indigo)', borderRadius: '6px', padding: '3px 10px', color: 'var(--accent-indigo)', fontSize: '0.75rem', fontFamily: 'var(--font-mono)', fontWeight: 800, cursor: 'pointer' }}
+                              style={{ background: 'rgba(55,86,125,0.15)', border: '1px solid var(--accent-indigo)', borderRadius: '6px', padding: '3px 10px', color: 'var(--accent-indigo)', fontSize: '0.75rem', fontFamily: 'var(--font-mono)', fontWeight: 800, cursor: 'pointer' }}
                             >
                               {comb.differentiator.basisFeatureCodes.join(' + ')} (Inspect Basis)
                             </button>
@@ -4935,7 +4935,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         </div>
 
                         {selectedDifferentiatorBasis && (
-                          <div style={{ background: 'rgba(99, 102, 241, 0.06)', border: '1px solid var(--accent-indigo)', borderRadius: '10px', padding: '12px 14px', fontSize: '0.76rem', color: 'var(--text-main)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ background: 'rgba(55,86,125,0.06)', border: '1px solid var(--accent-indigo)', borderRadius: '10px', padding: '12px 14px', fontSize: '0.76rem', color: 'var(--text-main)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                             <div style={{ fontWeight: 800, color: 'var(--accent-indigo)' }}>Supporting Features in Combination Basis:</div>
                             {comb.differentiator.basisFeatureCodes.map(code => {
                               const c = activeReport.extractedComponents.find(item => item.featureCode === code);
@@ -4959,7 +4959,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                             HUMAN REVIEW ACTION
                           </h4>
                         </div>
-                        <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '3px 10px', borderRadius: 4, background: 'rgba(245, 158, 11, 0.15)', color: 'var(--accent-amber)' }}>
+                        <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '3px 10px', borderRadius: 4, background: 'rgba(145,94,16,0.15)', color: 'var(--accent-amber)' }}>
                           PRIORITY: {comb?.humanReview?.priority || 'MEDIUM'}
                         </span>
                       </div>
@@ -5060,13 +5060,13 @@ const RESEARCH_PRESETS: RDPreset[] = [
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(360px, 100%), 1fr))', gap: '16px' }}>
                 {activeReport.recommendations.map((rec) => (
                   <div key={rec.id} style={{ background: 'var(--bg-input)', border: `1px solid ${rec.status === 'ACCEPTED' ? 'var(--accent-emerald)' : 'var(--border-color)'}`, borderRadius: '14px', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '16px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                         <h4 style={{ fontWeight: 700, fontSize: '0.98rem', color: 'var(--accent-indigo)', margin: 0 }}>{rec.title}</h4>
-                        <span style={{ fontSize: '0.68rem', padding: '3px 8px', borderRadius: 6, fontWeight: 700, textTransform: 'uppercase', background: rec.status === 'ACCEPTED' ? 'rgba(16, 185, 129, 0.2)' : 'var(--bg-surface)', color: rec.status === 'ACCEPTED' ? 'var(--accent-emerald)' : 'var(--text-dim)', border: `1px solid ${rec.status === 'ACCEPTED' ? 'rgba(16, 185, 129, 0.4)' : 'var(--border-color)'}` }}>
+                        <span style={{ fontSize: '0.68rem', padding: '3px 8px', borderRadius: 6, fontWeight: 700, textTransform: 'uppercase', background: rec.status === 'ACCEPTED' ? 'rgba(34,104,88,0.2)' : 'var(--bg-surface)', color: rec.status === 'ACCEPTED' ? 'var(--accent-emerald)' : 'var(--text-dim)', border: `1px solid ${rec.status === 'ACCEPTED' ? 'rgba(34,104,88,0.4)' : 'var(--border-color)'}` }}>
                           {rec.status}
                         </span>
                       </div>
@@ -5100,7 +5100,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           </button>
                           
                           {expandedClaimRecId === rec.id && (
-                            <div style={{ background: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.3)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.75rem', color: 'var(--text-main)', fontFamily: 'var(--font-mono)', lineHeight: 1.4 }}>
+                            <div style={{ background: 'rgba(55,86,125,0.08)', border: '1px solid rgba(55,86,125,0.3)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.75rem', color: 'var(--text-main)', fontFamily: 'var(--font-mono)', lineHeight: 1.4 }}>
                               <strong>Draft Claim 1 Limitation:</strong>
                               <p style={{ margin: '4px 0 0 0', fontStyle: 'italic' }}>"{rec.draftClaimClause}"</p>
                             </div>
@@ -5121,7 +5121,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           </button>
 
                           {expandedOfficeActionRecId === rec.id && (
-                            <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.75rem', color: 'var(--text-main)', lineHeight: 1.4 }}>
+                            <div style={{ background: 'rgba(145,94,16,0.08)', border: '1px solid rgba(145,94,16,0.3)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.75rem', color: 'var(--text-main)', lineHeight: 1.4 }}>
                               <strong>Statutory Traverse Argument (35 U.S.C. § 103):</strong>
                               <p style={{ margin: '4px 0 0 0', fontStyle: 'italic' }}>"{rec.officeActionResponseRationale}"</p>
                             </div>
@@ -5154,7 +5154,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                 {dbStore.getInnovationVersions(activeReport.innovationProjectId).map((ver) => (
                   <div key={ver.id} style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: 'rgba(55,86,125,0.15)', color: 'var(--accent-indigo)', border: '1px solid rgba(55,86,125,0.3)' }}>
                         Version {ver.versionNumber}.0
                       </span>
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{new Date(ver.createdAt).toLocaleString()}</span>
@@ -5196,12 +5196,12 @@ const RESEARCH_PRESETS: RDPreset[] = [
               width: 72, 
               height: 72, 
               borderRadius: '50%', 
-              background: 'rgba(244, 63, 94, 0.12)', 
+              background: 'rgba(174,54,67,0.12)',
               color: 'var(--accent-rose)', 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center',
-              border: '1px solid rgba(244, 63, 94, 0.3)'
+              border: '1px solid rgba(174,54,67,0.3)'
             }}
           >
             <AlertTriangle size={36} />
@@ -5248,12 +5248,12 @@ const RESEARCH_PRESETS: RDPreset[] = [
               width: 72, 
               height: 72, 
               borderRadius: '50%', 
-              background: 'rgba(244, 63, 94, 0.12)', 
+              background: 'rgba(174,54,67,0.12)',
               color: 'var(--accent-rose)', 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center',
-              border: '1px solid rgba(244, 63, 94, 0.3)'
+              border: '1px solid rgba(174,54,67,0.3)'
             }}
           >
             <AlertTriangle size={36} />
@@ -5370,13 +5370,13 @@ const RESEARCH_PRESETS: RDPreset[] = [
                       sub.status === 'NEEDS_REVISION' ? 'var(--accent-amber)' :
                       sub.status === 'REJECTED' ? 'var(--accent-rose)' : 'var(--accent-indigo)';
                     const statusBg = 
-                      sub.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16, 185, 129, 0.14)' :
-                      sub.status === 'NEEDS_REVISION' ? 'rgba(245, 158, 11, 0.14)' :
-                      sub.status === 'REJECTED' ? 'rgba(244, 63, 94, 0.14)' : 'rgba(99, 102, 241, 0.14)';
+                      sub.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(34,104,88,0.14)' :
+                      sub.status === 'NEEDS_REVISION' ? 'rgba(145,94,16,0.14)' :
+                      sub.status === 'REJECTED' ? 'rgba(174,54,67,0.14)' : 'rgba(55,86,125,0.14)';
                     const statusBorder = 
-                      sub.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16, 185, 129, 0.35)' :
-                      sub.status === 'NEEDS_REVISION' ? 'rgba(245, 158, 11, 0.35)' :
-                      sub.status === 'REJECTED' ? 'rgba(244, 63, 94, 0.35)' : 'rgba(99, 102, 241, 0.35)';
+                      sub.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(34,104,88,0.35)' :
+                      sub.status === 'NEEDS_REVISION' ? 'rgba(145,94,16,0.35)' :
+                      sub.status === 'REJECTED' ? 'rgba(174,54,67,0.35)' : 'rgba(55,86,125,0.35)';
 
                     return (
                       <div
@@ -5394,9 +5394,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           border: isSelected ? '1.5px solid var(--accent-indigo)' : '1px solid var(--border-color)',
                           borderLeft: isSelected ? '5px solid var(--accent-indigo)' : '4px solid transparent',
                           background: isSelected 
-                            ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.16) 0%, rgba(99, 102, 241, 0.05) 100%)' 
+                            ? 'linear-gradient(135deg, rgba(55,86,125,0.16) 0%, rgba(55,86,125,0.05) 100%)'
                             : 'var(--bg-card)',
-                          boxShadow: isSelected ? '0 6px 24px rgba(99, 102, 241, 0.22)' : 'var(--shadow-sm)',
+                          boxShadow: isSelected ? '0 6px 24px rgba(55,86,125,0.22)' : 'var(--shadow-sm)',
                           cursor: 'pointer',
                           display: 'flex',
                           flexDirection: 'column',
@@ -5408,7 +5408,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         {/* Submitter & Status Row */}
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
-                            <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(55,86,125,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                               <User size={12} color="var(--accent-indigo)" />
                             </div>
                             <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -5474,7 +5474,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                           justifyContent: 'space-between',
                           fontSize: '0.72rem',
                           color: 'var(--text-dim)',
-                          borderTop: '1px solid rgba(255,255,255,0.05)',
+                          borderTop: '1px solid rgba(21,51,60,0.05)',
                           paddingTop: '8px',
                           marginTop: '2px',
                           flexWrap: 'wrap',
@@ -5504,10 +5504,10 @@ const RESEARCH_PRESETS: RDPreset[] = [
                                 fontWeight: 800,
                                 color: 'var(--accent-emerald)',
                                 fontFamily: 'var(--font-mono)',
-                                background: 'rgba(16, 185, 129, 0.1)',
+                                background: 'rgba(34,104,88,0.1)',
                                 padding: '1px 6px',
                                 borderRadius: 4,
-                                border: '1px solid rgba(16, 185, 129, 0.25)'
+                                border: '1px solid rgba(34,104,88,0.25)'
                               }}>
                                 {rep.overallNoveltyScore}% Novelty
                               </span>
@@ -5534,9 +5534,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         fontWeight: 800,
                         padding: '3px 10px',
                         borderRadius: 6,
-                        background: 'rgba(99, 102, 241, 0.15)',
+                        background: 'rgba(55,86,125,0.15)',
                         color: 'var(--accent-indigo)',
-                        border: '1px solid rgba(99, 102, 241, 0.3)'
+                        border: '1px solid rgba(55,86,125,0.3)'
                       }}>
                         Version v{activeSubmission.versionNumber}.0
                       </span>
@@ -5547,9 +5547,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         fontWeight: 800,
                         textTransform: 'uppercase',
                         letterSpacing: '0.04em',
-                        background: activeSubmission.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16, 185, 129, 0.15)' : activeSubmission.status === 'NEEDS_REVISION' ? 'rgba(245, 158, 11, 0.15)' : activeSubmission.status === 'REJECTED' ? 'rgba(244, 63, 94, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+                        background: activeSubmission.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(34,104,88,0.15)' : activeSubmission.status === 'NEEDS_REVISION' ? 'rgba(145,94,16,0.15)' : activeSubmission.status === 'REJECTED' ? 'rgba(174,54,67,0.15)' : 'rgba(55,86,125,0.15)',
                         color: activeSubmission.status === 'APPROVED_FOR_DRAFTING' ? 'var(--accent-emerald)' : activeSubmission.status === 'NEEDS_REVISION' ? 'var(--accent-amber)' : activeSubmission.status === 'REJECTED' ? 'var(--accent-rose)' : 'var(--accent-indigo)',
-                        border: `1px solid ${activeSubmission.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(16, 185, 129, 0.3)' : activeSubmission.status === 'NEEDS_REVISION' ? 'rgba(245, 158, 11, 0.3)' : activeSubmission.status === 'REJECTED' ? 'rgba(244, 63, 94, 0.3)' : 'rgba(99, 102, 241, 0.3)'}`
+                        border: `1px solid ${activeSubmission.status === 'APPROVED_FOR_DRAFTING' ? 'rgba(34,104,88,0.3)' : activeSubmission.status === 'NEEDS_REVISION' ? 'rgba(145,94,16,0.3)' : activeSubmission.status === 'REJECTED' ? 'rgba(174,54,67,0.3)' : 'rgba(55,86,125,0.3)'}`
                       }}>
                         {activeSubmission.status.replace(/_/g, ' ')}
                       </span>
@@ -5610,7 +5610,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                       <button
                         onClick={() => setShowFerModal(true)}
                         className="btn-secondary"
-                        style={{ padding: '8px 16px', fontSize: '0.8rem', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent-indigo)', borderColor: 'rgba(99, 102, 241, 0.3)' }}
+                        style={{ padding: '8px 16px', fontSize: '0.8rem', background: 'rgba(55,86,125,0.1)', color: 'var(--accent-indigo)', borderColor: 'rgba(55,86,125,0.3)' }}
                       >
                         <FileText size={14} />
                         <span>Simulate / Export FER</span>
@@ -5711,12 +5711,12 @@ const RESEARCH_PRESETS: RDPreset[] = [
                             key={v.id}
                             className="review-version-card"
                             style={{
-                              background: isCurrentVersion ? 'rgba(99, 102, 241, 0.18)' : 'var(--bg-input)',
+                              background: isCurrentVersion ? 'rgba(55,86,125,0.18)' : 'var(--bg-input)',
                               border: `1px solid ${isCurrentVersion ? 'var(--accent-indigo)' : 'var(--border-color)'}`,
                               borderRadius: 10,
                               padding: '8px 14px',
                               fontSize: '0.75rem',
-                              boxShadow: isCurrentVersion ? '0 2px 10px rgba(99, 102, 241, 0.2)' : 'none'
+                              boxShadow: isCurrentVersion ? '0 2px 10px rgba(55,86,125,0.2)' : 'none'
                             }}
                           >
                             <span style={{ fontWeight: 800, color: 'var(--accent-indigo)' }}>v{v.versionNumber}.0</span>
@@ -5787,10 +5787,10 @@ const RESEARCH_PRESETS: RDPreset[] = [
                         <div
                           key={comm.id}
                           style={{
-                            background: comm.comment.includes('DECISION') ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-input)',
+                            background: comm.comment.includes('DECISION') ? 'rgba(55,86,125,0.08)' : 'var(--bg-input)',
                             padding: '12px 14px',
                             borderRadius: '12px',
-                            border: `1px solid ${comm.comment.includes('DECISION') ? 'rgba(99, 102, 241, 0.3)' : 'var(--border-color)'}`,
+                            border: `1px solid ${comm.comment.includes('DECISION') ? 'rgba(55,86,125,0.3)' : 'var(--border-color)'}`,
                             fontSize: '0.82rem',
                             display: 'flex',
                             flexDirection: 'column',
@@ -5835,7 +5835,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                 </div>
               ) : (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '32px', gap: '14px' }}>
-                  <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(99, 102, 241, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
+                  <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(55,86,125,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-indigo)', border: '1px solid rgba(55,86,125,0.25)' }}>
                     <Lightbulb size={28} />
                   </div>
                   <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>Select a Submission to Inspect</h3>
@@ -5851,8 +5851,8 @@ const RESEARCH_PRESETS: RDPreset[] = [
 
       {/* DECISION MODAL */}
       {showDecisionModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(11, 15, 25, 0.85)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-color)', borderRadius: '20px', padding: '28px', maxWidth: '480px', width: '100%', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 20px 40px rgba(0,0,0,0.6)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--bg-card-solid)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--border-color)', borderRadius: '20px', padding: '28px', maxWidth: '480px', width: '100%', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: 'var(--shadow-sm)' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Issue Patent Team Review Decision</h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -5899,8 +5899,8 @@ const RESEARCH_PRESETS: RDPreset[] = [
 
       {/* SIMULATED FIRST EXAMINATION REPORT (FER) MODAL */}
       {showFerModal && activeReport && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(11, 15, 25, 0.85)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--accent-indigo)', borderRadius: '24px', padding: '32px', maxWidth: '750px', width: '100%', maxHeight: '85vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 25px 50px rgba(0,0,0,0.7)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--bg-card-solid)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--accent-indigo)', borderRadius: '24px', padding: '32px', maxWidth: '750px', width: '100%', maxHeight: '85vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: 'var(--shadow-sm)' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
               <div>
                 <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--accent-indigo)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Simulated Patent Pre-Examination Engine</span>
@@ -5999,8 +5999,8 @@ const RESEARCH_PRESETS: RDPreset[] = [
       {/* MODAL 1: SIDE-BY-SIDE PROPOSAL VS PRIOR-ART COMPARISON MODAL             */}
       {/* ========================================================================= */}
       {selectedFeatureForModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(11, 15, 25, 0.85)', backdropFilter: 'blur(8px)', zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--accent-indigo)', borderRadius: '24px', padding: '28px', maxWidth: '900px', width: '100%', maxHeight: '88vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 25px 50px rgba(0,0,0,0.8)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--bg-card-solid)', backdropFilter: 'blur(8px)', zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--accent-indigo)', borderRadius: '24px', padding: '28px', maxWidth: '900px', width: '100%', maxHeight: '88vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: 'var(--shadow-sm)' }}>
             
             {/* Modal Header */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
@@ -6026,7 +6026,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                 <span style={{ fontSize: '0.7rem', padding: '3px 8px', borderRadius: 4, background: 'var(--bg-surface)', border: '1px solid var(--border-color)', color: 'var(--text-dim)' }}>
                   {selectedFeatureForModal.category}
                 </span>
-                <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '4px 12px', borderRadius: 999, textTransform: 'uppercase', background: selectedFeatureForModal.status === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.15)' : selectedFeatureForModal.status === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)', color: selectedFeatureForModal.status === 'KNOWN_PRIOR_ART' ? 'var(--accent-rose)' : selectedFeatureForModal.status === 'PARTIAL_OVERLAP' ? 'var(--accent-amber)' : 'var(--accent-emerald)', border: `1px solid ${selectedFeatureForModal.status === 'KNOWN_PRIOR_ART' ? 'rgba(244, 63, 94, 0.4)' : selectedFeatureForModal.status === 'PARTIAL_OVERLAP' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(16, 185, 129, 0.4)'}` }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '4px 12px', borderRadius: 999, textTransform: 'uppercase', background: selectedFeatureForModal.status === 'KNOWN_PRIOR_ART' ? 'rgba(174,54,67,0.15)' : selectedFeatureForModal.status === 'PARTIAL_OVERLAP' ? 'rgba(145,94,16,0.15)' : 'rgba(34,104,88,0.15)', color: selectedFeatureForModal.status === 'KNOWN_PRIOR_ART' ? 'var(--accent-rose)' : selectedFeatureForModal.status === 'PARTIAL_OVERLAP' ? 'var(--accent-amber)' : 'var(--accent-emerald)', border: `1px solid ${selectedFeatureForModal.status === 'KNOWN_PRIOR_ART' ? 'rgba(174,54,67,0.4)' : selectedFeatureForModal.status === 'PARTIAL_OVERLAP' ? 'rgba(145,94,16,0.4)' : 'rgba(34,104,88,0.4)'}` }}>
                   {selectedFeatureForModal.status.replace(/_/g, ' ')}
                 </span>
               </div>
@@ -6057,7 +6057,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                   <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Matched Concepts:</span>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                     {selectedFeatureForModal.matchedConcepts.map((c, i) => (
-                      <span key={i} style={{ fontSize: '0.7rem', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-emerald)', padding: '3px 8px', borderRadius: 4, border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                      <span key={i} style={{ fontSize: '0.7rem', background: 'rgba(34,104,88,0.15)', color: 'var(--accent-emerald)', padding: '3px 8px', borderRadius: 4, border: '1px solid rgba(34,104,88,0.3)' }}>
                         ✓ {c}
                       </span>
                     ))}
@@ -6068,7 +6068,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                   <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Proposal-Specific Aspects (Novel Elements):</span>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                     {selectedFeatureForModal.unmatchedConcepts.map((c, i) => (
-                      <span key={i} style={{ fontSize: '0.7rem', background: 'rgba(244, 63, 94, 0.15)', color: 'var(--accent-rose)', padding: '3px 8px', borderRadius: 4, border: '1px solid rgba(244, 63, 94, 0.3)' }}>
+                      <span key={i} style={{ fontSize: '0.7rem', background: 'rgba(174,54,67,0.15)', color: 'var(--accent-rose)', padding: '3px 8px', borderRadius: 4, border: '1px solid rgba(174,54,67,0.3)' }}>
                         ✕ {c}
                       </span>
                     ))}
@@ -6112,7 +6112,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
             </div>
 
             {/* Why Classified Explanation Box */}
-            <div style={{ background: 'rgba(99, 102, 241, 0.08)', borderLeft: '4px solid var(--accent-indigo)', padding: '14px', borderRadius: '10px', fontSize: '0.82rem', color: 'var(--text-main)' }}>
+            <div style={{ background: 'rgba(55,86,125,0.08)', borderLeft: '4px solid var(--accent-indigo)', padding: '14px', borderRadius: '10px', fontSize: '0.82rem', color: 'var(--text-main)' }}>
               <strong style={{ color: 'var(--accent-indigo)' }}>Patent Analysis Classification Verdict: </strong>
               {selectedFeatureForModal.whyClassifiedExplanation}
             </div>
@@ -6131,8 +6131,8 @@ const RESEARCH_PRESETS: RDPreset[] = [
       {/* MODAL 2: STATUTORY SUBJECT-MATTER ELIGIBILITY EXPLANATION MODAL         */}
       {/* ========================================================================= */}
       {showStatutoryWhyModal && activeReport && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(11, 15, 25, 0.88)', backdropFilter: 'blur(10px)', zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--accent-indigo)', borderRadius: '24px', padding: '28px', maxWidth: '850px', width: '100%', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 25px 50px rgba(0,0,0,0.8)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--bg-card-solid)', backdropFilter: 'blur(10px)', zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--accent-indigo)', borderRadius: '24px', padding: '28px', maxWidth: '850px', width: '100%', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: 'var(--shadow-sm)' }}>
             
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
@@ -6149,7 +6149,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
             </div>
 
             {/* Feature Purpose & Operational Functions */}
-            <div style={{ background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: '14px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ background: 'rgba(55,86,125,0.1)', border: '1px solid rgba(55,86,125,0.3)', borderRadius: '14px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-indigo)', fontWeight: 800, fontSize: '0.92rem' }}>
                 <HelpCircle size={18} />
                 <span>Why Was This Feature Built & What Functions Does It Perform?</span>
@@ -6157,7 +6157,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
               <p style={{ fontSize: '0.82rem', color: 'var(--text-main)', margin: 0, lineHeight: 1.5 }}>
                 In patent law, software and AI algorithms are heavily scrutinized. Under <strong>India Section 3(k)</strong> and <strong>US 35 U.S.C. §101 (Alice Framework)</strong>, pure software or mathematical formulas claimed in the abstract face immediate rejection as non-statutory subject matter ("computer program per se").
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px', marginTop: 4 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: '10px', marginTop: 4 }}>
                 <div style={{ background: 'var(--bg-input)', padding: '10px', borderRadius: '8px', fontSize: '0.76rem' }}>
                   <strong style={{ color: 'var(--accent-indigo)', display: 'block', marginBottom: 2 }}>1. Automated Token Extraction</strong>
                   Parses claim limitations into Physical, Computing, Algorithm, Data, and Technical Effect elements.
@@ -6183,7 +6183,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                       <h4 style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--accent-indigo)', margin: 0 }}>
                         🇮🇳 India — Section 3(k) Computer-Related Inventions (CRI) Guidelines
                       </h4>
-                      <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4, background: statDetails.indiaSection3k.screeningResult === 'LIKELY_ELIGIBLE' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)', color: statDetails.indiaSection3k.screeningResult === 'LIKELY_ELIGIBLE' ? 'var(--accent-emerald)' : 'var(--accent-amber)' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4, background: statDetails.indiaSection3k.screeningResult === 'LIKELY_ELIGIBLE' ? 'rgba(34,104,88,0.15)' : 'rgba(145,94,16,0.15)', color: statDetails.indiaSection3k.screeningResult === 'LIKELY_ELIGIBLE' ? 'var(--accent-emerald)' : 'var(--accent-amber)' }}>
                         {statDetails.indiaSection3k.screeningResult.replace(/_/g, ' ')}
                       </span>
                     </div>
@@ -6204,7 +6204,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                       <h4 style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--accent-indigo)', margin: 0 }}>
                         🇺🇸 United States — 35 U.S.C. § 101 (Alice 2-Step Framework)
                       </h4>
-                      <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4, background: statDetails.usSection101.screeningResult === 'LIKELY_ELIGIBLE' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)', color: statDetails.usSection101.screeningResult === 'LIKELY_ELIGIBLE' ? 'var(--accent-emerald)' : 'var(--accent-amber)' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4, background: statDetails.usSection101.screeningResult === 'LIKELY_ELIGIBLE' ? 'rgba(34,104,88,0.15)' : 'rgba(145,94,16,0.15)', color: statDetails.usSection101.screeningResult === 'LIKELY_ELIGIBLE' ? 'var(--accent-emerald)' : 'var(--accent-amber)' }}>
                         {statDetails.usSection101.screeningResult.replace(/_/g, ' ')}
                       </span>
                     </div>
@@ -6243,7 +6243,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                               <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                 <td style={{ padding: '10px 12px', fontWeight: 700, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>"{tok.text}"</td>
                                 <td style={{ padding: '10px 12px' }}>
-                                  <span style={{ fontSize: '0.65rem', fontWeight: 800, padding: '2px 6px', borderRadius: 4, background: tok.category === 'PHYSICAL' ? 'rgba(168, 85, 247, 0.2)' : tok.category === 'COMPUTING' ? 'rgba(99, 102, 241, 0.2)' : tok.category === 'ALGORITHM' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)', color: tok.category === 'PHYSICAL' ? '#C084FC' : tok.category === 'COMPUTING' ? '#818CF8' : tok.category === 'ALGORITHM' ? '#FBBF24' : '#34D399' }}>
+                                  <span style={{ fontSize: '0.65rem', fontWeight: 800, padding: '2px 6px', borderRadius: 4, background: tok.category === 'PHYSICAL' ? 'rgba(112,76,135,0.2)' : tok.category === 'COMPUTING' ? 'rgba(55,86,125,0.2)' : tok.category === 'ALGORITHM' ? 'rgba(145,94,16,0.2)' : 'rgba(34,104,88,0.2)', color: tok.category === 'PHYSICAL' ? 'var(--accent-purple)' : tok.category === 'COMPUTING' ? '#818CF8' : tok.category === 'ALGORITHM' ? '#FBBF24' : '#34D399' }}>
                                     {tok.category}
                                   </span>
                                 </td>
@@ -6274,8 +6274,8 @@ const RESEARCH_PRESETS: RDPreset[] = [
       {/* MODAL 3: CONFIRM SUBMISSION TO PATENT TEAM MODAL                          */}
       {/* ========================================================================= */}
       {showSubmitConfirmModal && activeProject && activeReport && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(11, 15, 25, 0.85)', backdropFilter: 'blur(8px)', zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--accent-indigo)', borderRadius: '24px', padding: '28px', maxWidth: '600px', width: '100%', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 25px 50px rgba(0,0,0,0.8)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--bg-card-solid)', backdropFilter: 'blur(8px)', zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--accent-indigo)', borderRadius: '24px', padding: '28px', maxWidth: '600px', width: '100%', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: 'var(--shadow-sm)' }}>
             
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
@@ -6334,7 +6334,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
       {/* ========================================================================= */}
       {showEditProjectModal && activeProject && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--accent-indigo)', borderRadius: '24px', padding: '28px', maxWidth: '650px', width: '100%', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 25px 50px rgba(0,0,0,0.8)' }}>
+          <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--accent-indigo)', borderRadius: '24px', padding: '28px', maxWidth: '650px', width: '100%', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: 'var(--shadow-sm)' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 4 }}>
@@ -6346,7 +6346,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                     const isUnchanged = isTitleUnchanged && isProblemUnchanged && isSolutionUnchanged;
 
                     return (
-                      <span style={{ fontSize: '0.7rem', fontWeight: 800, color: isUnchanged ? 'var(--accent-amber)' : 'var(--accent-emerald)', background: isUnchanged ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)', padding: '2px 8px', borderRadius: 999, border: `1px solid ${isUnchanged ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)'}` }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 800, color: isUnchanged ? 'var(--accent-amber)' : 'var(--accent-emerald)', background: isUnchanged ? 'rgba(145,94,16,0.15)' : 'rgba(34,104,88,0.15)', padding: '2px 8px', borderRadius: 999, border: `1px solid ${isUnchanged ? 'rgba(145,94,16,0.3)' : 'rgba(34,104,88,0.3)'}` }}>
                         {isUnchanged ? '⚠️ Unchanged Text' : `🟢 Technical Edits Detected (Creates Version v${(activeProject.currentVersionNumber || 1) + 1}.0)`}
                       </span>
                     );
@@ -6364,7 +6364,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
 
             {/* Error Warning Banner if User Didn't Edit Anything */}
             {editError && (
-              <div style={{ background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.4)', padding: '12px 16px', borderRadius: '12px', fontSize: '0.82rem', color: 'var(--accent-amber)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ background: 'rgba(145,94,16,0.12)', border: '1px solid rgba(145,94,16,0.4)', padding: '12px 16px', borderRadius: '12px', fontSize: '0.82rem', color: 'var(--accent-amber)', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <AlertTriangle size={18} style={{ flexShrink: 0 }} />
                 <span>{editError}</span>
               </div>
@@ -6441,9 +6441,9 @@ const RESEARCH_PRESETS: RDPreset[] = [
       {/* ========================================================================= */}
       {showNoRevisionWarningModal && activeProject && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--accent-amber)', borderRadius: '24px', padding: '28px', maxWidth: '540px', width: '100%', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 25px 50px rgba(0,0,0,0.8)' }}>
+          <div style={{ background: 'var(--bg-card-solid)', border: '1px solid var(--accent-amber)', borderRadius: '24px', padding: '28px', maxWidth: '540px', width: '100%', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: 'var(--shadow-sm)' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(245, 158, 11, 0.2)', color: 'var(--accent-amber)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid rgba(245, 158, 11, 0.4)' }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(145,94,16,0.2)', color: 'var(--accent-amber)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid rgba(145,94,16,0.4)' }}>
                 <AlertTriangle size={24} />
               </div>
               <div>
@@ -6475,7 +6475,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
                   handleInspectDifferentiators();
                 }}
                 className="btn-secondary"
-                style={{ justifyContent: 'center', padding: '10px', fontSize: '0.85rem', background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-indigo)', border: '1px solid rgba(99, 102, 241, 0.3)' }}
+                style={{ justifyContent: 'center', padding: '10px', fontSize: '0.85rem', background: 'rgba(55,86,125,0.15)', color: 'var(--accent-indigo)', border: '1px solid rgba(55,86,125,0.3)' }}
               >
                 <Sparkles size={16} />
                 <span>2. Inspect Differentiators & Add Limitation</span>
@@ -6525,12 +6525,12 @@ const RESEARCH_PRESETS: RDPreset[] = [
               display: 'flex', 
               flexDirection: 'column', 
               gap: '20px', 
-              boxShadow: '0 25px 50px rgba(0,0,0,0.8)' 
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: 42, height: 42, borderRadius: 10, background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 42, height: 42, borderRadius: 10, background: 'rgba(55,86,125,0.15)', color: 'var(--accent-indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Pencil size={20} />
                 </div>
                 <div>
@@ -6631,7 +6631,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
           <div 
             style={{ 
               background: 'var(--bg-card-solid)', 
-              border: '1px solid rgba(244, 63, 94, 0.4)', 
+              border: '1px solid rgba(174,54,67,0.4)',
               borderRadius: '20px', 
               padding: '28px', 
               maxWidth: '520px', 
@@ -6639,11 +6639,11 @@ const RESEARCH_PRESETS: RDPreset[] = [
               display: 'flex', 
               flexDirection: 'column', 
               gap: '20px', 
-              boxShadow: '0 25px 50px rgba(0,0,0,0.8)' 
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(244, 63, 94, 0.15)', color: 'var(--accent-rose)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid rgba(244, 63, 94, 0.3)' }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(174,54,67,0.15)', color: 'var(--accent-rose)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid rgba(174,54,67,0.3)' }}>
                 <Trash2 size={24} />
               </div>
               <div style={{ flex: 1 }}>
@@ -6656,7 +6656,7 @@ const RESEARCH_PRESETS: RDPreset[] = [
               </div>
             </div>
 
-            <div style={{ background: 'rgba(244, 63, 94, 0.08)', border: '1px solid rgba(244, 63, 94, 0.25)', borderRadius: '12px', padding: '14px', fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+            <div style={{ background: 'rgba(174,54,67,0.08)', border: '1px solid rgba(174,54,67,0.25)', borderRadius: '12px', padding: '14px', fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
               <div style={{ fontWeight: 700, color: 'var(--accent-rose)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <AlertTriangle size={14} />
                 <span>Warning: Cascading deletion cannot be undone</span>

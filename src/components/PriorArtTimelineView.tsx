@@ -191,11 +191,11 @@ export const PriorArtTimelineView: React.FC<Props> = ({ onOpenPaper, onNavigateT
           <div style={{ display: 'flex', gap: '8px', fontSize: '0.74rem' }}>
             <span className="badge badge-cyan">Target Under Examination</span>
             <span className="badge badge-emerald">Published Before Target Filing</span>
-            <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#F59E0B' }}>Subsequent Disclosure</span>
+            <span className="badge" style={{ background: 'rgba(145,94,16,0.15)', color: 'var(--accent-amber)' }}>Subsequent Disclosure</span>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(280px, 1fr))`, gap: '16px', position: 'relative' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(min(280px, 100%), 1fr))`, gap: '16px', position: 'relative' }}>
           {sortedPatents.map((p) => {
             const isTarget = p.id === targetPatent?.id;
             const temporal = checkTemporalEligibility(targetFilingDate, p.publicationDate);
@@ -212,11 +212,11 @@ export const PriorArtTimelineView: React.FC<Props> = ({ onOpenPaper, onNavigateT
               if (temporal.status === 'PUBLISHED_BEFORE_FILING') {
                 temporalTag = 'Published Before Target Filing';
                 badgeClass = 'badge badge-emerald';
-                borderColor = 'rgba(16, 185, 129, 0.4)';
+                borderColor = 'rgba(34,104,88,0.4)';
               } else {
                 temporalTag = 'Published On/After Target Filing';
                 badgeClass = 'badge badge-amber';
-                borderColor = 'rgba(245, 158, 11, 0.3)';
+                borderColor = 'rgba(145,94,16,0.3)';
               }
             } else {
               temporalTag = 'Temporal Status Unverified';
@@ -227,7 +227,7 @@ export const PriorArtTimelineView: React.FC<Props> = ({ onOpenPaper, onNavigateT
               <div
                 key={p.id}
                 style={{
-                  background: isTarget ? 'rgba(0, 242, 254, 0.06)' : 'var(--bg-surface)',
+                  background: isTarget ? 'rgba(34,104,88,0.06)' : 'var(--bg-surface)',
                   border: '1px solid',
                   borderColor,
                   padding: '16px',
@@ -397,7 +397,7 @@ export const PriorArtTimelineView: React.FC<Props> = ({ onOpenPaper, onNavigateT
                         return (
                           <td key={cand.candidateId} style={{ padding: '12px 14px' }}>
                             {cov.matchState === 'SUPPORTED' ? (
-                              <div style={{ color: '#10B981', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                              <div style={{ color: 'var(--accent-emerald)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
                                   <CheckCircle2 size={16} /> Literal text match
                                 </span>
@@ -423,7 +423,7 @@ export const PriorArtTimelineView: React.FC<Props> = ({ onOpenPaper, onNavigateT
                                 <HelpCircle size={15} /> Unassessed
                               </div>
                             ) : (
-                              <div style={{ color: '#F43F5E', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <div style={{ color: 'var(--accent-rose)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <XCircle size={15} /> No lexical match
                               </div>
                             )}

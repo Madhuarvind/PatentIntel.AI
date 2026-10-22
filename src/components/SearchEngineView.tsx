@@ -131,7 +131,7 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
             borderRadius: '10px',
             border: '1px solid',
             borderColor: searchTab === 'uspto-live' ? 'var(--accent-cyan)' : 'var(--border-color)',
-            background: searchTab === 'uspto-live' ? 'rgba(0, 242, 254, 0.12)' : 'var(--bg-card-solid)',
+            background: searchTab === 'uspto-live' ? 'rgba(34,104,88,0.12)' : 'var(--bg-card-solid)',
             color: searchTab === 'uspto-live' ? 'var(--accent-cyan)' : 'var(--text-muted)',
             fontWeight: searchTab === 'uspto-live' ? 700 : 500,
             fontSize: '0.9rem',
@@ -151,7 +151,7 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
             borderRadius: '10px',
             border: '1px solid',
             borderColor: searchTab === 'workspace-hybrid' ? 'var(--accent-cyan)' : 'var(--border-color)',
-            background: searchTab === 'workspace-hybrid' ? 'rgba(0, 242, 254, 0.12)' : 'var(--bg-card-solid)',
+            background: searchTab === 'workspace-hybrid' ? 'rgba(34,104,88,0.12)' : 'var(--bg-card-solid)',
             color: searchTab === 'workspace-hybrid' ? 'var(--accent-cyan)' : 'var(--text-muted)',
             fontWeight: searchTab === 'workspace-hybrid' ? 700 : 500,
             fontSize: '0.9rem',
@@ -258,7 +258,7 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
                       <span className="badge badge-emerald">Publication: {p.publicationDate || 'Unavailable'}</span>
                       <span className="badge badge-purple">Claims retrieved: {p.claimsCount}</span>
                       {typeof p.similarityScore === 'number' && (
-                        <span className="badge badge-cyan" style={{ background: 'rgba(0, 242, 254, 0.15)', color: 'var(--accent-cyan)' }}>
+                        <span className="badge badge-cyan" style={{ background: 'rgba(34,104,88,0.15)', color: 'var(--accent-cyan)' }}>
                           Heuristic keyword score: {p.similarityScore} / 100
                         </span>
                       )}
@@ -285,7 +285,7 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
                   </div>
                 </div>
 
-                <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: '1.55', marginBottom: '16px', background: 'rgba(255,255,255,0.02)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: '1.55', marginBottom: '16px', background: 'rgba(21,51,60,0.02)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
                   "{p.abstract}"
                 </p>
 
@@ -356,7 +356,7 @@ export const SearchEngineView: React.FC<Props> = ({ onNavigate, onOpenPaper, ini
                 </div>
               </div>
 
-              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: '1.5', marginBottom: '16px', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px' }}>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: '1.5', marginBottom: '16px', background: 'rgba(21,51,60,0.02)', padding: '12px', borderRadius: '8px' }}>
                 "{res.abstractSnippet}"
               </p>
 

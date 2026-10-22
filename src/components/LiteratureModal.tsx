@@ -395,7 +395,7 @@ export const LiteratureModal: React.FC<Props> = ({
       right: 0,
       bottom: 0,
       zIndex: 1000,
-      background: 'rgba(11, 15, 25, 0.90)',
+      background: 'var(--bg-card-solid)',
       backdropFilter: 'blur(16px)',
       display: 'flex',
       alignItems: 'center',
@@ -410,8 +410,8 @@ export const LiteratureModal: React.FC<Props> = ({
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
-        boxShadow: 'var(--shadow-glow)',
-        border: '1px solid rgba(0, 242, 254, 0.35)',
+        boxShadow: 'var(--shadow-sm)',
+        border: '1px solid rgba(34,104,88,0.35)',
         background: 'var(--bg-card-solid)',
         position: 'relative'
       }}>
@@ -424,7 +424,7 @@ export const LiteratureModal: React.FC<Props> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.10) 0%, rgba(99, 102, 241, 0.10) 100%)',
+          background: 'linear-gradient(135deg, rgba(34,104,88,0.10) 0%, rgba(55,86,125,0.10) 100%)',
           flexShrink: 0
         }}>
           <div>
@@ -493,7 +493,7 @@ export const LiteratureModal: React.FC<Props> = ({
                   borderRadius: '20px',
                   border: '1px solid',
                   borderColor: searchMode === mode.id ? 'var(--accent-cyan)' : 'var(--border-color)',
-                  background: searchMode === mode.id ? 'rgba(0, 242, 254, 0.15)' : 'var(--bg-card-solid)',
+                  background: searchMode === mode.id ? 'rgba(34,104,88,0.15)' : 'var(--bg-card-solid)',
                   color: searchMode === mode.id ? 'var(--accent-cyan)' : 'var(--text-muted)',
                   fontSize: '0.80rem',
                   fontWeight: searchMode === mode.id ? 700 : 500,
@@ -517,7 +517,7 @@ export const LiteratureModal: React.FC<Props> = ({
                   borderRadius: '8px',
                   border: '1px solid',
                   borderColor: activeFilterCount > 0 ? 'var(--accent-cyan)' : 'var(--border-color)',
-                  background: isFilterDrawerOpen || activeFilterCount > 0 ? 'rgba(0, 242, 254, 0.15)' : 'var(--bg-card-solid)',
+                  background: isFilterDrawerOpen || activeFilterCount > 0 ? 'rgba(34,104,88,0.15)' : 'var(--bg-card-solid)',
                   color: activeFilterCount > 0 ? 'var(--accent-cyan)' : 'var(--text-muted)',
                   fontSize: '0.80rem',
                   fontWeight: 600,
@@ -542,7 +542,7 @@ export const LiteratureModal: React.FC<Props> = ({
                   background: 'var(--bg-card-solid)',
                   border: '1px solid var(--accent-cyan)',
                   borderRadius: '12px',
-                  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.65), var(--shadow-glow)',
+                  boxShadow: 'var(--shadow-sm)',
                   padding: '16px',
                   zIndex: 200,
                   display: 'flex',
@@ -563,7 +563,7 @@ export const LiteratureModal: React.FC<Props> = ({
 
                   <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(min(170px, 100%), 1fr))',
                     gap: '12px',
                     maxHeight: '260px',
                     overflowY: 'auto',
@@ -594,7 +594,7 @@ export const LiteratureModal: React.FC<Props> = ({
                             background: 'var(--bg-card-solid)',
                             border: '1px solid var(--accent-cyan)',
                             borderRadius: '8px',
-                            boxShadow: 'var(--shadow-glow)',
+                            boxShadow: 'var(--shadow-sm)',
                             maxHeight: '180px',
                             overflowY: 'auto'
                           }}>
@@ -907,7 +907,7 @@ export const LiteratureModal: React.FC<Props> = ({
                   padding: '4px 10px',
                   borderRadius: '16px',
                   border: '1px solid var(--border-color)',
-                  background: searchQuery === topic ? 'rgba(0, 242, 254, 0.12)' : 'var(--bg-card-solid)',
+                  background: searchQuery === topic ? 'rgba(34,104,88,0.12)' : 'var(--bg-card-solid)',
                   color: searchQuery === topic ? 'var(--accent-cyan)' : 'var(--text-muted)',
                   fontSize: '0.76rem',
                   cursor: 'pointer',
@@ -924,7 +924,7 @@ export const LiteratureModal: React.FC<Props> = ({
         {selectedAuthor && (
           <div style={{
             padding: '8px 20px',
-            background: 'linear-gradient(90deg, rgba(99, 102, 241, 0.15) 0%, rgba(0, 242, 254, 0.10) 100%)',
+            background: 'linear-gradient(90deg, rgba(55,86,125,0.15) 0%, rgba(34,104,88,0.10) 100%)',
             borderBottom: '1px solid var(--accent-indigo)',
             display: 'flex',
             alignItems: 'center',
@@ -937,7 +937,7 @@ export const LiteratureModal: React.FC<Props> = ({
                 height: '32px',
                 borderRadius: '50%',
                 background: 'var(--accent-indigo)',
-                color: '#fff',
+                color: 'var(--text-main)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -988,7 +988,7 @@ export const LiteratureModal: React.FC<Props> = ({
                 <User size={18} /> Multiple Authors Match Query "{searchQuery}". Please Select the Intended Author:
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '14px' }}>
                 {authorDisambiguationList.map(auth => (
                   <div
                     key={auth.id}
@@ -1066,7 +1066,7 @@ export const LiteratureModal: React.FC<Props> = ({
                     borderRadius: '12px',
                     border: '1px solid',
                     borderColor: isExpanded ? 'var(--accent-cyan)' : 'var(--border-color)',
-                    background: isExpanded ? 'rgba(0, 242, 254, 0.04)' : 'var(--bg-surface)',
+                    background: isExpanded ? 'rgba(34,104,88,0.04)' : 'var(--bg-surface)',
                     padding: '18px',
                     transition: 'all 0.2s ease'
                   }}

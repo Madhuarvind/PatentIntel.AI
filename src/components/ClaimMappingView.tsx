@@ -110,14 +110,14 @@ export const ClaimMappingView: React.FC<Props> = ({ onNavigate, onOpenPaper }) =
         );
       case 'UNMATCHED':
         return (
-          <span className="badge" style={{ background: 'rgba(244, 63, 94, 0.15)', color: 'var(--accent-rose)', border: '1px solid rgba(244, 63, 94, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <span className="badge" style={{ background: 'rgba(174,54,67,0.15)', color: 'var(--accent-rose)', border: '1px solid rgba(174,54,67,0.3)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
             <AlertTriangle size={12} /> Unmatched
           </span>
         );
       case 'UNASSESSED':
       default:
         return (
-          <span className="badge" style={{ background: 'rgba(255, 255, 255, 0.08)', color: 'var(--text-dim)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <span className="badge" style={{ background: 'rgba(21,51,60,0.08)', color: 'var(--text-dim)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
             <FileQuestion size={12} /> Unassessed
           </span>
         );
@@ -141,7 +141,7 @@ export const ClaimMappingView: React.FC<Props> = ({ onNavigate, onOpenPaper }) =
           <button
             className="btn-secondary"
             onClick={() => setIsModalOpen(true)}
-            style={{ border: '1px solid var(--accent-rose)', color: 'var(--accent-rose)', background: 'rgba(244, 63, 94, 0.08)', fontWeight: 600, fontSize: '0.84rem' }}
+            style={{ border: '1px solid var(--accent-rose)', color: 'var(--accent-rose)', background: 'rgba(174,54,67,0.08)', fontWeight: 600, fontSize: '0.84rem' }}
           >
             <Scale size={15} /> Statutory Invalidity Calculator
           </button>
@@ -180,13 +180,13 @@ export const ClaimMappingView: React.FC<Props> = ({ onNavigate, onOpenPaper }) =
       </div>
 
       {exportNotice && (
-        <div style={{ padding: '10px 16px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid var(--accent-emerald)', borderRadius: '8px', color: 'var(--accent-emerald)', fontSize: '0.85rem' }}>
+        <div style={{ padding: '10px 16px', background: 'rgba(34,104,88,0.15)', border: '1px solid var(--accent-emerald)', borderRadius: '8px', color: 'var(--accent-emerald)', fontSize: '0.85rem' }}>
           {exportNotice}
         </div>
       )}
 
       {/* Dynamic Patent Selector Bar */}
-      <div className="glass-panel" style={{ padding: '18px 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px', borderRadius: '14px' }}>
+      <div className="glass-panel" style={{ padding: '18px 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(360px, 100%), 1fr))', gap: '20px', borderRadius: '14px' }}>
         <div>
           <PatentSelector
             patents={workspacePatents}
@@ -269,7 +269,7 @@ export const ClaimMappingView: React.FC<Props> = ({ onNavigate, onOpenPaper }) =
       )}
 
       {evidenceResult && !evidenceResult.success && (
-        <div className="glass-panel" style={{ padding: '28px 32px', borderRadius: '14px', border: '1px solid rgba(244, 63, 94, 0.4)', background: 'rgba(244, 63, 94, 0.05)' }}>
+        <div className="glass-panel" style={{ padding: '28px 32px', borderRadius: '14px', border: '1px solid rgba(174,54,67,0.4)', background: 'rgba(174,54,67,0.05)' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
             <AlertTriangle size={24} color="var(--accent-rose)" style={{ flexShrink: 0, marginTop: '2px' }} />
             <div>
@@ -351,9 +351,9 @@ export const ClaimMappingView: React.FC<Props> = ({ onNavigate, onOpenPaper }) =
             <div style={{
               padding: '12px 18px',
               borderRadius: '10px',
-              background: evidenceResult.record.temporalStatus === 'POTENTIAL_POST_FILING' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(255, 255, 255, 0.03)',
+              background: evidenceResult.record.temporalStatus === 'POTENTIAL_POST_FILING' ? 'rgba(145,94,16,0.1)' : 'rgba(21,51,60,0.03)',
               border: '1px solid',
-              borderColor: evidenceResult.record.temporalStatus === 'POTENTIAL_POST_FILING' ? 'rgba(245, 158, 11, 0.3)' : 'var(--border-color)',
+              borderColor: evidenceResult.record.temporalStatus === 'POTENTIAL_POST_FILING' ? 'rgba(145,94,16,0.3)' : 'var(--border-color)',
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
@@ -401,15 +401,15 @@ export const ClaimMappingView: React.FC<Props> = ({ onNavigate, onOpenPaper }) =
                       padding: '18px',
                       borderRadius: '12px',
                       background: isUnmatched
-                        ? 'rgba(244, 63, 94, 0.04)'
+                        ? 'rgba(174,54,67,0.04)'
                         : isPartial
-                        ? 'rgba(245, 158, 11, 0.04)'
+                        ? 'rgba(145,94,16,0.04)'
                         : 'var(--bg-surface)',
                       border: '1px solid',
                       borderColor: isUnmatched
-                        ? 'rgba(244, 63, 94, 0.25)'
+                        ? 'rgba(174,54,67,0.25)'
                         : isPartial
-                        ? 'rgba(245, 158, 11, 0.25)'
+                        ? 'rgba(145,94,16,0.25)'
                         : 'var(--border-color)',
                       display: 'flex',
                       flexDirection: 'column',
@@ -443,7 +443,7 @@ export const ClaimMappingView: React.FC<Props> = ({ onNavigate, onOpenPaper }) =
                       padding: '12px 14px',
                       borderRadius: '8px',
                       background: 'rgba(0, 0, 0, 0.25)',
-                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(21,51,60,0.05)',
                       fontSize: '0.84rem'
                     }}>
                       <div style={{ fontSize: '0.72rem', color: 'var(--accent-indigo)', fontWeight: 700, marginBottom: '4px' }}>

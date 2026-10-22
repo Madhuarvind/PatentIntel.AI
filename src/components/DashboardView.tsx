@@ -82,9 +82,9 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
       <div className="glass-panel" style={{
         padding: '28px 32px',
         borderRadius: '16px',
-        background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.08) 0%, rgba(99, 102, 241, 0.09) 50%, rgba(16, 185, 129, 0.05) 100%)',
-        border: '1px solid rgba(0, 242, 254, 0.22)',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.35)',
+        background: 'linear-gradient(135deg, rgba(34,104,88,0.08) 0%, rgba(55,86,125,0.09) 50%, rgba(34,104,88,0.05) 100%)',
+        border: '1px solid rgba(34,104,88,0.22)',
+        boxShadow: 'var(--shadow-sm)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -122,14 +122,14 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
       </div>
 
       {/* Real-Time Dynamic Metric Cards Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: '16px' }}>
         {/* Card 1: Active Patents */}
-        <div className="glass-panel glass-panel-hover" style={{ padding: '20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="glass-panel glass-panel-hover" style={{ padding: '20px', borderRadius: '14px', border: '1px solid rgba(21,51,60,0.08)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-            <div style={{ background: 'rgba(0, 242, 254, 0.12)', padding: '10px', borderRadius: '10px', color: 'var(--accent-cyan)' }}>
+            <div style={{ background: 'rgba(34,104,88,0.12)', padding: '10px', borderRadius: '10px', color: 'var(--accent-cyan)' }}>
               <FolderKanban size={22} />
             </div>
-            <span style={{ fontSize: '0.74rem', color: 'var(--accent-emerald)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600, background: 'rgba(16, 185, 129, 0.12)', padding: '3px 8px', borderRadius: '6px' }}>
+            <span style={{ fontSize: '0.74rem', color: 'var(--accent-emerald)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600, background: 'rgba(34,104,88,0.12)', padding: '3px 8px', borderRadius: '6px' }}>
               <TrendingUp size={12} /> Live Session
             </span>
           </div>
@@ -145,12 +145,12 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
         </div>
 
         {/* Card 2: Decomposed Claims */}
-        <div className="glass-panel glass-panel-hover" style={{ padding: '20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="glass-panel glass-panel-hover" style={{ padding: '20px', borderRadius: '14px', border: '1px solid rgba(21,51,60,0.08)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-            <div style={{ background: 'rgba(99, 102, 241, 0.12)', padding: '10px', borderRadius: '10px', color: 'var(--accent-indigo)' }}>
+            <div style={{ background: 'rgba(55,86,125,0.12)', padding: '10px', borderRadius: '10px', color: 'var(--accent-indigo)' }}>
               <FileCheck size={22} />
             </div>
-            <span style={{ fontSize: '0.74rem', color: 'var(--accent-cyan)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600, background: 'rgba(0, 242, 254, 0.12)', padding: '3px 8px', borderRadius: '6px' }}>
+            <span style={{ fontSize: '0.74rem', color: 'var(--accent-cyan)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600, background: 'rgba(34,104,88,0.12)', padding: '3px 8px', borderRadius: '6px' }}>
               <Zap size={12} /> {metrics.avgClaimsPerPatent} / patent
             </span>
           </div>
@@ -166,12 +166,12 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
         </div>
 
         {/* Card 3: Technical Limitations */}
-        <div className="glass-panel glass-panel-hover" style={{ padding: '20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="glass-panel glass-panel-hover" style={{ padding: '20px', borderRadius: '14px', border: '1px solid rgba(21,51,60,0.08)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-            <div style={{ background: 'rgba(16, 185, 129, 0.12)', padding: '10px', borderRadius: '10px', color: 'var(--accent-emerald)' }}>
+            <div style={{ background: 'rgba(34,104,88,0.12)', padding: '10px', borderRadius: '10px', color: 'var(--accent-emerald)' }}>
               <Layers size={22} />
             </div>
-            <span style={{ fontSize: '0.74rem', color: 'var(--accent-emerald)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600, background: 'rgba(16, 185, 129, 0.12)', padding: '3px 8px', borderRadius: '6px' }}>
+            <span style={{ fontSize: '0.74rem', color: 'var(--accent-emerald)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600, background: 'rgba(34,104,88,0.12)', padding: '3px 8px', borderRadius: '6px' }}>
               {metrics.avgElementsPerClaim} / claim
             </span>
           </div>
@@ -187,12 +187,12 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
         </div>
 
         {/* Card 4: CPC Classifications */}
-        <div className="glass-panel glass-panel-hover" style={{ padding: '20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="glass-panel glass-panel-hover" style={{ padding: '20px', borderRadius: '14px', border: '1px solid rgba(21,51,60,0.08)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-            <div style={{ background: 'rgba(168, 85, 247, 0.12)', padding: '10px', borderRadius: '10px', color: 'var(--accent-purple)' }}>
+            <div style={{ background: 'rgba(112,76,135,0.12)', padding: '10px', borderRadius: '10px', color: 'var(--accent-purple)' }}>
               <Cpu size={22} />
             </div>
-            <span style={{ fontSize: '0.74rem', color: 'var(--accent-purple)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600, background: 'rgba(168, 85, 247, 0.12)', padding: '3px 8px', borderRadius: '6px' }}>
+            <span style={{ fontSize: '0.74rem', color: 'var(--accent-purple)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600, background: 'rgba(112,76,135,0.12)', padding: '3px 8px', borderRadius: '6px' }}>
               WIPO / CPC
             </span>
           </div>
@@ -208,12 +208,12 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
         </div>
 
         {/* Card 5: Decomposition Coverage */}
-        <div className="glass-panel glass-panel-hover" style={{ padding: '20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="glass-panel glass-panel-hover" style={{ padding: '20px', borderRadius: '14px', border: '1px solid rgba(21,51,60,0.08)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-            <div style={{ background: 'rgba(245, 158, 11, 0.12)', padding: '10px', borderRadius: '10px', color: 'var(--accent-amber)' }}>
+            <div style={{ background: 'rgba(145,94,16,0.12)', padding: '10px', borderRadius: '10px', color: 'var(--accent-amber)' }}>
               <ShieldCheck size={22} />
             </div>
-            <span style={{ fontSize: '0.74rem', color: 'var(--accent-amber)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600, background: 'rgba(245, 158, 11, 0.12)', padding: '3px 8px', borderRadius: '6px' }}>
+            <span style={{ fontSize: '0.74rem', color: 'var(--accent-amber)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600, background: 'rgba(145,94,16,0.12)', padding: '3px 8px', borderRadius: '6px' }}>
               Parsed
             </span>
           </div>
@@ -230,7 +230,7 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
       </div>
 
       {/* Two-Column Analytics: Technology Domains & Portfolio Concentration */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(400px, 100%), 1fr))', gap: '20px' }}>
         {/* Left: CPC Technology Subclass Breakdown */}
         <div className="glass-panel" style={{ padding: '24px', borderRadius: '14px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -245,7 +245,7 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
             {selectedCpcFilter && (
               <button 
                 onClick={() => setSelectedCpcFilter(null)}
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border-color)', color: 'var(--accent-cyan)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.76rem', cursor: 'pointer' }}
+                style={{ background: 'rgba(21,51,60,0.06)', border: '1px solid var(--border-color)', color: 'var(--accent-cyan)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.76rem', cursor: 'pointer' }}
               >
                 Clear Filter ({selectedCpcFilter})
               </button>
@@ -268,8 +268,8 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
                       cursor: 'pointer',
                       padding: '8px 10px',
                       borderRadius: '8px',
-                      background: isSelected ? 'rgba(0, 242, 254, 0.08)' : 'transparent',
-                      border: isSelected ? '1px solid rgba(0, 242, 254, 0.3)' : '1px solid transparent',
+                      background: isSelected ? 'rgba(34,104,88,0.08)' : 'transparent',
+                      border: isSelected ? '1px solid rgba(34,104,88,0.3)' : '1px solid transparent',
                       transition: 'all 0.15s ease'
                     }}
                   >
@@ -281,7 +281,7 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
                         {item.count} ({item.percentage}%)
                       </span>
                     </div>
-                    <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{ width: '100%', height: '6px', background: 'rgba(21,51,60,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
                       <div style={{ 
                         width: `${Math.max(item.percentage, 8)}%`, 
                         height: '100%', 
@@ -331,8 +331,8 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
                     justifyContent: 'space-between',
                     padding: '10px 14px',
                     borderRadius: '8px',
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid rgba(255, 255, 255, 0.06)'
+                    background: 'rgba(21,51,60,0.03)',
+                    border: '1px solid rgba(21,51,60,0.06)'
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -379,7 +379,7 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))', gap: '16px' }}>
           {/* Module 01: Hybrid Search Engine */}
           <div 
             className="glass-panel glass-panel-hover" 
@@ -763,14 +763,14 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenLiterature })
               Last {Math.min(activityLogs.length, 4)} logged examination actions
             </span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '10px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '10px' }}>
             {activityLogs.slice(0, 4).map((log, idx) => (
               <div 
                 key={idx}
                 style={{
                   padding: '8px 12px',
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px solid rgba(255,255,255,0.05)',
+                  background: 'rgba(21,51,60,0.02)',
+                  border: '1px solid rgba(21,51,60,0.05)',
                   borderRadius: '8px',
                   fontSize: '0.78rem'
                 }}

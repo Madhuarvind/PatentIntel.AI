@@ -139,7 +139,7 @@ export const OrganizationSelector: React.FC<Props> = ({
                 left: '14px',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                color: query ? '#00F2FE' : '#64748B',
+                color: query ? 'var(--accent-cyan)' : 'var(--text-muted)',
                 transition: 'color 0.2s ease'
               }}
             />
@@ -160,15 +160,15 @@ export const OrganizationSelector: React.FC<Props> = ({
               style={{
                 width: '100%',
                 padding: '12px 14px 12px 44px',
-                background: 'rgba(15, 23, 42, 0.6)',
+                background: 'var(--bg-card-solid)',
                 border: isOpen
-                  ? '1px solid #00F2FE'
-                  : '1px solid rgba(255, 255, 255, 0.12)',
+                  ? '1px solid var(--accent-cyan)'
+                  : '1px solid rgba(21,51,60,0.12)',
                 borderRadius: '12px',
-                color: '#F8FAFC',
+                color: 'var(--text-main)',
                 fontSize: '0.92rem',
                 outline: 'none',
-                boxShadow: isOpen ? '0 0 16px rgba(0, 242, 254, 0.2)' : 'none',
+                boxShadow: isOpen ? '0 0 16px rgba(34,104,88,0.2)' : 'none',
                 transition: 'all 0.2s ease'
               }}
             />
@@ -182,10 +182,10 @@ export const OrganizationSelector: React.FC<Props> = ({
                 top: 'calc(100% + 6px)',
                 left: 0,
                 right: 0,
-                background: '#0F172A',
-                border: '1px solid rgba(0, 242, 254, 0.3)',
+                background: 'var(--bg-card-solid)',
+                border: '1px solid rgba(34,104,88,0.3)',
                 borderRadius: '14px',
-                boxShadow: '0 12px 32px rgba(0, 0, 0, 0.75)',
+                boxShadow: 'var(--shadow-sm)',
                 zIndex: 100,
                 maxHeight: '320px',
                 overflowY: 'auto',
@@ -207,41 +207,41 @@ export const OrganizationSelector: React.FC<Props> = ({
                         borderRadius: '8px',
                         cursor: 'pointer',
                         background: isHighlighted
-                          ? 'rgba(0, 242, 254, 0.12)'
+                          ? 'rgba(34,104,88,0.12)'
                           : 'transparent',
                         borderLeft: isHighlighted
-                          ? '3px solid #00F2FE'
+                          ? '3px solid var(--accent-cyan)'
                           : '3px solid transparent',
                         transition: 'all 0.15s ease',
                         marginBottom: '2px'
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ fontWeight: 700, fontSize: '0.88rem', color: isHighlighted ? '#00F2FE' : '#F8FAFC' }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.88rem', color: isHighlighted ? 'var(--accent-cyan)' : 'var(--text-main)' }}>
                           {org.officialName}
                         </div>
-                        {isSelected && <Check size={16} color="#00F2FE" />}
+                        {isSelected && <Check size={16} color="var(--accent-cyan)" />}
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', fontSize: '0.76rem', color: '#94A3B8' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', fontSize: '0.76rem', color: 'var(--text-muted)' }}>
                         {org.city && org.state && (
                           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <MapPin size={12} color="#64748B" /> {org.city}, {org.state}
+                            <MapPin size={12} color="var(--text-muted)" /> {org.city}, {org.state}
                           </span>
                         )}
                         <span>•</span>
                         <span style={{
-                          background: 'rgba(255, 255, 255, 0.06)',
+                          background: 'rgba(21,51,60,0.06)',
                           padding: '2px 6px',
                           borderRadius: '4px',
-                          color: '#CBD5E1'
+                          color: 'var(--text-muted)'
                         }}>
                           {org.type}
                         </span>
                         {org.source === 'user_added' && (
                           <span style={{
-                            background: 'rgba(168, 85, 247, 0.15)',
-                            color: '#C084FC',
+                            background: 'rgba(112,76,135,0.15)',
+                            color: 'var(--accent-purple)',
                             padding: '2px 6px',
                             borderRadius: '4px',
                             fontWeight: 600
@@ -254,7 +254,7 @@ export const OrganizationSelector: React.FC<Props> = ({
                   );
                 })
               ) : (
-                <div style={{ padding: '12px', textAlign: 'center', fontSize: '0.85rem', color: '#94A3B8' }}>
+                <div style={{ padding: '12px', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                   No matching institution found.
                 </div>
               )}
@@ -268,10 +268,10 @@ export const OrganizationSelector: React.FC<Props> = ({
                   borderRadius: '8px',
                   cursor: 'pointer',
                   background: highlightedIndex === suggestions.length
-                    ? 'rgba(99, 102, 241, 0.18)'
-                    : 'rgba(255, 255, 255, 0.04)',
-                  border: '1px dashed rgba(99, 102, 241, 0.4)',
-                  color: '#6366F1',
+                    ? 'rgba(55,86,125,0.18)'
+                    : 'rgba(21,51,60,0.04)',
+                  border: '1px dashed rgba(55,86,125,0.4)',
+                  color: 'var(--accent-indigo)',
                   fontWeight: 700,
                   fontSize: '0.86rem',
                   display: 'flex',
@@ -289,20 +289,20 @@ export const OrganizationSelector: React.FC<Props> = ({
       ) : (
         /* CUSTOM ORGANIZATION INPUT FORM INLINE */
         <div style={{
-          background: 'rgba(15, 23, 42, 0.95)',
-          border: '1px solid rgba(99, 102, 241, 0.4)',
+          background: 'var(--bg-card-solid)',
+          border: '1px solid rgba(55,86,125,0.4)',
           borderRadius: '12px',
           padding: '12px',
-          boxShadow: '0 0 20px rgba(99, 102, 241, 0.15)'
+          boxShadow: 'var(--shadow-sm)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#6366F1', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent-indigo)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Add Custom Organization / Institution
             </span>
             <button
               type="button"
               onClick={() => setIsCustomMode(false)}
-              style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer' }}
+              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
             >
               <X size={16} />
             </button>
@@ -321,10 +321,10 @@ export const OrganizationSelector: React.FC<Props> = ({
               style={{
                 width: '100%',
                 padding: '10px 12px',
-                background: '#0B0F19',
-                border: customError ? '1px solid #EF4444' : '1px solid rgba(255, 255, 255, 0.15)',
+                background: 'var(--bg-card-solid)',
+                border: customError ? '1px solid var(--accent-rose)' : '1px solid rgba(21,51,60,0.15)',
                 borderRadius: '8px',
-                color: '#F8FAFC',
+                color: 'var(--text-main)',
                 fontSize: '0.9rem',
                 outline: 'none'
               }}
@@ -332,7 +332,7 @@ export const OrganizationSelector: React.FC<Props> = ({
           </div>
 
           {customError && (
-            <div style={{ fontSize: '0.78rem', color: '#EF4444', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--accent-rose)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <AlertCircle size={14} /> {customError}
             </div>
           )}
@@ -344,10 +344,10 @@ export const OrganizationSelector: React.FC<Props> = ({
               style={{
                 flex: 1,
                 padding: '8px 12px',
-                background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
+                background: 'linear-gradient(135deg, var(--accent-indigo) 0%, #8B5CF6 100%)',
                 border: 'none',
                 borderRadius: '8px',
-                color: '#FFFFFF',
+                color: 'var(--text-main)',
                 fontWeight: 700,
                 fontSize: '0.85rem',
                 cursor: 'pointer',
@@ -364,10 +364,10 @@ export const OrganizationSelector: React.FC<Props> = ({
               onClick={() => setIsCustomMode(false)}
               style={{
                 padding: '8px 12px',
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
+                background: 'rgba(21,51,60,0.08)',
+                border: '1px solid rgba(21,51,60,0.12)',
                 borderRadius: '8px',
-                color: '#CBD5E1',
+                color: 'var(--text-muted)',
                 fontWeight: 600,
                 fontSize: '0.85rem',
                 cursor: 'pointer'
